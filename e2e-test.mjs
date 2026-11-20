@@ -6,20 +6,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 async function runTest() {
-  console.log('--- 1. Starting Vite Preview Server ---');
-  const server = spawn('npm.cmd', ['run', 'preview', '--', '--port', '4173'], {
-    cwd: __dirname,
-    stdio: 'pipe',
-    shell: true,
-  });
-
-  server.stdout.on('data', (d) => process.stdout.write(d.toString()));
-  server.stderr.on('data', (d) => process.stderr.write(d.toString()));
-
-  // Wait for server to spin up
-  await new Promise((res) => setTimeout(res, 3000));
-
-  console.log('--- 2. Launching Native Edge Browser via Playwright ---');
+  console.log('--- 1. Connecting to active dev server at http://localhost:5173 ---');
   const browser = await chromium.launch({ headless: true, channel: 'msedge' });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
@@ -31,33 +18,36 @@ async function runTest() {
   });
 
   try {
-    console.log('--- 3. Navigating to LIFE OS at http://localhost:4173 ---');
-    await page.goto('http://localhost:4173', { waitUntil: 'networkidle' });
+    console.log('--- 2. Navigating to LIFE OS at http://localhost:5173 ---');
+    await page.goto('http://localhost:5173', { waitUntil: 'networkidle' });
 
-    console.log('--- 4. Verifying Dashboard & The 5 Vital Questions ---');
+    console.log('--- 4. Verifying Redesigned Anti-Slop Dashboard ---');
     const title = await page.title();
     console.log(`✓ Page title: "${title}"`);
 
-    await page.waitForSelector('text=1. What to do today?', { timeout: 6000 });
-    console.log('✓ Question 1: "1. What to do today?" found.');
+    // Verify 2-column workspace headers
+    await page.waitForSelector('text=Today\'s Tasks', { timeout: 6000 });
+    console.log('✓ Left Column: "Today\'s Tasks" verified.');
 
-    const q2 = await page.isVisible('text=2. What is most important?');
-    const q3 = await page.isVisible('text=3. Falling behind on?');
-    const q4 = await page.isVisible('text=4. Progress Made?');
-    const q5 = await page.isVisible('text=5. Improve Tomorrow?');
-    console.log(`✓ Questions 2-5 verified: Q2=${q2}, Q3=${q3}, Q4=${q4}, Q5=${q5}`);
+    const rightCol = await page.isVisible('text=Priority Goals');
+    console.log(`✓ Right Column: "Priority Goals" verified (${rightCol}).`);
+
+    // Verify daily overview strip
+    const overviewStrip = await page.isVisible('text=Scheduled today:');
+    console.log(`✓ Daily Overview Strip verified (${overviewStrip}).`);
 
     // Test Navigation: Goals
-    console.log('--- 5. Testing Goals Module ---');
+    console.log('--- 5. Testing Goals Module (Structured Data Table) ---');
     await page.click('button:has(span:text-is("Goals"))');
-    await page.waitForSelector('text=Goal Priority Management', { timeout: 4000 });
-    console.log('✓ Goals Management verified.');
+    await page.waitForSelector('text=Goal Management', { timeout: 4000 });
+    const hasCritical = await page.isVisible('text=Critical:');
+    console.log(`✓ Goals Structured Table & Summary Strip verified (hasCritical=${hasCritical}).`);
 
     // Test Navigation: Tasks
     console.log('--- 6. Testing Tasks Module (List, Kanban, Calendar) ---');
     await page.click('button:has(span:text-is("Tasks"))');
-    await page.waitForSelector('text=Task Management & Priorities', { timeout: 4000 });
-    console.log('✓ Tasks List view verified.');
+    await page.waitForSelector('text=Task Management', { timeout: 4000 });
+    console.log('✓ Tasks List view & Compact Summary Strip verified.');
 
     // Switch to Kanban
     await page.click('button:has-text("Kanban")');
@@ -70,10 +60,11 @@ async function runTest() {
     console.log('✓ Tasks Calendar view (SUN-SAT grid) verified.');
 
     // Test Navigation: Habits
-    console.log('--- 7. Testing Habits Module ---');
+    console.log('--- 7. Testing Habits Module (Table & 70-Day Labeled Heatmap) ---');
     await page.click('button:has(span:text-is("Habits"))');
-    await page.waitForSelector('text=Habit Architecture & Heatmaps', { timeout: 4000 });
-    console.log('✓ Habits Tracker & Heatmaps verified.');
+    await page.waitForSelector('text=Habits & Daily Consistency', { timeout: 4000 });
+    const hasHeatmap = await page.isVisible('text=Consistency Heatmap');
+    console.log(`✓ Habits Structured Table & Labeled Heatmap verified (hasHeatmap=${hasHeatmap}).`);
 
     // Test Navigation: Finances
     console.log('--- 8. Testing Finance Module ---');
@@ -110,7 +101,6 @@ async function runTest() {
     await page.click('button:has(span:text-is("AI Copilot"))');
     await page.waitForSelector('text=Astra — Life OS AI Copilot', { timeout: 4000 });
     
-    // Test interactive prompt
     const planDayBtn = await page.waitForSelector('button:has-text("Plan my day")', { timeout: 3000 });
     if (planDayBtn) {
       await planDayBtn.click();
@@ -157,7 +147,6 @@ async function runTest() {
     process.exit(1);
   } finally {
     await browser.close();
-    server.kill();
     process.exit(0);
   }
 }

@@ -18,7 +18,7 @@ import SettingsPage from './pages/SettingsPage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
-import { Menu, Moon, Command, Plus, Search, Sparkles } from 'lucide-react';
+import { Menu, Plus, Search, Sparkles } from 'lucide-react';
 
 export default function App() {
   const isLoaded = useStore((s) => s.isLoaded);
@@ -31,7 +31,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Command palette & quick creation state
+  // Command palette & quick creation modals
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
@@ -122,7 +122,7 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation (Section 2.A) */}
       <Sidebar
         collapsed={sidebarCollapsed}
         setCollapsed={setSidebarCollapsed}
@@ -130,166 +130,95 @@ export default function App() {
         setMobileOpen={setMobileMenuOpen}
       />
 
-      {/* Main Content Area */}
-      <main
-        className="main-content"
-        style={{
-          marginLeft: sidebarCollapsed ? '70px' : '260px',
-          transition: 'margin-left 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-          background: 'var(--bg-primary)',
-        }}
-      >
-        {/* Top Header / Command Palette Trigger */}
-        <header
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 28px',
-            borderBottom: '1px solid var(--border)',
-            background: 'var(--bg-secondary)',
-          }}
-        >
-          {/* Mobile Menu Toggle & Title */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Main Workspace Area (Section 2.B & 2.C) */}
+      <main className="main-content">
+        {/* Global Top Toolbar (Single consistent toolbar across all pages) */}
+        <header className="global-toolbar">
+          {/* Left: Mobile menu toggle + Search Command Palette trigger */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
-              className="btn btn-ghost btn-icon mobile-only"
+              className="btn btn-ghost btn-sm mobile-only"
               onClick={() => setMobileMenuOpen(true)}
               style={{ display: 'none' }}
+              aria-label="Open navigation menu"
             >
-              <Menu size={20} />
+              <Menu size={16} />
             </button>
+
             <button
               onClick={() => setCommandPaletteOpen(true)}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: '8px',
-                padding: '6px 14px',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                borderRadius: 'var(--radius-small)',
+                padding: '4px 10px',
                 color: 'var(--text-muted)',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 cursor: 'pointer',
+                minWidth: '220px',
+                transition: 'border-color 0.12s ease',
               }}
+              aria-label="Search and command palette"
             >
-              <Search size={14} />
-              <span>Search or type command...</span>
-              <kbd style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: '4px', fontSize: '10px' }}>
+              <Search size={13} />
+              <span style={{ flex: 1, textAlign: 'left' }}>Search or type command...</span>
+              <kbd
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  padding: '1px 5px',
+                  borderRadius: '3px',
+                  fontSize: '10px',
+                  fontFamily: 'var(--font-mono)',
+                }}
+              >
                 ⌘K
               </kbd>
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Right: New Task, New Goal, AI Assistant */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <button
               onClick={() => setQuickTaskModalOpen(true)}
-              className="btn btn-secondary"
-              style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+              className="btn btn-secondary btn-sm"
+              title="Create new task"
             >
-              <Plus size={14} /> Task
+              <Plus size={13} /> New Task
             </button>
             <button
               onClick={() => setQuickGoalModalOpen(true)}
-              className="btn btn-secondary"
-              style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+              className="btn btn-secondary btn-sm"
+              title="Create new goal"
             >
-              <Plus size={14} /> Goal
+              <Plus size={13} /> New Goal
             </button>
             <button
               onClick={() => setActiveView('assistant')}
-              className="btn btn-primary"
-              style={{ fontSize: '12px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+              className="btn btn-primary btn-sm"
+              title="Open Astra AI Assistant"
             >
-              <Sparkles size={14} /> Astra AI
+              <Sparkles size={13} /> AI Assistant
             </button>
           </div>
         </header>
 
-        {/* Dynamic View Body */}
-        <div style={{ flex: 1, width: '100%' }}>
+        {/* Workspace Body */}
+        <div className="workspace-content">
           {renderActiveView()}
         </div>
       </main>
 
-      {/* QUICK COMMAND PALETTE MODAL (CMD+K) */}
-      {commandPaletteOpen && (
-        <div className="modal-overlay" onClick={() => setCommandPaletteOpen(false)}>
-          <div
-            className="modal-content"
-            style={{ maxWidth: '500px', padding: '16px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '12px' }}>
-              <Search size={18} color="var(--text-muted)" />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Where to? (Dashboard, Finance, Fitness, Academics, Career...)"
-                style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-primary)',
-                  fontSize: '15px',
-                  outline: 'none',
-                }}
-              />
-              <kbd style={{ fontSize: '10px', color: 'var(--text-muted)' }}>ESC to close</kbd>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {[
-                { label: '📊 Command Dashboard', view: 'dashboard' },
-                { label: '🎯 Goals & Objectives', view: 'goals' },
-                { label: '✅ Tasks & Kanban Board', view: 'tasks' },
-                { label: '🔥 Habit Tracker & Heatmap', view: 'habits' },
-                { label: '💰 Personal Finances & Budgets', view: 'finance' },
-                { label: '🏋️ Gym & Fitness Conditioning', view: 'fitness' },
-                { label: '🎓 Academics & Courses', view: 'academics' },
-                { label: '💼 Career & Projects', view: 'career' },
-                { label: '📈 Analytics & Intelligence', view: 'analytics' },
-                { label: '🤖 Astra AI Personal Assistant', view: 'assistant' },
-                { label: '📝 Obsidian Markdown Vault', view: 'obsidian' },
-                { label: '🌙 Evening Review Wizard', view: 'review' },
-                { label: '⚙️ Settings & IndexedDB Backup', view: 'settings' },
-              ].map((item) => (
-                <button
-                  key={item.view}
-                  onClick={() => {
-                    setActiveView(item.view);
-                    setCommandPaletteOpen(false);
-                  }}
-                  className="btn btn-ghost"
-                  style={{
-                    justifyContent: 'flex-start',
-                    padding: '8px 12px',
-                    fontSize: '13.5px',
-                    borderRadius: '8px',
-                    textAlign: 'left',
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* QUICK TASK MODAL */}
+      {/* GLOBAL MODALS */}
       {quickTaskModalOpen && (
         <TaskModal
-          isOpen={quickTaskModalOpen}
           onClose={() => setQuickTaskModalOpen(false)}
         />
       )}
 
-      {/* QUICK GOAL MODAL */}
       {quickGoalModalOpen && (
         <GoalModal
           isOpen={quickGoalModalOpen}
@@ -297,16 +226,77 @@ export default function App() {
         />
       )}
 
-      <style>{`
-        @media (max-width: 768px) {
-          .main-content {
-            margin-left: 0 !important;
-          }
-          .mobile-only {
-            display: flex !important;
-          }
-        }
-      `}</style>
+      {/* COMMAND PALETTE (⌘K / Ctrl+K) */}
+      {commandPaletteOpen && (
+        <div className="modal-overlay" onClick={() => setCommandPaletteOpen(false)}>
+          <div
+            className="modal"
+            style={{ maxWidth: '480px', padding: 0, overflow: 'hidden' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-default)' }}>
+              <Search size={16} color="var(--text-muted)" style={{ marginRight: '10px' }} />
+              <input
+                type="text"
+                autoFocus
+                placeholder="Search views, modules, or actions..."
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-primary)',
+                  fontSize: '14px',
+                  outline: 'none',
+                  width: '100%',
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setCommandPaletteOpen(false);
+                }}
+              />
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>ESC</span>
+            </div>
+
+            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '300px', overflowY: 'auto' }}>
+              {[
+                { id: 'dashboard', label: 'Go to Dashboard', shortcut: 'G D' },
+                { id: 'tasks', label: 'Go to Task Management', shortcut: 'G T' },
+                { id: 'goals', label: 'Go to Goal Management', shortcut: 'G G' },
+                { id: 'habits', label: 'Go to Habit Tracker', shortcut: 'G H' },
+                { id: 'finance', label: 'Go to Finance Command', shortcut: 'G F' },
+                { id: 'academics', label: 'Go to Academics & Attendance', shortcut: 'G A' },
+                { id: 'fitness', label: 'Go to Gym & Fitness', shortcut: 'G W' },
+                { id: 'career', label: 'Go to Career Roadmap', shortcut: 'G C' },
+                { id: 'assistant', label: 'Ask Astra AI Copilot', shortcut: 'G I' },
+                { id: 'review', label: 'Start Evening Review', shortcut: 'G R' },
+                { id: 'settings', label: 'Open Settings', shortcut: 'G S' },
+              ].map((cmd) => (
+                <button
+                  key={cmd.id}
+                  onClick={() => {
+                    setActiveView(cmd.id);
+                    setCommandPaletteOpen(false);
+                  }}
+                  className="btn btn-ghost"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    fontSize: '13px',
+                    borderRadius: 'var(--radius-small)',
+                    width: '100%',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span>{cmd.label}</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                    {cmd.shortcut}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

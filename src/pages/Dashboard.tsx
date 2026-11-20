@@ -1,11 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import {
   Target,
   CheckSquare,
   Repeat,
   Moon,
   Clock,
-  Plus,
   AlertTriangle,
   CheckCircle2,
   Calendar,
@@ -13,14 +12,11 @@ import {
   GraduationCap,
   Dumbbell,
   DollarSign,
-  Sparkles,
+  Circle,
+  Award,
 } from 'lucide-react';
 import useStore from '../store/useStore';
-import GoalCard from '../components/GoalCard';
-import TaskItem from '../components/TaskItem';
-import GoalModal from '../components/GoalModal';
-import TaskModal from '../components/TaskModal';
-import type { Goal, Task, Priority } from '../types';
+import type { Task, Priority } from '../types';
 
 export default function Dashboard() {
   const goals = useStore((s) => s.goals);
@@ -35,11 +31,8 @@ export default function Dashboard() {
   const settings = useStore((s) => s.settings);
   const setActiveView = useStore((s) => s.setActiveView);
   const toggleHabitEntry = useStore((s) => s.toggleHabitEntry);
-
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<Goal | undefined>(undefined);
-  const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
+  const completeTask = useStore((s) => s.completeTask);
+  const updateTask = useStore((s) => s.updateTask);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -47,10 +40,10 @@ export default function Dashboard() {
   const currentHour = new Date().getHours();
   const greeting =
     currentHour < 12
-      ? 'Good Morning'
+      ? 'Good morning'
       : currentHour < 17
-      ? 'Good Afternoon'
-      : 'Good Evening';
+      ? 'Good afternoon'
+      : 'Good evening';
 
   const todayFormatted = new Date().toLocaleDateString(undefined, {
     weekday: 'long',
@@ -58,36 +51,32 @@ export default function Dashboard() {
     day: 'numeric',
   });
 
-  // Daily Motivation Quotes (Editorial & restrained)
-  const quotes = [
-    { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Will Durant" },
-    { text: "Focus is a muscle. The more you protect your deep work, the rarer your output becomes.", author: "Cal Newport" },
-    { text: "Action precedes motivation. Do the smallest unit of work first.", author: "James Clear" },
-  ];
-  const dailyQuote = quotes[new Date().getDate() % quotes.length];
-
-  // Critical & High Priority Goals
-  const priorityGoals = useMemo(() => {
-    return goals
-      .filter((g) => !g.isArchived && (g.priority === 'critical' || g.priority === 'high'))
-      .sort((a, b) => (a.priority === 'critical' ? -1 : 1))
-      .slice(0, 3);
-  }, [goals]);
-
-  // Tasks due today or general
+  // Strict Data Distinction (Section 3 rule: Distinguish overdue tasks from tasks scheduled today)
   const priorityOrder: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-  const todayTasks = useMemo(() => {
+
+  // 1. Strictly tasks scheduled for TODAY (not overdue past items)
+  const todayScheduledTasks = useMemo(() => {
     return tasks
-      .filter((t) => !t.isCompleted && (t.dueDate === todayStr || (!t.dueDate && !t.isOverdue)))
+      .filter((t) => !t.isCompleted && t.dueDate === todayStr)
       .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
   }, [tasks, todayStr]);
 
-  // Overdue tasks
+  // 2. Overdue tasks (due date was strictly before today)
   const overdueTasks = useMemo(() => {
-    return tasks.filter((t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr)));
+    return tasks
+      .filter((t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr)))
+      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
   }, [tasks, todayStr]);
 
-  // Completed tasks count today
+  // 3. Upcoming tasks (due date is strictly after today)
+  const upcomingTasks = useMemo(() => {
+    return tasks
+      .filter((t) => !t.isCompleted && t.dueDate && t.dueDate > todayStr)
+      .sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))
+      .slice(0, 3);
+  }, [tasks, todayStr]);
+
+  // 4. Completed tasks today
   const completedTodayCount = useMemo(() => {
     return tasks.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length;
   }, [tasks, todayStr]);
@@ -104,248 +93,124 @@ export default function Dashboard() {
     ).length;
   }, [habitsToday, habitEntries, todayStr]);
 
-  // Daily Progress Indicator (0-100%)
+  // Daily Progress percentage
   const dailyProgress = useMemo(() => {
-    const taskDenominator = todayTasks.length + completedTodayCount;
-    const taskScore = taskDenominator > 0 ? (completedTodayCount / taskDenominator) * 50 : 50;
-    const habitScore = habitsToday.length > 0 ? (habitsCompletedTodayCount / habitsToday.length) * 50 : 50;
-    return Math.round(taskScore + habitScore);
-  }, [todayTasks, completedTodayCount, habitsToday, habitsCompletedTodayCount]);
+    const totalItems = todayScheduledTasks.length + completedTodayCount + habitsToday.length;
+    if (totalItems === 0) return 100;
+    const completedItems = completedTodayCount + habitsCompletedTodayCount;
+    return Math.round((completedItems / totalItems) * 100);
+  }, [todayScheduledTasks, completedTodayCount, habitsToday, habitsCompletedTodayCount]);
 
-  // Latest evening review
-  const latestReview = useMemo(() => {
-    return eveningReviews.length > 0
-      ? [...eveningReviews].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
-      : null;
-  }, [eveningReviews]);
+  // Priority Goals (Critical & High)
+  const priorityGoals = useMemo(() => {
+    return goals
+      .filter((g) => !g.isArchived && (g.priority === 'critical' || g.priority === 'high'))
+      .sort((a, b) => (a.priority === 'critical' ? -1 : 1))
+      .slice(0, 4);
+  }, [goals]);
 
-  // Academic alert
+  // Academic alert (<75% target)
   const academicAlertSubject = useMemo(() => {
     return academicSubjects.find(
       (s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
     );
   }, [academicSubjects]);
 
+  // Latest evening review status
+  const latestReview = useMemo(() => {
+    return eveningReviews.find((r) => r.date === todayStr) || null;
+  }, [eveningReviews, todayStr]);
+
+  const handleToggleTask = (task: Task) => {
+    if (task.isCompleted) {
+      updateTask(task.id, { isCompleted: false, completedAt: undefined });
+    } else {
+      completeTask(task.id);
+    }
+  };
+
   return (
-    <div className="page-container animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
-      {/* 1. EDITORIAL HEADER & ACTION BAR (NO purple gradients) */}
+      {/* 1. TOP: COMPACT DAILY OVERVIEW (Section 3: Date, Greeting, Daily completion, Upcoming responsibilities) */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           flexWrap: 'wrap',
-          gap: '16px',
-          paddingBottom: '16px',
-          borderBottom: '1px solid var(--border)',
+          gap: 'var(--space-4)',
+          paddingBottom: 'var(--space-4)',
+          borderBottom: '1px solid var(--border-default)',
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
-            <span>{todayFormatted}</span>
-            <span>•</span>
-            <span className="tabular">{todayTasks.length} tasks scheduled</span>
-            <span>•</span>
-            <span className="tabular">{habitsToday.length - habitsCompletedTodayCount} habits pending</span>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '2px' }}>
+            {todayFormatted}
           </div>
-
           <h1 style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
             {greeting}, {settings.userName}
           </h1>
         </div>
 
-        {/* Clean, high-contrast actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            onClick={() => {
-              setEditingTask(undefined);
-              setIsTaskModalOpen(true);
-            }}
-            className="btn btn-secondary btn-sm"
-          >
-            <Plus size={14} /> Task
-          </button>
-          <button
-            onClick={() => {
-              setEditingGoal(undefined);
-              setIsGoalModalOpen(true);
-            }}
-            className="btn btn-secondary btn-sm"
-          >
-            <Plus size={14} /> Goal
-          </button>
-          <button
-            onClick={() => setActiveView('assistant')}
-            className="btn btn-primary btn-sm"
-          >
-            <Sparkles size={14} /> Astra Copilot
-          </button>
+        {/* Compact summary metrics strip — No oversized cards */}
+        <div className="summary-strip">
+          <span className="metric-item">
+            Scheduled today: <strong className="tabular">{todayScheduledTasks.length}</strong>
+          </span>
+          <span>·</span>
+          <span className="metric-item">
+            Overdue: <strong className="tabular" style={{ color: overdueTasks.length > 0 ? 'var(--status-danger)' : 'var(--text-primary)' }}>{overdueTasks.length}</strong>
+          </span>
+          <span>·</span>
+          <span className="metric-item">
+            Habits: <strong className="tabular">{habitsCompletedTodayCount}/{habitsToday.length}</strong>
+          </span>
+          <span>·</span>
+          <span className="metric-item">
+            Daily execution: <strong className="tabular">{dailyProgress}%</strong>
+          </span>
         </div>
       </div>
 
-      {/* 2. THE 5 VITAL QUESTIONS — STRUCTURED BRIEFING (Solid surfaces, tabular, restrained) */}
+      {/* 2. TWO-COLUMN WORKSPACE (Section 3) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-          gap: '1px',
-          background: 'var(--border)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          overflow: 'hidden',
+          gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)',
+          gap: 'var(--space-6)',
+          alignItems: 'flex-start',
         }}
       >
-        {/* Q1: What should I do today? */}
-        <div
-          onClick={() => setActiveView('tasks')}
-          style={{
-            padding: '14px 16px',
-            background: 'var(--bg-card)',
-            cursor: 'pointer',
-            transition: 'background 0.12s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
-        >
-          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-            1. What to do today?
-          </div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }} className="tabular">
-            {todayTasks.length} Key Tasks
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {todayTasks[0] ? todayTasks[0].title : 'All items cleared'}
-          </div>
-        </div>
-
-        {/* Q2: What is most important? */}
-        <div
-          onClick={() => setActiveView('goals')}
-          style={{
-            padding: '14px 16px',
-            background: 'var(--bg-card)',
-            cursor: 'pointer',
-            transition: 'background 0.12s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
-        >
-          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--priority-critical)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-            2. What is most important?
-          </div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {priorityGoals[0]?.title ? priorityGoals[0].title : 'Set Critical Goal'}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
-            {priorityGoals[0] ? `${priorityGoals[0].progress}% • Due ${priorityGoals[0].targetDate || 'Ongoing'}` : 'High impact focus'}
-          </div>
-        </div>
-
-        {/* Q3: What am I falling behind on? */}
-        <div
-          onClick={() => (overdueTasks.length > 0 ? setActiveView('tasks') : academicAlertSubject ? setActiveView('academics') : null)}
-          style={{
-            padding: '14px 16px',
-            background: 'var(--bg-card)',
-            cursor: 'pointer',
-            transition: 'background 0.12s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
-        >
-          <div style={{ fontSize: '10.5px', fontWeight: 600, color: overdueTasks.length > 0 || academicAlertSubject ? 'var(--danger)' : 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-            3. Falling behind on?
-          </div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }} className="tabular">
-            {overdueTasks.length > 0
-              ? `${overdueTasks.length} Overdue Task${overdueTasks.length > 1 ? 's' : ''}`
-              : academicAlertSubject
-              ? `${academicAlertSubject.code} Attendance`
-              : 'Zero Bottlenecks'}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {overdueTasks.length > 0
-              ? 'Needs rescheduling'
-              : academicAlertSubject
-              ? 'Below 75% threshold'
-              : 'On schedule'}
-          </div>
-        </div>
-
-        {/* Q4: How much progress made? */}
-        <div
-          onClick={() => setActiveView('analytics')}
-          style={{
-            padding: '14px 16px',
-            background: 'var(--bg-card)',
-            cursor: 'pointer',
-            transition: 'background 0.12s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
-        >
-          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-            4. Progress Made?
-          </div>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }} className="tabular">
-            {completedTodayCount} Completed Today
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
-            Daily Execution: {dailyProgress}%
-          </div>
-        </div>
-
-        {/* Q5: What should I improve tomorrow? */}
-        <div
-          onClick={() => setActiveView('review')}
-          style={{
-            padding: '14px 16px',
-            background: 'var(--bg-card)',
-            cursor: 'pointer',
-            transition: 'background 0.12s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
-        >
-          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--warning)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-            5. Improve Tomorrow?
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {latestReview?.whatToImproveTomorrow || latestReview?.tomorrowPriorities?.[0] || 'Evening Reflection'}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {latestReview?.rating ? `Yesterday: ${latestReview.rating}/5 stars` : 'Review at day close'}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. ASYMMETRIC 2-COLUMN WORKFLOW GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: '20px', alignItems: 'flex-start' }}>
         
-        {/* LEFT COLUMN: ACTIVE TASKS & HABITS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {/* =========================================================================
+            LEFT COLUMN: DAILY EXECUTION
+            1. Today's priority tasks
+            2. Upcoming tasks
+            3. Daily habit checklist
+            4. End-of-day review status
+        ========================================================================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
           
-          {/* Action Items List */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
+          {/* 1. Today's Priority Tasks */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <CheckSquare size={16} color="var(--text-primary)" />
                 <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Today's Tasks</h2>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">({todayTasks.length})</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }} className="tabular">
+                  ({todayScheduledTasks.length})
+                </span>
               </div>
               <button
-                onClick={() => {
-                  setEditingTask(undefined);
-                  setIsTaskModalOpen(true);
-                }}
+                onClick={() => setActiveView('tasks')}
                 className="btn btn-ghost btn-sm"
               >
-                <Plus size={13} /> Add
+                View all tasks →
               </button>
             </div>
 
-            {/* Overdue alert banner if present */}
+            {/* Overdue Alert banner if distinct overdue items exist */}
             {overdueTasks.length > 0 && (
               <div
                 style={{
@@ -353,65 +218,160 @@ export default function Dashboard() {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '8px 12px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--danger-bg)',
-                  border: '1px solid rgba(239, 68, 68, 0.25)',
-                  marginBottom: '10px',
+                  borderRadius: 'var(--radius-small)',
+                  background: 'var(--status-danger-bg)',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  marginBottom: 'var(--space-3)',
                   fontSize: '12px',
-                  color: 'var(--danger)',
+                  color: 'var(--status-danger)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <AlertTriangle size={14} />
-                  <span><strong>{overdueTasks.length} overdue task(s)</strong> need rescheduling.</span>
+                  <AlertTriangle size={13} />
+                  <span>
+                    <strong>{overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}</strong> from previous days require rescheduling.
+                  </span>
                 </div>
                 <button
                   onClick={() => setActiveView('tasks')}
                   className="btn btn-ghost btn-sm"
-                  style={{ color: 'var(--danger)', padding: '2px 6px', fontSize: '11px' }}
+                  style={{ color: 'var(--status-danger)', padding: '2px 6px', fontSize: '11px' }}
                 >
-                  Manage
+                  Resolve
                 </button>
               </div>
             )}
 
-            {todayTasks.length === 0 ? (
-              <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px' }}>
-                All scheduled tasks completed for today.
+            {todayScheduledTasks.length === 0 ? (
+              <div
+                style={{
+                  padding: '24px 16px',
+                  border: '1px dashed var(--border-default)',
+                  borderRadius: 'var(--radius-medium)',
+                  textAlign: 'center',
+                  color: 'var(--text-muted)',
+                  fontSize: '12.5px',
+                  background: 'var(--bg-surface)',
+                }}
+              >
+                No tasks scheduled for today. {overdueTasks.length > 0 ? 'Focus on resolving overdue items above.' : 'All clear for deep work.'}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {todayTasks.slice(0, 6).map((t) => (
-                  <TaskItem
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {todayScheduledTasks.map((t) => (
+                  <div
                     key={t.id}
-                    task={t}
-                    onEdit={() => {
-                      setEditingTask(t);
-                      setIsTaskModalOpen(true);
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 10px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-default)',
+                      borderLeft: `3px solid ${
+                        t.priority === 'critical'
+                          ? 'var(--priority-critical)'
+                          : t.priority === 'high'
+                          ? 'var(--priority-high)'
+                          : t.priority === 'medium'
+                          ? 'var(--priority-medium)'
+                          : 'var(--priority-low)'
+                      }`,
+                      borderRadius: 'var(--radius-small)',
+                      gap: '8px',
                     }}
-                  />
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                      <button
+                        onClick={() => handleToggleTask(t)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                        title="Mark complete"
+                      >
+                        <Circle size={15} color="var(--border-focus)" />
+                      </button>
+                      <span style={{ fontSize: '13px', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {t.title}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      {t.dueTime && (
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '2px' }} className="tabular">
+                          <Clock size={10} /> {t.dueTime}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          fontWeight: 600,
+                          padding: '1px 5px',
+                          borderRadius: 'var(--radius-xs)',
+                          background:
+                            t.priority === 'critical'
+                              ? 'var(--priority-critical-bg)'
+                              : t.priority === 'high'
+                              ? 'var(--priority-high-bg)'
+                              : 'var(--bg-surface)',
+                          color:
+                            t.priority === 'critical'
+                              ? 'var(--priority-critical)'
+                              : t.priority === 'high'
+                              ? 'var(--priority-high)'
+                              : 'var(--text-secondary)',
+                        }}
+                      >
+                        {t.priority}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
+          </section>
 
-            {todayTasks.length > 6 && (
-              <button
-                onClick={() => setActiveView('tasks')}
-                className="btn btn-ghost btn-sm"
-                style={{ width: '100%', marginTop: '10px', fontSize: '12px' }}
-              >
-                View all {todayTasks.length} tasks →
-              </button>
-            )}
-          </div>
+          {/* 2. Upcoming Tasks */}
+          {upcomingTasks.length > 0 && (
+            <section>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2)' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  Upcoming This Week
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                {upcomingTasks.map((t) => (
+                  <div
+                    key={t.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '7px 10px',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: 'var(--radius-small)',
+                      fontSize: '12.5px',
+                    }}
+                  >
+                    <span style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {t.title}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                      {t.dueDate}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-          {/* Daily Habit Rituals Checklist */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
+          {/* 3. Daily Habit Checklist */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Repeat size={16} color="var(--text-primary)" />
                 <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Daily Habits</h2>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }} className="tabular">
                   ({habitsCompletedTodayCount}/{habitsToday.length})
                 </span>
               </div>
@@ -419,7 +379,7 @@ export default function Dashboard() {
                 onClick={() => setActiveView('habits')}
                 className="btn btn-ghost btn-sm"
               >
-                Heatmap →
+                Manage habits →
               </button>
             </div>
 
@@ -438,23 +398,17 @@ export default function Dashboard() {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '7px 10px',
-                      borderRadius: 'var(--radius-sm)',
-                      background: isCompleted ? 'var(--bg-hover)' : 'transparent',
+                      borderRadius: 'var(--radius-small)',
+                      background: isCompleted ? 'var(--bg-hover)' : 'var(--bg-elevated)',
+                      border: '1px solid var(--border-default)',
                       cursor: 'pointer',
-                      border: '1px solid transparent',
                       transition: 'background 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isCompleted) e.currentTarget.style.background = 'var(--bg-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isCompleted) e.currentTarget.style.background = 'transparent';
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <CheckCircle2
-                        size={16}
-                        color={isCompleted ? 'var(--success)' : 'var(--text-muted)'}
+                        size={15}
+                        color={isCompleted ? 'var(--status-success)' : 'var(--text-muted)'}
                         strokeWidth={isCompleted ? 2.2 : 1.5}
                       />
                       <span
@@ -475,137 +429,15 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* RIGHT COLUMN: PRIORITY GOALS & DOMAIN PULSE */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* High Impact Goals */}
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Target size={16} color="var(--priority-critical)" />
-                <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Priority Goals</h2>
-              </div>
-              <button
-                onClick={() => {
-                  setEditingGoal(undefined);
-                  setIsGoalModalOpen(true);
-                }}
-                className="btn btn-ghost btn-sm"
-              >
-                <Plus size={13} /> Add
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {priorityGoals.map((g) => (
-                <GoalCard
-                  key={g.id}
-                  goal={g}
-                  onEdit={() => {
-                    setEditingGoal(g);
-                    setIsGoalModalOpen(true);
-                  }}
-                />
-              ))}
-            </div>
-
-            <button
-              onClick={() => setActiveView('goals')}
-              className="btn btn-ghost btn-sm"
-              style={{ width: '100%', marginTop: '10px', fontSize: '12px' }}
-            >
-              All {goals.length} Goals →
-            </button>
-          </div>
-
-          {/* Life Domains Status (Tabular, clean) */}
-          <div className="card">
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
-              Domain Health
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {/* Academics */}
-              <div
-                onClick={() => setActiveView('academics')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-secondary)',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <GraduationCap size={15} color="var(--text-secondary)" />
-                  <span style={{ fontSize: '12.5px', fontWeight: 500 }}>Academics</span>
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
-                  {academicAssignments.filter((a) => !a.isSubmitted).length} assignments due
-                </div>
-              </div>
-
-              {/* Fitness */}
-              <div
-                onClick={() => setActiveView('fitness')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-secondary)',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Dumbbell size={15} color="var(--text-secondary)" />
-                  <span style={{ fontSize: '12.5px', fontWeight: 500 }}>Fitness</span>
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
-                  {workoutSessions[0]?.splitType || 'Schedule Session'}
-                </div>
-              </div>
-
-              {/* Finances */}
-              <div
-                onClick={() => setActiveView('finance')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-secondary)',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <DollarSign size={15} color="var(--text-secondary)" />
-                  <span style={{ fontSize: '12.5px', fontWeight: 500 }}>Finances</span>
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
-                  {financeTransactions.length} entries recorded
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Evening Review Shutdown Prompt (Solid, quiet) */}
+          {/* 4. End-of-Day Review Status */}
           <div
             style={{
-              padding: '14px 16px',
-              borderRadius: 'var(--radius)',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-medium)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
@@ -615,55 +447,248 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Moon size={16} color="var(--text-secondary)" />
               <div>
-                <div style={{ fontSize: '13px', fontWeight: 600 }}>Evening Shutdown</div>
+                <div style={{ fontSize: '13px', fontWeight: 600 }}>End-of-Day Review</div>
                 <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                  Reflect & set tomorrow's top 3
+                  {latestReview
+                    ? `Completed for today (Rated ${latestReview.rating}/5 stars)`
+                    : 'Pending shutdown · Reflect and set tomorrow’s top 3'}
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setActiveView('review')}
-              className="btn btn-secondary btn-sm"
+              className={latestReview ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
             >
-              Review
+              {latestReview ? 'View Review' : 'Start Review'}
             </button>
           </div>
         </div>
+
+        {/* =========================================================================
+            RIGHT COLUMN: LONG-TERM DIRECTION
+            1. Priority goals
+            2. Goal progress
+            3. Upcoming milestones
+            4. Important reminders (academic alert, bottleneck)
+        ========================================================================= */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          
+          {/* 1 & 2. Priority Goals with Progress */}
+          <section>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Target size={16} color="var(--priority-critical)" />
+                <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Priority Goals</h2>
+              </div>
+              <button
+                onClick={() => setActiveView('goals')}
+                className="btn btn-ghost btn-sm"
+              >
+                All goals →
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {priorityGoals.map((g) => {
+                const nextMilestone = g.milestones.find((m) => !m.isCompleted);
+
+                return (
+                  <div
+                    key={g.id}
+                    style={{
+                      padding: '10px 12px',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: 'var(--radius-small)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '6px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {g.title}
+                      </div>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          fontWeight: 600,
+                          padding: '1px 5px',
+                          borderRadius: 'var(--radius-xs)',
+                          background: g.priority === 'critical' ? 'var(--priority-critical-bg)' : 'var(--priority-high-bg)',
+                          color: g.priority === 'critical' ? 'var(--priority-critical)' : 'var(--priority-high)',
+                        }}
+                      >
+                        {g.priority}
+                      </span>
+                    </div>
+
+                    {/* Progress track */}
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '3px' }}>
+                        <span className="tabular">{g.progress}% complete</span>
+                        <span className="tabular">{g.targetDate || 'Ongoing'}</span>
+                      </div>
+                      <div className="progress-track">
+                        <div
+                          className="progress-thumb"
+                          style={{
+                            width: `${g.progress}%`,
+                            background: g.priority === 'critical' ? 'var(--priority-critical)' : 'var(--text-primary)',
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Next Milestone */}
+                    {nextMilestone && (
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Next:</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {nextMilestone.title}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* 3 & 4. Important Reminders & Bottlenecks */}
+          <section>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 'var(--space-2)' }}>
+              Important Reminders
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {/* Academic Attendance Reminder */}
+              {academicAlertSubject ? (
+                <div
+                  onClick={() => setActiveView('academics')}
+                  style={{
+                    padding: '9px 12px',
+                    borderRadius: 'var(--radius-small)',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--status-warning)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <GraduationCap size={15} color="var(--status-warning)" />
+                    <div>
+                      <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {academicAlertSubject.code} Attendance Warning
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Attendance below {academicAlertSubject.targetAttendancePercentage}% target
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} color="var(--text-muted)" />
+                </div>
+              ) : (
+                <div
+                  onClick={() => setActiveView('academics')}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-small)',
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border-default)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <GraduationCap size={14} color="var(--text-secondary)" />
+                    <span style={{ fontSize: '12.5px' }}>Academics: {academicAssignments.filter((a) => !a.isSubmitted).length} assignments due</span>
+                  </div>
+                  <ChevronRight size={13} color="var(--text-muted)" />
+                </div>
+              )}
+
+              {/* Fitness Reminder */}
+              <div
+                onClick={() => setActiveView('fitness')}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-small)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Dumbbell size={14} color="var(--text-secondary)" />
+                  <span style={{ fontSize: '12.5px' }}>
+                    Fitness: {workoutSessions[0]?.splitType || 'Schedule Workout'}
+                  </span>
+                </div>
+                <ChevronRight size={13} color="var(--text-muted)" />
+              </div>
+
+              {/* Finance Reminder */}
+              <div
+                onClick={() => setActiveView('finance')}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-small)',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-default)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <DollarSign size={14} color="var(--text-secondary)" />
+                  <span style={{ fontSize: '12.5px' }}>
+                    Finance: {financeTransactions.length} recorded entries
+                  </span>
+                </div>
+                <ChevronRight size={13} color="var(--text-muted)" />
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
 
-      {/* 4. EDITORIAL QUOTE (Discreet, grounded) */}
+      {/* 3. BOTTOM: WEEKLY OVERVIEW (Section 3: Compact weekly productivity summary) */}
       <div
         style={{
-          paddingTop: '12px',
-          borderTop: '1px solid var(--border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          color: 'var(--text-muted)',
-          fontSize: '12px',
+          borderTop: '1px solid var(--border-default)',
+          paddingTop: 'var(--space-4)',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: 'var(--space-4)',
         }}
       >
-        <span style={{ fontStyle: 'italic' }}>"{dailyQuote.text}"</span>
-        <span>— {dailyQuote.author}</span>
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>Weekly Discipline</div>
+          <span>Active streaks across {habits.filter((h) => h.streak > 0).length} of {habits.length} habits.</span>
+        </div>
+
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>Objectives Velocity</div>
+          <span>{goals.reduce((acc, g) => acc + g.milestones.filter((m) => m.isCompleted).length, 0)} milestones passed across active goals.</span>
+        </div>
+
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>Accountability Check</div>
+          <span>{eveningReviews.length} total evening reflections stored in local vault.</span>
+        </div>
       </div>
-
-      {/* MODALS */}
-      {isGoalModalOpen && (
-        <GoalModal
-          isOpen={isGoalModalOpen}
-          onClose={() => setIsGoalModalOpen(false)}
-          editingGoal={editingGoal}
-        />
-      )}
-
-      {isTaskModalOpen && (
-        <TaskModal
-          isOpen={isTaskModalOpen}
-          onClose={() => setIsTaskModalOpen(false)}
-          editingTask={editingTask}
-        />
-      )}
     </div>
   );
 }

@@ -45,6 +45,7 @@ export default function TasksPage() {
   const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar'>('list');
   const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'overdue' | 'all' | 'completed'>('today');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'date' | 'created'>('priority');
 
@@ -55,6 +56,14 @@ export default function TasksPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const todayStr = new Date().toISOString().split('T')[0];
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.category) set.add(t.category);
+    });
+    return Array.from(set);
+  }, [tasks]);
 
   // Stats calculation
   const stats = useMemo(() => {
@@ -90,6 +99,7 @@ export default function TasksPage() {
       })
       .filter((t) => {
         if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
+        if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
         if (
           searchQuery &&
           !t.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -240,101 +250,87 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
+      {/* Compact Summary Strip */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-          gap: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '8px 14px',
+          background: 'var(--bg-secondary)',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border)',
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+          flexWrap: 'wrap',
         }}
       >
-        <div
-          className="card card-sm"
-          style={{
-            borderLeft: '4px solid var(--accent)',
-            cursor: 'pointer',
-            background: activeTab === 'today' && viewMode === 'list' ? 'var(--bg-hover)' : 'var(--bg-card)',
-          }}
+        <span
           onClick={() => {
             setViewMode('list');
             setActiveTab('today');
           }}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <div style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 700 }}>DUE TODAY</div>
-          <div style={{ fontSize: '24px', fontWeight: 800 }}>{stats.today}</div>
-        </div>
+          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Due Today:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+            {stats.today}
+          </span>
+        </span>
 
-        <div
-          className="card card-sm"
-          style={{
-            borderLeft: '4px solid var(--danger)',
-            cursor: 'pointer',
-            background: activeTab === 'overdue' && viewMode === 'list' ? 'var(--bg-hover)' : 'var(--bg-card)',
-          }}
+        <span style={{ color: 'var(--border)' }}>·</span>
+
+        <span
           onClick={() => {
             setViewMode('list');
             setActiveTab('overdue');
           }}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <div style={{ fontSize: '11px', color: 'var(--danger)', fontWeight: 700 }}>OVERDUE</div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--danger)' }}>
+          <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Overdue:</span>
+          <span style={{ fontWeight: 700, color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>
             {stats.overdue}
-          </div>
-        </div>
+          </span>
+        </span>
 
-        <div
-          className="card card-sm"
-          style={{
-            borderLeft: '4px solid var(--priority-critical)',
-            cursor: 'pointer',
-            background: priorityFilter === 'critical' ? 'var(--bg-hover)' : 'var(--bg-card)',
-          }}
+        <span style={{ color: 'var(--border)' }}>·</span>
+
+        <span
           onClick={() => {
-            setPriorityFilter(priorityFilter === 'critical' ? 'all' : 'critical');
+            setViewMode('list');
+            setActiveTab('upcoming');
           }}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <div style={{ fontSize: '11px', color: 'var(--priority-critical)', fontWeight: 700 }}>
-            🔥 CRITICAL
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800 }}>{stats.critical}</div>
-        </div>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Upcoming:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+            {tasks.filter((t) => !t.isCompleted && t.dueDate && t.dueDate > todayStr).length}
+          </span>
+        </span>
 
-        <div
-          className="card card-sm"
-          style={{
-            borderLeft: '4px solid var(--priority-high)',
-            cursor: 'pointer',
-            background: priorityFilter === 'high' ? 'var(--bg-hover)' : 'var(--bg-card)',
-          }}
-          onClick={() => {
-            setPriorityFilter(priorityFilter === 'high' ? 'all' : 'high');
-          }}
-        >
-          <div style={{ fontSize: '11px', color: 'var(--priority-high)', fontWeight: 700 }}>
-            ⚡ HIGH PRIORITY
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800 }}>{stats.high}</div>
-        </div>
+        <span style={{ color: 'var(--border)' }}>·</span>
 
-        <div
-          className="card card-sm"
-          style={{
-            borderLeft: '4px solid var(--success)',
-            cursor: 'pointer',
-            background: activeTab === 'completed' && viewMode === 'list' ? 'var(--bg-hover)' : 'var(--bg-card)',
-          }}
+        <span
           onClick={() => {
             setViewMode('list');
             setActiveTab('completed');
           }}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <div style={{ fontSize: '11px', color: 'var(--success)', fontWeight: 700 }}>
-            COMPLETED TODAY
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--success)' }}>
+          <span style={{ color: 'var(--success)', fontWeight: 600 }}>Completed Today:</span>
+          <span style={{ fontWeight: 700, color: 'var(--success)', fontVariantNumeric: 'tabular-nums' }}>
             {stats.completedToday}
-          </div>
-        </div>
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Total Active:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+            {tasks.filter((t) => !t.isCompleted).length}
+          </span>
+        </span>
       </div>
 
       {/* =========================================================================
@@ -342,121 +338,194 @@ export default function TasksPage() {
       ========================================================================= */}
       {viewMode === 'list' && (
         <>
-          {/* Tabs navigation */}
+          {/* Single Compact Navigation Row */}
           <div
             style={{
               display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
               borderBottom: '1px solid var(--border)',
-              gap: '8px',
-              overflowX: 'auto',
-              paddingBottom: '4px',
+              paddingBottom: '8px',
+              flexWrap: 'wrap',
             }}
           >
-            {[
-              { id: 'today', label: "Today's Tasks" },
-              { id: 'upcoming', label: 'Upcoming' },
-              { id: 'overdue', label: `Overdue (${stats.overdue})` },
-              { id: 'all', label: 'All Active' },
-              { id: 'completed', label: 'Completed' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className="btn btn-ghost"
+            <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
+              {[
+                { id: 'today', label: 'Today', count: stats.today },
+                { id: 'upcoming', label: 'Upcoming', count: tasks.filter((t) => !t.isCompleted && t.dueDate && t.dueDate > todayStr).length },
+                { id: 'overdue', label: 'Overdue', count: stats.overdue, danger: stats.overdue > 0 },
+                { id: 'all', label: 'All Active', count: tasks.filter((t) => !t.isCompleted).length },
+                { id: 'completed', label: 'Completed', count: tasks.filter((t) => t.isCompleted).length },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className="btn btn-sm"
+                    style={{
+                      background: isActive ? 'var(--bg-hover)' : 'transparent',
+                      color: isActive
+                        ? 'var(--text-primary)'
+                        : tab.danger
+                        ? 'var(--danger)'
+                        : 'var(--text-secondary)',
+                      border: isActive ? '1px solid var(--border)' : '1px solid transparent',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '4px 10px',
+                      fontSize: '12px',
+                      fontWeight: isActive ? 600 : 500,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontVariantNumeric: 'tabular-nums',
+                        color: tab.danger ? 'var(--danger)' : 'var(--text-muted)',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Inline Search */}
+            <div style={{ position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input"
                 style={{
-                  padding: '8px 14px',
-                  fontSize: '13px',
-                  fontWeight: activeTab === tab.id ? 700 : 500,
-                  color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
-                  borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
-                  borderRadius: 0,
+                  padding: '4px 8px 4px 26px',
+                  fontSize: '12px',
+                  width: '180px',
+                  height: '28px',
+                  borderRadius: 'var(--radius-sm)',
                 }}
-              >
-                {tab.label}
-              </button>
-            ))}
+              />
+              <Search
+                size={12}
+                style={{
+                  position: 'absolute',
+                  left: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: 'var(--text-muted)',
+                }}
+              />
+            </div>
           </div>
 
-          {/* Filter & Sort Controls */}
+          {/* Inline Filter Controls Row */}
           <div
-            className="card card-sm"
             style={{
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'space-between',
               gap: '12px',
+              padding: '6px 10px',
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-sm)',
+              border: '1px solid var(--border)',
             }}
           >
-            {/* Priority Filter */}
+            {/* Priority Filter (semantic text pills, no emojis) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
                 Priority:
               </span>
-              {(['all', 'critical', 'high', 'medium', 'low'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPriorityFilter(p)}
-                  className="btn btn-sm"
-                  style={{
-                    borderRadius: '16px',
-                    fontSize: '11px',
-                    padding: '3px 9px',
-                    fontWeight: 600,
-                    textTransform: 'capitalize',
-                    background: priorityFilter === p ? 'var(--accent)' : 'var(--bg-secondary)',
-                    color: priorityFilter === p ? '#fff' : 'var(--text-secondary)',
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  {p === 'critical'
-                    ? '🔥 Critical'
+              {(['all', 'critical', 'high', 'medium', 'low'] as const).map((p) => {
+                const isSelected = priorityFilter === p;
+                const dotColor =
+                  p === 'critical'
+                    ? 'var(--priority-critical)'
                     : p === 'high'
-                    ? '⚡ High'
+                    ? 'var(--priority-high)'
                     : p === 'medium'
-                    ? '📌 Medium'
+                    ? 'var(--priority-medium)'
                     : p === 'low'
-                    ? '🌱 Low'
-                    : 'All'}
-                </button>
-              ))}
+                    ? 'var(--priority-low)'
+                    : 'transparent';
+
+                return (
+                  <button
+                    key={p}
+                    onClick={() => setPriorityFilter(p)}
+                    className="btn btn-sm"
+                    style={{
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '11px',
+                      padding: '2px 8px',
+                      fontWeight: isSelected ? 600 : 500,
+                      textTransform: 'capitalize',
+                      background: isSelected ? 'var(--bg-card)' : 'transparent',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      border: isSelected ? '1px solid var(--border)' : '1px solid transparent',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                  >
+                    {p !== 'all' && (
+                      <span
+                        style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          background: dotColor,
+                        }}
+                      />
+                    )}
+                    {p === 'all' ? 'All' : p}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Sort & Search */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Category & Sort controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Category Filter */}
+              {categories.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Category:</span>
+                  <select
+                    className="select"
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    style={{ width: 'auto', padding: '3px 8px', fontSize: '11px', height: '26px' }}
+                  >
+                    <option value="all">All Categories</option>
+                    {categories.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sort By */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <ArrowUpDown size={13} color="var(--text-muted)" />
+                <ArrowUpDown size={12} color="var(--text-muted)" />
                 <select
                   className="select"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  style={{ width: 'auto', padding: '5px 8px', fontSize: '12px' }}
+                  style={{ width: 'auto', padding: '3px 8px', fontSize: '11px', height: '26px' }}
                 >
-                  <option value="priority">Priority: Critical First</option>
+                  <option value="priority">Priority</option>
                   <option value="date">Due Date</option>
-                  <option value="created">Created Date</option>
+                  <option value="created">Created</option>
                 </select>
-              </div>
-
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input"
-                  style={{ padding: '5px 8px 5px 26px', fontSize: '12px', width: '150px' }}
-                />
-                <Search
-                  size={12}
-                  style={{
-                    position: 'absolute',
-                    left: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: 'var(--text-muted)',
-                  }}
-                />
               </div>
             </div>
           </div>
@@ -520,7 +589,7 @@ export default function TasksPage() {
                 key={col.id}
                 style={{
                   background: 'var(--bg-secondary)',
-                  borderRadius: '12px',
+                  borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--border)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -607,7 +676,8 @@ export default function TasksPage() {
                           style={{
                             padding: '12px',
                             background: 'var(--bg-card)',
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-sm)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '8px',
