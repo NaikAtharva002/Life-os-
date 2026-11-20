@@ -270,7 +270,7 @@ export default function FitnessPage() {
         <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Volume Lifted</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(124, 92, 252, 0.12)', color: 'var(--accent)' }}>
+            <span style={{ padding: '6px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
               <Dumbbell size={16} />
             </span>
           </div>
@@ -349,11 +349,12 @@ export default function FitnessPage() {
                       <span
                         style={{
                           fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          background: 'rgba(124, 92, 252, 0.15)',
-                          color: 'var(--accent)',
+                          fontWeight: 600,
+                          padding: '2px 7px',
+                          borderRadius: 'var(--radius-xs)',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-secondary)',
                           textTransform: 'uppercase',
                         }}
                       >
@@ -471,9 +472,9 @@ export default function FitnessPage() {
                             width: '100%',
                             maxWidth: '32px',
                             height: `${heightPct}%`,
-                            background: 'linear-gradient(180deg, #7c5cfc, rgba(124, 92, 252, 0.2))',
-                            borderRadius: '6px 6px 0 0',
-                            transition: 'height 0.4s ease',
+                            background: 'var(--text-primary)',
+                            borderRadius: 'var(--radius-xs) var(--radius-xs) 0 0',
+                            transition: 'height 0.2s ease',
                           }}
                         />
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -633,9 +634,10 @@ export default function FitnessPage() {
                       fontSize: '11px',
                       padding: '2px 8px',
                       borderRadius: '6px',
-                      background: 'rgba(124, 92, 252, 0.1)',
-                      color: 'var(--accent)',
-                      fontWeight: 600,
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border)',
+                      fontWeight: 500,
                     }}
                   >
                     {ex.category}

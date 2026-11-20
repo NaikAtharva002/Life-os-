@@ -140,41 +140,41 @@ export default function EveningReviewPage() {
 
   return (
     <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Page Header / Hero Banner */}
+      {/* Page Header (Editorial & Solid) */}
       <div
         className="card"
         style={{
-          background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.15) 0%, rgba(30, 27, 75, 0.4) 100%)',
-          borderColor: 'var(--accent)',
-          padding: '24px',
+          background: 'var(--bg-card)',
+          borderColor: 'var(--border)',
+          padding: '18px 22px',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px',
+          gap: '14px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div
             style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '14px',
-              background: 'var(--accent)',
+              width: '36px',
+              height: '36px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#fff',
-              boxShadow: '0 4px 14px var(--accent-glow)',
+              color: 'var(--text-primary)',
             }}
           >
-            <Moon size={26} />
+            <Moon size={18} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800 }}>
+            <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 600, letterSpacing: '-0.015em' }}>
               End-of-Day Evening Review
             </h1>
-            <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '13.5px' }}>
+            <p style={{ margin: '3px 0 0', color: 'var(--text-secondary)', fontSize: '13px' }}>
               Close today with intentionality. Celebrate progress, clear loose ends, and set tomorrow's focus.
             </p>
           </div>
@@ -182,13 +182,13 @@ export default function EveningReviewPage() {
 
         {/* Date Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Calendar size={16} color="var(--accent)" />
+          <Calendar size={15} color="var(--text-secondary)" />
           <input
             type="date"
             className="input"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ width: 'auto', padding: '6px 12px', fontSize: '13px', fontWeight: 600 }}
+            style={{ width: 'auto', padding: '5px 10px', fontSize: '12.5px', fontWeight: 500 }}
           />
         </div>
       </div>

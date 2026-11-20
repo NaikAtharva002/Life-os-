@@ -1,24 +1,19 @@
 import React, { useState, useMemo } from 'react';
 import {
-  Sparkles,
   Target,
   CheckSquare,
   Repeat,
   Moon,
   Clock,
-  Flame,
   Plus,
-  ArrowRight,
   AlertTriangle,
   CheckCircle2,
   Calendar,
   ChevronRight,
-  DollarSign,
-  Dumbbell,
   GraduationCap,
-  Briefcase,
-  TrendingUp,
-  Quote,
+  Dumbbell,
+  DollarSign,
+  Sparkles,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import GoalCard from '../components/GoalCard';
@@ -33,11 +28,9 @@ export default function Dashboard() {
   const habits = useStore((s) => s.habits);
   const habitEntries = useStore((s) => s.habitEntries);
   const financeTransactions = useStore((s) => s.financeTransactions);
-  const financeBudgets = useStore((s) => s.financeBudgets);
   const academicSubjects = useStore((s) => s.academicSubjects);
   const academicAssignments = useStore((s) => s.academicAssignments);
   const workoutSessions = useStore((s) => s.workoutSessions);
-  const careerApplications = useStore((s) => s.careerApplications);
   const eveningReviews = useStore((s) => s.eveningReviews);
   const settings = useStore((s) => s.settings);
   const setActiveView = useStore((s) => s.setActiveView);
@@ -49,7 +42,6 @@ export default function Dashboard() {
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const currency = settings.currencySymbol || '$';
 
   // Greeting
   const currentHour = new Date().getHours();
@@ -66,7 +58,7 @@ export default function Dashboard() {
     day: 'numeric',
   });
 
-  // Daily Motivation Quotes
+  // Daily Motivation Quotes (Editorial & restrained)
   const quotes = [
     { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Will Durant" },
     { text: "Focus is a muscle. The more you protect your deep work, the rarer your output becomes.", author: "Cal Newport" },
@@ -135,139 +127,137 @@ export default function Dashboard() {
   }, [academicSubjects]);
 
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div className="page-container animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
-      {/* 1. HERO COMMAND BANNER & PROGRESS RING */}
+      {/* 1. EDITORIAL HEADER & ACTION BAR (NO purple gradients) */}
       <div
-        className="card"
         style={{
-          background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.14) 0%, rgba(6, 182, 212, 0.08) 100%)',
-          borderRadius: '16px',
-          border: '1px solid rgba(124, 92, 252, 0.25)',
-          padding: '24px 28px',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           flexWrap: 'wrap',
-          gap: '20px',
+          gap: '16px',
+          paddingBottom: '16px',
+          borderBottom: '1px solid var(--border)',
         }}
       >
-        <div style={{ flex: 1, minWidth: '280px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            <Calendar size={14} /> {todayFormatted}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+            <span>{todayFormatted}</span>
+            <span>•</span>
+            <span className="tabular">{todayTasks.length} tasks scheduled</span>
+            <span>•</span>
+            <span className="tabular">{habitsToday.length - habitsCompletedTodayCount} habits pending</span>
           </div>
-          <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '4px 0 6px 0', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+
+          <h1 style={{ fontSize: '22px', fontWeight: 600, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
             {greeting}, {settings.userName}
           </h1>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '580px', lineHeight: '1.5' }}>
-            You have <strong style={{ color: 'var(--text-primary)' }}>{todayTasks.length} tasks scheduled</strong> today and{' '}
-            <strong style={{ color: 'var(--text-primary)' }}>{habitsToday.length - habitsCompletedTodayCount} habits</strong> pending completion.
-          </p>
         </div>
 
-        {/* Daily Progress Circular Widget */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-card)', padding: '12px 18px', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ position: 'relative', width: '56px', height: '56px' }}>
-            <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="var(--border)"
-                strokeWidth="4"
-              />
-              <path
-                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="4"
-                strokeDasharray={`${dailyProgress}, 100`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800 }}>
-              {dailyProgress}%
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>Daily Progress</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              {completedTodayCount} tasks • {habitsCompletedTodayCount}/{habitsToday.length} habits
-            </div>
-          </div>
+        {/* Clean, high-contrast actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => {
+              setEditingTask(undefined);
+              setIsTaskModalOpen(true);
+            }}
+            className="btn btn-secondary btn-sm"
+          >
+            <Plus size={14} /> Task
+          </button>
+          <button
+            onClick={() => {
+              setEditingGoal(undefined);
+              setIsGoalModalOpen(true);
+            }}
+            className="btn btn-secondary btn-sm"
+          >
+            <Plus size={14} /> Goal
+          </button>
+          <button
+            onClick={() => setActiveView('assistant')}
+            className="btn btn-primary btn-sm"
+          >
+            <Sparkles size={14} /> Astra Copilot
+          </button>
         </div>
       </div>
 
-      {/* 2. THE 5 VITAL QUESTIONS EXECUTIVE DASHBOARD */}
+      {/* 2. THE 5 VITAL QUESTIONS — STRUCTURED BRIEFING (Solid surfaces, tabular, restrained) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '14px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '1px',
+          background: 'var(--border)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius)',
+          overflow: 'hidden',
         }}
       >
         {/* Q1: What should I do today? */}
         <div
           onClick={() => setActiveView('tasks')}
-          className="card"
           style={{
-            padding: '16px',
+            padding: '14px 16px',
             background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: '1px solid var(--border)',
             cursor: 'pointer',
-            transition: 'border-color 0.2s ease',
+            transition: 'background 0.12s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
         >
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
             1. What to do today?
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }} className="tabular">
             {todayTasks.length} Key Tasks
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {todayTasks[0] ? `Top: "${todayTasks[0].title.substring(0, 28)}..."` : 'Clear for deep work'}
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {todayTasks[0] ? todayTasks[0].title : 'All items cleared'}
           </div>
         </div>
 
         {/* Q2: What is most important? */}
         <div
           onClick={() => setActiveView('goals')}
-          className="card"
           style={{
-            padding: '16px',
+            padding: '14px 16px',
             background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: '1px solid var(--border)',
             cursor: 'pointer',
+            transition: 'background 0.12s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
         >
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--priority-critical)', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--priority-critical)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
             2. What is most important?
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
-            {priorityGoals[0]?.title ? priorityGoals[0].title.substring(0, 22) + '...' : 'Set Critical Goal'}
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {priorityGoals[0]?.title ? priorityGoals[0].title : 'Set Critical Goal'}
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {priorityGoals[0] ? `${priorityGoals[0].progress}% complete • Due ${priorityGoals[0].targetDate}` : 'Prioritize high impact'}
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
+            {priorityGoals[0] ? `${priorityGoals[0].progress}% • Due ${priorityGoals[0].targetDate || 'Ongoing'}` : 'High impact focus'}
           </div>
         </div>
 
         {/* Q3: What am I falling behind on? */}
         <div
           onClick={() => (overdueTasks.length > 0 ? setActiveView('tasks') : academicAlertSubject ? setActiveView('academics') : null)}
-          className="card"
           style={{
-            padding: '16px',
+            padding: '14px 16px',
             background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: overdueTasks.length > 0 || academicAlertSubject ? '1px solid var(--danger)' : '1px solid var(--border)',
             cursor: 'pointer',
+            transition: 'background 0.12s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
         >
-          <div style={{ fontSize: '11px', fontWeight: 700, color: overdueTasks.length > 0 || academicAlertSubject ? 'var(--danger)' : 'var(--success)', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '10.5px', fontWeight: 600, color: overdueTasks.length > 0 || academicAlertSubject ? 'var(--danger)' : 'var(--success)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
             3. Falling behind on?
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }} className="tabular">
             {overdueTasks.length > 0
               ? `${overdueTasks.length} Overdue Task${overdueTasks.length > 1 ? 's' : ''}`
               : academicAlertSubject
@@ -276,216 +266,109 @@ export default function Dashboard() {
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
             {overdueTasks.length > 0
-              ? `Resolve or reschedule today`
+              ? 'Needs rescheduling'
               : academicAlertSubject
-              ? `Attendance < 75% threshold`
-              : 'All systems on track'}
+              ? 'Below 75% threshold'
+              : 'On schedule'}
           </div>
         </div>
 
         {/* Q4: How much progress made? */}
         <div
           onClick={() => setActiveView('analytics')}
-          className="card"
           style={{
-            padding: '16px',
+            padding: '14px 16px',
             background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: '1px solid var(--border)',
             cursor: 'pointer',
+            transition: 'background 0.12s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
         >
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--info)', textTransform: 'uppercase', marginBottom: '6px' }}>
+          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
             4. Progress Made?
           </div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }} className="tabular">
             {completedTodayCount} Completed Today
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {goals.reduce((acc, g) => acc + g.milestones.filter((m) => m.isCompleted).length, 0)} total milestones passed
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
+            Daily Execution: {dailyProgress}%
           </div>
         </div>
 
         {/* Q5: What should I improve tomorrow? */}
         <div
           onClick={() => setActiveView('review')}
-          className="card"
           style={{
-            padding: '16px',
+            padding: '14px 16px',
             background: 'var(--bg-card)',
-            borderRadius: '12px',
-            border: '1px solid var(--border)',
             cursor: 'pointer',
+            transition: 'background 0.12s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-card)')}
         >
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--warning)', textTransform: 'uppercase', marginBottom: '6px' }}>
-            5. Improve tomorrow?
+          <div style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--warning)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+            5. Improve Tomorrow?
           </div>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {latestReview?.whatToImproveTomorrow || latestReview?.tomorrowPriorities?.[0] || 'Schedule evening reflection'}
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {latestReview?.whatToImproveTomorrow || latestReview?.tomorrowPriorities?.[0] || 'Evening Reflection'}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-            {latestReview?.rating ? `Yesterday rated: ${latestReview.rating}/5 stars` : 'Perform evening review at 21:30'}
+            {latestReview?.rating ? `Yesterday: ${latestReview.rating}/5 stars` : 'Review at day close'}
           </div>
         </div>
       </div>
 
-      {/* 3. MOTIVATION & AI COPILOT INSIGHT BANNER */}
-      <div
-        className="card"
-        style={{
-          padding: '16px 20px',
-          background: 'var(--bg-card)',
-          borderRadius: '14px',
-          border: '1px solid var(--border)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ padding: '8px', borderRadius: '8px', background: 'rgba(124, 92, 252, 0.12)', color: 'var(--accent)' }}>
-            <Quote size={18} />
-          </div>
-          <div>
-            <div style={{ fontSize: '13.5px', color: 'var(--text-primary)', fontStyle: 'italic', fontWeight: 500 }}>
-              "{dailyQuote.text}"
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              — {dailyQuote.author}
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setActiveView('assistant')}
-          className="btn btn-secondary"
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
-        >
-          <Sparkles size={14} color="var(--accent)" /> Ask Astra Copilot
-        </button>
-      </div>
-
-      {/* 4. TODAY'S HABIT QUICK-CHECKER STRIP */}
-      <div
-        className="card"
-        style={{
-          padding: '18px 20px',
-          background: 'var(--bg-card)',
-          borderRadius: '14px',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Flame size={18} color="var(--warning)" />
-            <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Today's Habit Rituals ({habitsCompletedTodayCount}/{habitsToday.length})
-            </span>
-          </div>
-          <button
-            onClick={() => setActiveView('habits')}
-            className="btn btn-ghost"
-            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
-          >
-            View Heatmap <ChevronRight size={14} />
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-          {habitsToday.map((h) => {
-            const isCompleted = habitEntries.some(
-              (e) => e.habitId === h.id && e.date === todayStr && e.completed
-            );
-
-            return (
-              <div
-                key={h.id}
-                onClick={() => toggleHabitEntry(h.id, todayStr)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  background: isCompleted ? 'rgba(34, 197, 94, 0.1)' : 'var(--bg-secondary)',
-                  border: isCompleted ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid var(--border)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                <CheckCircle2 size={18} color={isCompleted ? 'var(--success)' : 'var(--text-muted)'} />
-                <div style={{ overflow: 'hidden' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', textDecoration: isCompleted ? 'line-through' : 'none' }}>
-                    {h.name}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Streak: {h.streak} days
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 5. MAIN SPLIT: TASKS TO DO (LEFT) + GOALS & DOMAIN CARDS (RIGHT) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+      {/* 3. ASYMMETRIC 2-COLUMN WORKFLOW GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)', gap: '20px', alignItems: 'flex-start' }}>
         
-        {/* Left Column: Today's Action Tasks */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div
-            className="card"
-            style={{
-              padding: '20px',
-              background: 'var(--bg-card)',
-              borderRadius: '14px',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        {/* LEFT COLUMN: ACTIVE TASKS & HABITS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Action Items List */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckSquare size={18} color="var(--accent)" />
-                <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Action Items ({todayTasks.length})</h2>
+                <CheckSquare size={16} color="var(--text-primary)" />
+                <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Today's Tasks</h2>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">({todayTasks.length})</span>
               </div>
               <button
                 onClick={() => {
                   setEditingTask(undefined);
                   setIsTaskModalOpen(true);
                 }}
-                className="btn btn-secondary"
-                style={{ fontSize: '12px', padding: '4px 10px' }}
+                className="btn btn-ghost btn-sm"
               >
-                + New Task
+                <Plus size={13} /> Add
               </button>
             </div>
 
-            {/* Overdue Alert banner if any */}
+            {/* Overdue alert banner if present */}
             {overdueTasks.length > 0 && (
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  marginBottom: '12px',
-                  fontSize: '12.5px',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--danger-bg)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  marginBottom: '10px',
+                  fontSize: '12px',
                   color: 'var(--danger)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertTriangle size={15} />
-                  <span><strong>{overdueTasks.length} overdue task(s)</strong> require rescheduling.</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <AlertTriangle size={14} />
+                  <span><strong>{overdueTasks.length} overdue task(s)</strong> need rescheduling.</span>
                 </div>
                 <button
                   onClick={() => setActiveView('tasks')}
-                  className="btn btn-ghost"
-                  style={{ fontSize: '11px', color: 'var(--danger)', padding: '2px 6px' }}
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: 'var(--danger)', padding: '2px 6px', fontSize: '11px' }}
                 >
                   Manage
                 </button>
@@ -493,12 +376,12 @@ export default function Dashboard() {
             )}
 
             {todayTasks.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                All scheduled tasks completed for today. Great job!
+              <div style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12.5px' }}>
+                All scheduled tasks completed for today.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {todayTasks.slice(0, 5).map((t) => (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {todayTasks.slice(0, 6).map((t) => (
                   <TaskItem
                     key={t.id}
                     task={t}
@@ -511,99 +394,112 @@ export default function Dashboard() {
               </div>
             )}
 
-            {todayTasks.length > 5 && (
+            {todayTasks.length > 6 && (
               <button
                 onClick={() => setActiveView('tasks')}
-                className="btn btn-ghost"
-                style={{ width: '100%', marginTop: '12px', fontSize: '12.5px', color: 'var(--accent)' }}
+                className="btn btn-ghost btn-sm"
+                style={{ width: '100%', marginTop: '10px', fontSize: '12px' }}
               >
-                View all {todayTasks.length} tasks in Tasks view
+                View all {todayTasks.length} tasks →
               </button>
             )}
           </div>
 
-          {/* Quick Domain Pulse Cards (Finance, Academics, Fitness) */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-            
-            {/* Academics Pulse */}
-            <div
-              onClick={() => setActiveView('academics')}
-              className="card"
-              style={{
-                padding: '16px',
-                background: 'var(--bg-card)',
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--info)' }}>Academics</span>
-                <GraduationCap size={16} color="var(--info)" />
+          {/* Daily Habit Rituals Checklist */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Repeat size={16} color="var(--text-primary)" />
+                <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Daily Habits</h2>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                  ({habitsCompletedTodayCount}/{habitsToday.length})
+                </span>
               </div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {academicAssignments.filter((a) => !a.isSubmitted).length} Assignments
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Next: {academicAssignments.find((a) => !a.isSubmitted)?.title.substring(0, 20) || 'None pending'}
-              </div>
+              <button
+                onClick={() => setActiveView('habits')}
+                className="btn btn-ghost btn-sm"
+              >
+                Heatmap →
+              </button>
             </div>
 
-            {/* Fitness Pulse */}
-            <div
-              onClick={() => setActiveView('fitness')}
-              className="card"
-              style={{
-                padding: '16px',
-                background: 'var(--bg-card)',
-                borderRadius: '12px',
-                border: '1px solid var(--border)',
-                cursor: 'pointer',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent)' }}>Fitness</span>
-                <Dumbbell size={16} color="var(--accent)" />
-              </div>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {workoutSessions[0]?.splitType ? `${workoutSessions[0].splitType} Split` : 'Schedule Split'}
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Last: {workoutSessions[0]?.date || 'None logged'}
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {habitsToday.map((h) => {
+                const isCompleted = habitEntries.some(
+                  (e) => e.habitId === h.id && e.date === todayStr && e.completed
+                );
+
+                return (
+                  <div
+                    key={h.id}
+                    onClick={() => toggleHabitEntry(h.id, todayStr)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '7px 10px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: isCompleted ? 'var(--bg-hover)' : 'transparent',
+                      cursor: 'pointer',
+                      border: '1px solid transparent',
+                      transition: 'background 0.1s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isCompleted) e.currentTarget.style.background = 'var(--bg-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isCompleted) e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <CheckCircle2
+                        size={16}
+                        color={isCompleted ? 'var(--success)' : 'var(--text-muted)'}
+                        strokeWidth={isCompleted ? 2.2 : 1.5}
+                      />
+                      <span
+                        style={{
+                          fontSize: '13px',
+                          color: isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
+                          textDecoration: isCompleted ? 'line-through' : 'none',
+                        }}
+                      >
+                        {h.name}
+                      </span>
+                    </div>
+
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                      {h.streak}d streak
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Right Column: High Priority Goals */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <div
-            className="card"
-            style={{
-              padding: '20px',
-              background: 'var(--bg-card)',
-              borderRadius: '14px',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        {/* RIGHT COLUMN: PRIORITY GOALS & DOMAIN PULSE */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* High Impact Goals */}
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Target size={18} color="var(--priority-critical)" />
-                <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>High Impact Goals</h2>
+                <Target size={16} color="var(--priority-critical)" />
+                <h2 style={{ fontSize: '14px', fontWeight: 600 }}>Priority Goals</h2>
               </div>
               <button
                 onClick={() => {
                   setEditingGoal(undefined);
                   setIsGoalModalOpen(true);
                 }}
-                className="btn btn-secondary"
-                style={{ fontSize: '12px', padding: '4px 10px' }}
+                className="btn btn-ghost btn-sm"
               >
-                + New Goal
+                <Plus size={13} /> Add
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {priorityGoals.map((g) => (
                 <GoalCard
                   key={g.id}
@@ -618,49 +514,138 @@ export default function Dashboard() {
 
             <button
               onClick={() => setActiveView('goals')}
-              className="btn btn-ghost"
-              style={{ width: '100%', marginTop: '12px', fontSize: '12.5px', color: 'var(--accent)' }}
+              className="btn btn-ghost btn-sm"
+              style={{ width: '100%', marginTop: '10px', fontSize: '12px' }}
             >
-              Manage all {goals.length} Goals
+              All {goals.length} Goals →
             </button>
           </div>
 
-          {/* Evening Review Reminder Banner */}
+          {/* Life Domains Status (Tabular, clean) */}
+          <div className="card">
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '10px' }}>
+              Domain Health
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {/* Academics */}
+              <div
+                onClick={() => setActiveView('academics')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-secondary)',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <GraduationCap size={15} color="var(--text-secondary)" />
+                  <span style={{ fontSize: '12.5px', fontWeight: 500 }}>Academics</span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
+                  {academicAssignments.filter((a) => !a.isSubmitted).length} assignments due
+                </div>
+              </div>
+
+              {/* Fitness */}
+              <div
+                onClick={() => setActiveView('fitness')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-secondary)',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Dumbbell size={15} color="var(--text-secondary)" />
+                  <span style={{ fontSize: '12.5px', fontWeight: 500 }}>Fitness</span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
+                  {workoutSessions[0]?.splitType || 'Schedule Session'}
+                </div>
+              </div>
+
+              {/* Finances */}
+              <div
+                onClick={() => setActiveView('finance')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-secondary)',
+                  cursor: 'pointer',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <DollarSign size={15} color="var(--text-secondary)" />
+                  <span style={{ fontSize: '12.5px', fontWeight: 500 }}>Finances</span>
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }} className="tabular">
+                  {financeTransactions.length} entries recorded
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Evening Review Shutdown Prompt (Solid, quiet) */}
           <div
-            className="card"
             style={{
-              padding: '18px 20px',
-              background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.1), rgba(20, 20, 28, 0.7))',
-              borderRadius: '14px',
+              padding: '14px 16px',
+              borderRadius: 'var(--radius)',
+              background: 'var(--bg-card)',
               border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ padding: '8px', borderRadius: '8px', background: 'rgba(124, 92, 252, 0.15)', color: 'var(--accent)' }}>
-                <Moon size={18} />
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Moon size={16} color="var(--text-secondary)" />
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Evening Review Ritual
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  Reflect on today's wins and set tomorrow's top 3 priorities.
+                <div style={{ fontSize: '13px', fontWeight: 600 }}>Evening Shutdown</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                  Reflect & set tomorrow's top 3
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setActiveView('review')}
-              className="btn btn-primary"
-              style={{ fontSize: '12px', padding: '6px 14px' }}
+              className="btn btn-secondary btn-sm"
             >
-              Start Review
+              Review
             </button>
           </div>
         </div>
+      </div>
+
+      {/* 4. EDITORIAL QUOTE (Discreet, grounded) */}
+      <div
+        style={{
+          paddingTop: '12px',
+          borderTop: '1px solid var(--border)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          color: 'var(--text-muted)',
+          fontSize: '12px',
+        }}
+      >
+        <span style={{ fontStyle: 'italic' }}>"{dailyQuote.text}"</span>
+        <span>— {dailyQuote.author}</span>
       </div>
 
       {/* MODALS */}

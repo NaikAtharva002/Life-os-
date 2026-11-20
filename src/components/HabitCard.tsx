@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Award, Check, Edit2, Trash2 } from 'lucide-react';
+import { Award, Check, Edit2, Trash2 } from 'lucide-react';
 import type { Habit } from '../types';
 import useStore from '../store/useStore';
 
@@ -40,83 +40,72 @@ export default function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
 
   return (
     <div
-      className="card"
       style={{
-        borderLeft: `4px solid ${habit.color || 'var(--accent)'}`,
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '10px',
         background: 'var(--bg-card)',
-        padding: '16px',
-        borderRadius: '12px',
-        borderTop: '1px solid var(--border)',
-        borderRight: '1px solid var(--border)',
-        borderBottom: '1px solid var(--border)',
+        padding: '14px',
+        borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--border)',
+        transition: 'border-color 0.12s ease',
       }}
     >
-      {/* Top Header: Icon + Name + Actions */}
+      {/* Top Header: Name + Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '8px',
-              background: `${habit.color}22`,
-              color: habit.color,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '18px',
-            }}
-          >
-            {habit.icon || '⚡'}
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text-primary)' }}>
+            {habit.name}
           </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>
-              {habit.name}
+          {habit.description && (
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '1px' }}>
+              {habit.description}
             </div>
-            {habit.description && (
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {habit.description}
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button onClick={onEdit} className="btn btn-ghost" style={{ padding: '4px', color: 'var(--text-muted)' }}>
-            <Edit2 size={14} />
+        <div style={{ display: 'flex', gap: '2px' }}>
+          <button onClick={onEdit} className="btn btn-ghost btn-sm" style={{ padding: '3px', color: 'var(--text-muted)' }}>
+            <Edit2 size={12} />
           </button>
-          <button onClick={onDelete} className="btn btn-ghost" style={{ padding: '4px', color: 'var(--text-muted)' }}>
-            <Trash2 size={14} />
+          <button onClick={onDelete} className="btn btn-ghost btn-sm" style={{ padding: '3px', color: 'var(--text-muted)' }}>
+            <Trash2 size={12} />
           </button>
         </div>
       </div>
 
-      {/* Streak Counter Strip */}
-      <div style={{ display: 'flex', gap: '16px', background: 'var(--bg-secondary)', padding: '8px 12px', borderRadius: '8px' }}>
+      {/* Streak Counter Strip (Tabular, clean) */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'var(--bg-secondary)',
+          padding: '6px 10px',
+          borderRadius: 'var(--radius-xs)',
+          fontSize: '11.5px',
+          border: '1px solid var(--border)',
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Flame size={16} color="var(--warning)" />
-          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Current:</span>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }} className="tabular">
             {habit.streak} days
           </span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>current</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Award size={16} color="var(--accent)" />
-          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+          <span style={{ color: 'var(--text-muted)' }}>Record:</span>
+          <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }} className="tabular">
             {habit.longestStreak} days
           </span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>best</span>
         </div>
       </div>
 
       {/* 7-Day History Mini Strip */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>
-          <span>LAST 7 DAYS</span>
-          <span>Click day to toggle</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500, marginBottom: '5px' }}>
+          <span>Past 7 days</span>
+          <span>Click to toggle</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
           {last7Days.map((dStr) => {
@@ -128,18 +117,19 @@ export default function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
                 key={dStr}
                 onClick={() => handleToggleDate(dStr)}
                 style={{
-                  padding: '6px 2px',
-                  borderRadius: '6px',
-                  border: isToday ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  background: isCompleted ? (habit.color || 'var(--accent)') : 'var(--bg-secondary)',
-                  color: isCompleted ? '#fff' : 'var(--text-secondary)',
+                  padding: '5px 2px',
+                  borderRadius: 'var(--radius-xs)',
+                  border: isToday ? '1px solid var(--text-primary)' : '1px solid var(--border)',
+                  background: isCompleted ? 'var(--text-primary)' : 'var(--bg-secondary)',
+                  color: isCompleted ? 'var(--bg-primary)' : 'var(--text-secondary)',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
                   gap: '2px',
                   cursor: 'pointer',
                   fontSize: '10px',
-                  fontWeight: 700,
+                  fontWeight: 600,
+                  transition: 'opacity 0.1s ease',
                 }}
               >
                 <span>{getDayLetter(dStr)}</span>
@@ -153,19 +143,15 @@ export default function HabitCard({ habit, onEdit, onDelete }: HabitCardProps) {
       {/* Quick Today Toggle */}
       <button
         onClick={handleToggleToday}
-        className={isTodayCompleted ? 'btn btn-secondary' : 'btn btn-primary'}
+        className={isTodayCompleted ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
         style={{
           width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          fontSize: '13px',
+          padding: '6px 10px',
+          fontSize: '12px',
           fontWeight: 600,
-          padding: '8px',
         }}
       >
-        <Check size={16} />
+        <Check size={14} />
         {isTodayCompleted ? 'Completed Today' : 'Mark Done Today'}
       </button>
     </div>

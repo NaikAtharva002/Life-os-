@@ -156,17 +156,17 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            padding: '24px',
-            background: 'linear-gradient(135deg, rgba(124, 92, 252, 0.12), rgba(6, 182, 212, 0.08))',
-            borderRadius: '16px',
-            border: '1px solid rgba(124, 92, 252, 0.25)',
+            padding: '20px',
+            background: 'var(--bg-card)',
+            borderRadius: 'var(--radius)',
+            border: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'center',
-            gap: '24px',
+            gap: '20px',
           }}
         >
-          {/* Circular SVG Gauge */}
-          <div style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
+          {/* Circular SVG Gauge (Solid, high contrast) */}
+          <div style={{ position: 'relative', width: '84px', height: '84px', flexShrink: 0 }}>
             <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
               <path
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -177,17 +177,11 @@ export default function AnalyticsPage() {
               <path
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 fill="none"
-                stroke="url(#purpleGrad)"
+                stroke="var(--text-primary)"
                 strokeWidth="3.5"
                 strokeDasharray={`${productivityScore}, 100`}
                 strokeLinecap="round"
               />
-              <defs>
-                <linearGradient id="purpleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7c5cfc" />
-                  <stop offset="100%" stopColor="#06b6d4" />
-                </linearGradient>
-              </defs>
             </svg>
             <div
               style={{
@@ -348,13 +342,12 @@ export default function AnalyticsPage() {
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{g.title}</span>
                   <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{g.progress}%</span>
                 </div>
-                <div style={{ height: '6px', background: 'var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
+                <div className="progress-track" style={{ marginTop: '4px' }}>
                   <div
+                    className="progress-thumb"
                     style={{
-                      height: '100%',
                       width: `${g.progress}%`,
-                      background: 'linear-gradient(90deg, #7c5cfc, #06b6d4)',
-                      borderRadius: '6px',
+                      background: 'var(--text-primary)',
                     }}
                   />
                 </div>

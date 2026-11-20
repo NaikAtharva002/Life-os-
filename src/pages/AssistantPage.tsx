@@ -259,53 +259,53 @@ export default function AssistantPage() {
   return (
     <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 48px)' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div
             style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #7c5cfc, #06b6d4)',
+              width: '32px',
+              height: '32px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 10px rgba(124, 92, 252, 0.3)',
             }}
           >
-            <Sparkles size={20} color="#fff" />
+            <Sparkles size={16} color="var(--text-primary)" />
           </div>
           <div>
-            <h1 style={{ fontSize: '20px', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: '16px', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
               Astra — Life OS AI Copilot
             </h1>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              100% Private • Local-First Grounded Intelligence • Real-time Data Sync
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Local-first heuristic intelligence • Private • Real-time data sync
             </div>
           </div>
         </div>
 
         <button
           onClick={clearAssistantChat}
-          className="btn btn-ghost"
+          className="btn btn-ghost btn-sm"
           style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}
         >
-          <Trash2 size={14} /> Clear History
+          <Trash2 size={13} /> Clear
         </button>
       </div>
 
       {/* Quick Prompts Strip */}
-      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '8px' }}>
         {quickPrompts.map((p, idx) => (
           <button
             key={idx}
             onClick={() => handleSend(p.query)}
-            className="btn btn-secondary"
+            className="btn btn-secondary btn-sm"
             style={{
-              fontSize: '12px',
+              fontSize: '11.5px',
               whiteSpace: 'nowrap',
-              padding: '6px 12px',
-              borderRadius: '20px',
+              padding: '4px 9px',
+              borderRadius: 'var(--radius-xs)',
             }}
           >
             {p.label}
@@ -344,29 +344,30 @@ export default function AssistantPage() {
               {!isUser && (
                 <div
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #7c5cfc, #06b6d4)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: 'var(--radius-xs)',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
                   }}
                 >
-                  <Bot size={16} color="#fff" />
+                  <Bot size={14} color="var(--text-secondary)" />
                 </div>
               )}
 
               <div
                 style={{
-                  padding: '14px 18px',
-                  borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  background: isUser ? 'var(--accent)' : 'var(--bg-secondary)',
-                  color: isUser ? '#fff' : 'var(--text-primary)',
-                  fontSize: '13.5px',
-                  lineHeight: '1.6',
-                  border: isUser ? 'none' : '1px solid var(--border)',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isUser ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+                  color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  lineHeight: '1.55',
+                  border: '1px solid var(--border)',
                   whiteSpace: 'pre-wrap',
                 }}
               >
@@ -376,17 +377,20 @@ export default function AssistantPage() {
               {isUser && (
                 <div
                   style={{
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '8px',
-                    background: 'var(--border)',
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: 'var(--radius-xs)',
+                    background: 'var(--text-primary)',
+                    color: 'var(--bg-primary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     flexShrink: 0,
+                    fontWeight: 600,
+                    fontSize: '11px',
                   }}
                 >
-                  <User size={16} color="var(--text-primary)" />
+                  {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U'}
                 </div>
               )}
             </div>
@@ -394,28 +398,29 @@ export default function AssistantPage() {
         })}
 
         {isThinking && (
-          <div style={{ display: 'flex', gap: '12px', alignSelf: 'flex-start' }}>
+          <div style={{ display: 'flex', gap: '10px', alignSelf: 'flex-start' }}>
             <div
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #7c5cfc, #06b6d4)',
+                width: '28px',
+                height: '28px',
+                borderRadius: 'var(--radius-xs)',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Bot size={16} color="#fff" />
+              <Bot size={14} color="var(--text-secondary)" />
             </div>
             <div
               style={{
-                padding: '12px 18px',
-                borderRadius: '16px 16px 16px 4px',
+                padding: '10px 14px',
+                borderRadius: 'var(--radius-sm)',
                 background: 'var(--bg-secondary)',
-                color: 'var(--text-muted)',
-                fontSize: '13px',
                 border: '1px solid var(--border)',
+                color: 'var(--text-muted)',
+                fontSize: '12.5px',
               }}
             >
               Analyzing IndexedDB personal state...

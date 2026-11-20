@@ -5,13 +5,10 @@ import {
   Circle,
   Clock,
   Edit2,
-  Flame,
-  MoreVertical,
-  Plus,
   Trash2,
   TrendingUp,
   AlertCircle,
-  Flag,
+  Plus,
 } from 'lucide-react';
 import type { Goal, Priority } from '../types';
 import useStore from '../store/useStore';
@@ -24,31 +21,27 @@ interface GoalCardProps {
 
 const PRIORITY_CONFIG: Record<
   Priority,
-  { label: string; color: string; bg: string; icon: string }
+  { label: string; color: string; bg: string }
 > = {
   critical: {
     label: 'Critical',
     color: 'var(--priority-critical)',
     bg: 'var(--priority-critical-bg)',
-    icon: '🔥',
   },
   high: {
     label: 'High',
     color: 'var(--priority-high)',
     bg: 'var(--priority-high-bg)',
-    icon: '⚡',
   },
   medium: {
     label: 'Medium',
     color: 'var(--priority-medium)',
     bg: 'var(--priority-medium-bg)',
-    icon: '📌',
   },
   low: {
     label: 'Low',
     color: 'var(--priority-low)',
     bg: 'var(--priority-low-bg)',
-    icon: '🌱',
   },
 };
 
@@ -93,173 +86,168 @@ export default function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
     setNewMilestoneTitle('');
   };
 
-  const handleProgressChange = (newProgress: number) => {
-    updateGoal(goal.id, { progress: Math.min(100, Math.max(0, newProgress)) });
-  };
-
-  // Due date check
-  const isOverdue =
+  const completedMilestones = goal.milestones.filter((m) => m.isCompleted).length;
+  const isDelayed =
     goal.targetDate &&
-    new Date(goal.targetDate) < new Date(new Date().toISOString().split('T')[0]) &&
+    new Date(goal.targetDate) < new Date() &&
     goal.progress < 100;
 
   return (
     <div
-      className="card"
       style={{
-        borderLeft: `4px solid ${priorityCfg.color}`,
-        position: 'relative',
+        padding: '12px 14px',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-sm)',
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        boxShadow:
-          goal.priority === 'critical'
-            ? '0 4px 16px rgba(239, 68, 68, 0.08)'
-            : '0 2px 8px rgba(0,0,0,0.03)',
+        gap: '8px',
+        position: 'relative',
+        transition: 'border-color 0.12s ease',
       }}
     >
-      {/* Top row: Priority Badge + Category + Action Menu */}
+      {/* Top row: Priority Pill + Category + Actions */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          flexWrap: 'wrap',
           gap: '8px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Priority Quick-Changer Pill */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {/* Priority Quick-Changer Pill (Restrained, no emoji) */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setIsChangingPriority(!isChangingPriority)}
-              className="priority-badge"
               style={{
                 background: priorityCfg.bg,
                 color: priorityCfg.color,
-                border: `1px solid ${priorityCfg.color}40`,
+                border: 'none',
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '5px',
-                padding: '4px 10px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: 700,
-                transition: 'transform 0.1s ease',
+                gap: '4px',
+                padding: '2px 6px',
+                borderRadius: 'var(--radius-xs)',
+                fontSize: '10.5px',
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.03em',
               }}
-              title="Click to change priority anytime"
+              title="Click to change priority"
             >
-              <span>{priorityCfg.icon}</span>
               <span>{priorityCfg.label}</span>
-              <span style={{ fontSize: '9px', opacity: 0.7 }}>▼</span>
+              <span style={{ fontSize: '8px', opacity: 0.7 }}>▾</span>
             </button>
 
-            {/* Quick Priority Dropdown */}
             {isChangingPriority && (
               <div
                 style={{
                   position: 'absolute',
-                  top: '110%',
+                  top: '100%',
                   left: 0,
+                  marginTop: '4px',
                   zIndex: 20,
                   background: 'var(--bg-card)',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-sm)',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
-                  padding: '6px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                  padding: '4px',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '4px',
-                  minWidth: '120px',
+                  gap: '2px',
+                  minWidth: '100px',
                 }}
               >
                 {(['critical', 'high', 'medium', 'low'] as Priority[]).map((p) => (
                   <button
                     key={p}
                     onClick={() => handlePriorityChange(p)}
-                    className="btn btn-ghost"
+                    className="btn btn-ghost btn-sm"
                     style={{
                       justifyContent: 'flex-start',
-                      padding: '6px 8px',
-                      fontSize: '12px',
-                      borderRadius: '4px',
+                      padding: '4px 8px',
+                      fontSize: '11px',
                       color: PRIORITY_CONFIG[p].color,
-                      fontWeight: goal.priority === p ? 700 : 500,
-                      background:
-                        goal.priority === p ? PRIORITY_CONFIG[p].bg : 'transparent',
+                      fontWeight: goal.priority === p ? 600 : 400,
                     }}
                   >
-                    <span>{PRIORITY_CONFIG[p].icon}</span>
-                    <span style={{ textTransform: 'capitalize' }}>{p}</span>
+                    {PRIORITY_CONFIG[p].label}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Category Tag */}
           {goal.category && (
             <span
-              className="tag"
               style={{
                 fontSize: '11px',
-                background: 'var(--bg-secondary)',
+                color: 'var(--text-muted)',
+                background: 'var(--bg-primary)',
+                padding: '1px 5px',
+                borderRadius: 'var(--radius-xs)',
                 border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-                padding: '3px 8px',
-                borderRadius: '12px',
               }}
             >
               {goal.category}
             </span>
           )}
+
+          {isDelayed && (
+            <span
+              style={{
+                fontSize: '10.5px',
+                color: 'var(--danger)',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '3px',
+              }}
+            >
+              <AlertCircle size={11} /> Delayed
+            </span>
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        {/* Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {onEdit && (
             <button
-              className="btn btn-ghost btn-icon btn-sm"
               onClick={() => onEdit(goal)}
-              title="Edit Goal"
+              className="btn btn-ghost btn-sm"
+              style={{ padding: '3px', color: 'var(--text-muted)' }}
+              title="Edit goal"
             >
-              <Edit2 size={14} />
+              <Edit2 size={12} />
             </button>
           )}
           {onDelete && (
             <button
-              className="btn btn-ghost btn-icon btn-sm"
               onClick={() => onDelete(goal.id)}
-              title="Delete Goal"
-              style={{ color: 'var(--danger)' }}
+              className="btn btn-ghost btn-sm"
+              style={{ padding: '3px', color: 'var(--text-muted)' }}
+              title="Delete goal"
             >
-              <Trash2 size={14} />
+              <Trash2 size={12} />
             </button>
           )}
         </div>
       </div>
 
-      {/* Goal Title & Description */}
+      {/* Goal Title */}
       <div>
-        <h3
-          style={{
-            margin: '0 0 6px 0',
-            fontSize: '16px',
-            fontWeight: 700,
-            color: 'var(--text-primary)',
-            lineHeight: 1.3,
-          }}
-        >
+        <div style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.3 }}>
           {goal.title}
-        </h3>
+        </div>
         {goal.description && (
-          <p
+          <div
             style={{
-              margin: 0,
-              fontSize: '13px',
+              fontSize: '12px',
               color: 'var(--text-secondary)',
-              lineHeight: 1.4,
+              marginTop: '2px',
+              lineHeight: 1.35,
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -267,65 +255,33 @@ export default function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
             }}
           >
             {goal.description}
-          </p>
+          </div>
         )}
       </div>
 
-      {/* Target Date */}
-      {goal.targetDate && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '12px',
-            color: isOverdue ? 'var(--danger)' : 'var(--text-muted)',
-            fontWeight: isOverdue ? 600 : 400,
-          }}
-        >
-          <Calendar size={13} />
-          <span>Target: {goal.targetDate}</span>
-          {isOverdue && (
-            <span
-              style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                color: 'var(--danger)',
-                padding: '1px 6px',
-                borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: 700,
-              }}
-            >
-              OVERDUE
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Progress Bar & Slider */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+      {/* Progress Track (Hairline, solid) */}
+      <div style={{ marginTop: '2px' }}>
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontSize: '12px',
+            fontSize: '11px',
+            color: 'var(--text-muted)',
+            marginBottom: '4px',
           }}
         >
-          <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Progress</span>
-          <span
-            style={{
-              fontWeight: 700,
-              color: goal.progress === 100 ? 'var(--success)' : 'var(--accent)',
-            }}
-          >
-            {goal.progress}%
-          </span>
+          <span className="tabular">{goal.progress}% complete</span>
+          {goal.targetDate && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }} className="tabular">
+              <Calendar size={11} /> {goal.targetDate}
+            </span>
+          )}
         </div>
 
-        <div className="progress-bar" style={{ height: '7px', background: 'var(--bg-hover)' }}>
+        <div className="progress-track">
           <div
-            className="progress-fill"
+            className="progress-thumb"
             style={{
               width: `${goal.progress}%`,
               background:
@@ -333,110 +289,64 @@ export default function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
                   ? 'var(--success)'
                   : goal.priority === 'critical'
                   ? 'var(--priority-critical)'
-                  : 'var(--accent)',
-              transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  : 'var(--text-primary)',
             }}
           />
         </div>
-
-        {/* Quick Slider Adjustment */}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={goal.progress}
-          onChange={(e) => handleProgressChange(Number(e.target.value))}
-          style={{
-            width: '100%',
-            height: '4px',
-            accentColor: 'var(--accent)',
-            cursor: 'pointer',
-            opacity: 0.6,
-          }}
-          title="Drag to update progress"
-        />
       </div>
 
-      {/* Milestones toggle */}
-      <div
-        style={{
-          borderTop: '1px solid var(--border)',
-          paddingTop: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
+      {/* Milestones toggle & list */}
+      {goal.milestones.length > 0 && (
+        <div style={{ marginTop: '4px' }}>
           <button
             onClick={() => setShowMilestones(!showMilestones)}
             className="btn btn-ghost btn-sm"
-            style={{ padding: '2px 6px', fontSize: '11px', color: 'var(--text-secondary)' }}
+            style={{ padding: '0', fontSize: '11px', color: 'var(--text-muted)' }}
           >
-            {goal.milestones.length > 0 ? (
-              <span>
-                {goal.milestones.filter((m) => m.isCompleted).length} /{' '}
-                {goal.milestones.length} Milestones{' '}
-                {showMilestones ? '▲' : '▼'}
-              </span>
-            ) : (
-              <span>+ Add Milestones</span>
-            )}
+            {showMilestones ? 'Hide milestones' : `Show milestones (${completedMilestones}/${goal.milestones.length})`}
           </button>
+
+          {showMilestones && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px', paddingLeft: '4px' }}>
+              {goal.milestones.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => handleToggleMilestone(m.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '12px',
+                    color: m.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
+                    textDecoration: m.isCompleted ? 'line-through' : 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <CheckCircle2
+                    size={13}
+                    color={m.isCompleted ? 'var(--success)' : 'var(--text-muted)'}
+                  />
+                  <span>{m.title}</span>
+                </div>
+              ))}
+
+              <form onSubmit={handleAddMilestone} style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                <input
+                  type="text"
+                  placeholder="Add milestone..."
+                  className="input"
+                  value={newMilestoneTitle}
+                  onChange={(e) => setNewMilestoneTitle(e.target.value)}
+                  style={{ padding: '3px 6px', fontSize: '11px' }}
+                />
+                <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '3px 8px' }}>
+                  <Plus size={11} />
+                </button>
+              </form>
+            </div>
+          )}
         </div>
-
-        {showMilestones && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {goal.milestones.map((m) => (
-              <div
-                key={m.id}
-                onClick={() => handleToggleMilestone(m.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  color: m.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
-                  textDecoration: m.isCompleted ? 'line-through' : 'none',
-                  padding: '3px 0',
-                }}
-              >
-                {m.isCompleted ? (
-                  <CheckCircle2 size={14} color="var(--success)" />
-                ) : (
-                  <Circle size={14} color="var(--border-light)" />
-                )}
-                <span>{m.title}</span>
-              </div>
-            ))}
-
-            <form
-              onSubmit={handleAddMilestone}
-              style={{ display: 'flex', gap: '6px', marginTop: '4px' }}
-            >
-              <input
-                type="text"
-                placeholder="New milestone..."
-                value={newMilestoneTitle}
-                onChange={(e) => setNewMilestoneTitle(e.target.value)}
-                className="input"
-                style={{ padding: '4px 8px', fontSize: '12px' }}
-              />
-              <button type="submit" className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }}>
-                <Plus size={12} />
-              </button>
-            </form>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

@@ -320,7 +320,7 @@ export default function CareerPage() {
                   <span style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>
                     {sk.name}
                   </span>
-                  <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: '4px', background: 'rgba(124, 92, 252, 0.1)', color: 'var(--accent)', fontWeight: 600 }}>
+                  <span style={{ fontSize: '11px', padding: '2px 7px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontWeight: 500 }}>
                     {sk.category}
                   </span>
                 </div>

@@ -35,7 +35,6 @@ interface NavItem {
   icon: LucideIcon;
   badge?: number;
   badgeColor?: string;
-  highlight?: boolean;
   warning?: boolean;
 }
 
@@ -90,7 +89,7 @@ export default function Sidebar({
       ],
     },
     {
-      title: 'LIFE DOMAINS',
+      title: 'DOMAINS',
       items: [
         { id: 'finance', label: 'Finances', icon: DollarSign },
         { id: 'fitness', label: 'Gym & Fitness', icon: Dumbbell },
@@ -104,15 +103,15 @@ export default function Sidebar({
       ],
     },
     {
-      title: 'INTELLIGENCE & VAULT',
+      title: 'INTELLIGENCE',
       items: [
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-        { id: 'assistant', label: 'AI Copilot', icon: Sparkles, highlight: true },
+        { id: 'assistant', label: 'AI Copilot', icon: Sparkles },
         { id: 'obsidian', label: 'Obsidian Notes', icon: FileText },
       ],
     },
     {
-      title: 'REFLECTION',
+      title: 'SYSTEM',
       items: [
         { id: 'review', label: 'Evening Review', icon: Moon },
         { id: 'history', label: 'Review Archive', icon: History },
@@ -132,7 +131,7 @@ export default function Sidebar({
       {mobileOpen && (
         <div
           className="modal-overlay"
-          style={{ zIndex: 99, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          style={{ zIndex: 99, background: 'rgba(0,0,0,0.6)' }}
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -140,18 +139,22 @@ export default function Sidebar({
       <aside
         className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
-          width: collapsed ? '70px' : '260px',
-          transition: 'width 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+          width: collapsed ? '64px' : '240px',
+          background: 'var(--bg-secondary)',
+          borderRight: '1px solid var(--border)',
+          transition: 'width 0.15s ease',
         }}
       >
-        {/* Brand Header */}
+        {/* Brand Header — Editorial Monochrome */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
-            padding: collapsed ? '18px 0' : '18px 16px',
+            padding: collapsed ? '16px 0' : '16px 14px',
             borderBottom: '1px solid var(--border)',
+            height: '56px',
+            boxSizing: 'border-box',
           }}
         >
           <div
@@ -159,32 +162,36 @@ export default function Sidebar({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
+              gap: '9px',
               cursor: 'pointer',
             }}
           >
+            {/* Crisp minimalist mark */}
             <div
               style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '8px',
-                background: 'linear-gradient(135deg, #7c5cfc, #06b6d4)',
+                width: '26px',
+                height: '26px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--text-primary)',
+                color: 'var(--bg-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(124, 92, 252, 0.3)',
+                fontWeight: 700,
+                fontSize: '13px',
+                letterSpacing: '-0.02em',
                 flexShrink: 0,
               }}
             >
-              <span style={{ fontSize: '15px', fontWeight: 800, color: '#fff' }}>Ω</span>
+              Ω
             </div>
             {!collapsed && (
               <div>
-                <div style={{ fontSize: '15px', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)', lineHeight: 1.2 }}>
                   LIFE OS
                 </div>
-                <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Command Center
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.02em' }}>
+                  Workspace
                 </div>
               </div>
             )}
@@ -194,46 +201,47 @@ export default function Sidebar({
             <button
               onClick={() => setCollapsed(true)}
               className="btn btn-ghost"
-              style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-secondary)' }}
+              style={{ padding: '4px', color: 'var(--text-muted)' }}
               title="Collapse sidebar"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={15} />
             </button>
           )}
         </div>
 
-        {/* Collapsed Expand Toggle */}
+        {/* Expand toggle when collapsed */}
         {collapsed && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
             <button
               onClick={() => setCollapsed(false)}
               className="btn btn-ghost"
-              style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-secondary)' }}
+              style={{ padding: '4px', color: 'var(--text-muted)' }}
               title="Expand sidebar"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={15} />
             </button>
           </div>
         )}
 
         {/* Nav Items List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '8px 6px' : '12px 10px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '10px 4px' : '12px 8px' }}>
           {navSections.map((section, sIdx) => (
             <div key={sIdx} style={{ marginBottom: '14px' }}>
               {!collapsed && (
                 <div
                   style={{
                     fontSize: '10px',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     color: 'var(--text-muted)',
-                    letterSpacing: '0.08em',
-                    padding: '4px 10px 6px 10px',
+                    letterSpacing: '0.06em',
+                    padding: '2px 8px 6px 8px',
+                    textTransform: 'uppercase',
                   }}
                 >
                   {section.title}
                 </div>
               )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.id;
@@ -248,38 +256,33 @@ export default function Sidebar({
                         alignItems: 'center',
                         justifyContent: collapsed ? 'center' : 'space-between',
                         width: '100%',
-                        padding: collapsed ? '10px 0' : '9px 12px',
-                        borderRadius: '8px',
+                        padding: collapsed ? '8px 0' : '7px 8px',
+                        borderRadius: 'var(--radius-sm)',
                         border: 'none',
-                        background: isActive
-                          ? 'var(--bg-hover)'
-                          : item.highlight
-                          ? 'rgba(124, 92, 252, 0.08)'
-                          : 'transparent',
-                        color: isActive
-                          ? 'var(--accent)'
-                          : item.highlight
-                          ? 'var(--accent)'
-                          : 'var(--text-secondary)',
+                        background: isActive ? 'var(--bg-hover)' : 'transparent',
+                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
                         fontWeight: isActive ? 600 : 500,
-                        fontSize: '13.5px',
+                        fontSize: '13px',
                         cursor: 'pointer',
-                        transition: 'all 0.15s ease',
+                        transition: 'background 0.1s ease, color 0.1s ease',
                         textAlign: 'left',
                         position: 'relative',
                       }}
                       onMouseEnter={(e) => {
-                        if (!isActive) e.currentTarget.style.background = 'var(--bg-hover)';
+                        if (!isActive) {
+                          e.currentTarget.style.background = 'var(--bg-hover)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        if (!isActive)
-                          e.currentTarget.style.background = item.highlight
-                            ? 'rgba(124, 92, 252, 0.08)'
-                            : 'transparent';
+                        if (!isActive) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                        }
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Icon size={18} color={isActive ? 'var(--accent)' : 'currentColor'} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icon size={16} strokeWidth={isActive ? 2 : 1.6} color={isActive ? 'var(--text-primary)' : 'var(--text-secondary)'} />
                         {!collapsed && <span>{item.label}</span>}
                       </div>
 
@@ -287,20 +290,19 @@ export default function Sidebar({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {item.warning && (
                             <span title="Attendance alert">
-                              <AlertCircle size={14} color="var(--warning)" />
+                              <AlertCircle size={13} color="var(--warning)" />
                             </span>
                           )}
                           {item.badge !== undefined && (
                             <span
                               style={{
-                                fontSize: '11px',
-                                fontWeight: 700,
-                                background: item.badgeColor || 'var(--accent)',
-                                color: '#fff',
-                                padding: '1px 6px',
-                                borderRadius: '10px',
-                                minWidth: '18px',
-                                textAlign: 'center',
+                                fontSize: '10px',
+                                fontWeight: 600,
+                                padding: '1px 5px',
+                                borderRadius: 'var(--radius-xs)',
+                                background: item.badgeColor || 'var(--bg-active)',
+                                color: '#ffffff',
+                                fontVariantNumeric: 'tabular-nums',
                               }}
                             >
                               {item.badge}
@@ -316,48 +318,65 @@ export default function Sidebar({
           ))}
         </div>
 
-        {/* User Profile & Theme Footer */}
+        {/* Footer / Profile */}
         <div
           style={{
-            padding: collapsed ? '12px 6px' : '14px 16px',
+            padding: collapsed ? '10px 0' : '10px 12px',
             borderTop: '1px solid var(--border)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
+            gap: '8px',
             background: 'var(--bg-secondary)',
           }}
         >
           {!collapsed ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
               <div
                 style={{
-                  width: '28px',
-                  height: '28px',
-                  borderRadius: '50%',
-                  background: 'var(--border)',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: 'var(--radius-xs)',
+                  background: 'var(--bg-hover)',
+                  border: '1px solid var(--border)',
                   color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: '12px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  flexShrink: 0,
                 }}
               >
-                {settings.userName.charAt(0)}
+                {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U'}
               </div>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                   {settings.userName}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success)' }} />
-                  Local-first
                 </div>
               </div>
             </div>
-          ) : null}
+          ) : (
+            <div
+              style={{
+                width: '24px',
+                height: '24px',
+                borderRadius: 'var(--radius-xs)',
+                background: 'var(--bg-hover)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: 600,
+              }}
+            >
+              {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U'}
+            </div>
+          )}
 
-          <ThemeToggle />
+          {!collapsed && <ThemeToggle />}
         </div>
       </aside>
     </>

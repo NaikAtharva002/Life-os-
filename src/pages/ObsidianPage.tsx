@@ -456,7 +456,7 @@ Room: ${sub.roomOrLink || 'Lecture Hall'}
                       .replace(/# (.*)/g, '<h1 style="font-size: 20px; font-weight: 800; margin: 12px 0 6px 0;">$1</h1>')
                       .replace(/## (.*)/g, '<h2 style="font-size: 16px; font-weight: 700; margin: 10px 0 4px 0;">$1</h2>')
                       .replace(/### (.*)/g, '<h3 style="font-size: 14px; font-weight: 700; margin: 8px 0 2px 0;">$1</h3>')
-                      .replace(/\[\[(.*?)\]\]/g, '<span style="color: var(--accent); background: rgba(124, 92, 252, 0.12); padding: 1px 6px; border-radius: 4px; font-weight: 600;">[[$1]]</span>')
+                      .replace(/\[\[(.*?)\]\]/g, '<span style="color: var(--accent); background: var(--bg-hover); padding: 1px 6px; border-radius: var(--radius-xs); border: 1px solid var(--border); font-weight: 500;">[[$1]]</span>')
                       .replace(/`([^`]+)`/g, '<code style="background: var(--bg-secondary); padding: 2px 6px; border-radius: 4px; font-family: monospace;">$1</code>'),
                   }}
                 />

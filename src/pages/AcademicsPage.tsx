@@ -200,7 +200,7 @@ export default function AcademicsPage() {
         <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Target SGPA</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(124, 92, 252, 0.12)', color: 'var(--accent)' }}>
+            <span style={{ padding: '6px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
               <Award size={16} />
             </span>
           </div>
@@ -519,13 +519,12 @@ export default function AcademicsPage() {
                       <span>Syllabus Prepared</span>
                       <span style={{ fontWeight: 600 }}>{exam.syllabusCoveragePercentage}%</span>
                     </div>
-                    <div style={{ height: '6px', background: 'var(--border)', borderRadius: '6px', overflow: 'hidden', marginTop: '6px' }}>
+                    <div className="progress-track" style={{ marginTop: '6px' }}>
                       <div
+                        className="progress-thumb"
                         style={{
-                          height: '100%',
                           width: `${exam.syllabusCoveragePercentage}%`,
-                          background: 'linear-gradient(90deg, #7c5cfc, #06b6d4)',
-                          borderRadius: '6px',
+                          background: 'var(--text-primary)',
                         }}
                       />
                     </div>
