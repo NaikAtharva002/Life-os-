@@ -13,7 +13,8 @@ Ensure you have:
 
 ```bash
 # 1. Clone the repository
-git clone <YOUR_REPOSITORY_URL>
+git clone https://github.com/NaikAtharva002/life-os.git
+# (Or using SSH: git clone git@github.com:NaikAtharva002/life-os.git)
 cd life-os
 
 # 2. Install dependencies
