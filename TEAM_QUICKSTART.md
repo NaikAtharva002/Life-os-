@@ -13,9 +13,9 @@ Ensure you have:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/NaikAtharva002/life-os.git
-# (Or using SSH: git clone git@github.com:NaikAtharva002/life-os.git)
-cd life-os
+git clone https://github.com/NaikAtharva002/Life-os-.git
+# (Or using SSH: git clone git@github.com:NaikAtharva002/Life-os-.git)
+cd Life-os-
 
 # 2. Install dependencies
 npm install
