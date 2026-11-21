@@ -18,7 +18,8 @@ import SettingsPage from './pages/SettingsPage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
-import { Menu, Plus, Search, Sparkles } from 'lucide-react';
+import { Menu, Plus, Search, Sparkles, Terminal } from 'lucide-react';
+import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
 
 export default function App() {
   const isLoaded = useStore((s) => s.isLoaded);
@@ -35,11 +36,23 @@ export default function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
+  const [engineStatus, setEngineStatus] = useState<AIEngineStatus>({ isAvailable: false });
 
   // 1. Initialize IndexedDB database on startup
   useEffect(() => {
     initializeFromDB();
   }, [initializeFromDB]);
+
+  // Check Python AI Engine status
+  useEffect(() => {
+    const check = async () => {
+      const s = await aiEngine.checkHealth();
+      setEngineStatus(s);
+    };
+    check();
+    const interval = setInterval(check, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // 2. Set dark/light theme
   useEffect(() => {
@@ -180,8 +193,40 @@ export default function App() {
             </button>
           </div>
 
-          {/* Right: New Task, New Goal, AI Assistant */}
+          {/* Right: Architecture Engine Status + New Task, New Goal, AI Assistant */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Ambient Multi-Engine Badge */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+              }}
+              title={
+                engineStatus.isAvailable
+                  ? `Python AI Engine v${engineStatus.version} active on port 8000 (FastAPI + SQLite)`
+                  : 'Running in Local-First IndexedDB Mode (Python Engine Offline)'
+              }
+            >
+              <span
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: engineStatus.isAvailable ? 'var(--status-success)' : 'var(--text-muted)',
+                }}
+              />
+              <span style={{ fontWeight: 500 }}>
+                {engineStatus.isAvailable ? 'Python Engine' : 'Local Heuristic'}
+              </span>
+            </div>
+
             <button
               onClick={() => setQuickTaskModalOpen(true)}
               className="btn btn-secondary btn-sm"

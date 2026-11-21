@@ -38,6 +38,20 @@ playwright-report/
 test-results/
 view-*.png
 *.png
+.pytest_cache/
+
+# Python virtual environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+services/ai_engine/.venv/
+.venv/
+services/ai_engine/data/*.db
+services/ai_engine/data/*.db-wal
+services/ai_engine/data/*.db-shm
+
+# Rust / Tauri build artifacts
+src-tauri/target/
 
 # OS temporary files
 Thumbs.db

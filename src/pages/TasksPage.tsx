@@ -16,10 +16,12 @@ import {
   Check,
   MoreVertical,
   Layers,
+  Sparkles,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import TaskItem from '../components/TaskItem';
 import TaskModal from '../components/TaskModal';
+import { aiEngine } from '../services/aiEngineClient';
 import type { Task, Priority, TaskStatus } from '../types';
 
 const PRIORITY_ORDER: Record<Priority, number> = {
@@ -38,6 +40,7 @@ const KANBAN_COLUMNS: { id: TaskStatus; title: string; color: string }[] = [
 
 export default function TasksPage() {
   const tasks = useStore((s) => s.tasks);
+  const addTask = useStore((s) => s.addTask);
   const deleteTask = useStore((s) => s.deleteTask);
   const updateTask = useStore((s) => s.updateTask);
   const completeTask = useStore((s) => s.completeTask);
@@ -48,6 +51,9 @@ export default function TasksPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'date' | 'created'>('priority');
+
+  const [nlpInput, setNlpInput] = useState('');
+  const [nlpLoading, setNlpLoading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
@@ -125,6 +131,38 @@ export default function TasksPage() {
   const handleEdit = (t: Task) => {
     setEditingTask(t);
     setIsModalOpen(true);
+  };
+
+  const handleNLPTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nlpInput.trim()) return;
+
+    setNlpLoading(true);
+    const parsed = await aiEngine.parseTaskNLP(nlpInput);
+
+    if (parsed) {
+      await addTask({
+        title: parsed.title,
+        dueDate: parsed.due_date || (parsed.is_scheduled_today ? todayStr : undefined),
+        dueTime: parsed.due_time || undefined,
+        priority: parsed.priority,
+        category: parsed.category || 'General',
+        status: 'todo',
+        subtasks: [],
+      });
+    } else {
+      await addTask({
+        title: nlpInput.trim(),
+        priority: 'medium',
+        category: 'General',
+        dueDate: todayStr,
+        status: 'todo',
+        subtasks: [],
+      });
+    }
+
+    setNlpInput('');
+    setNlpLoading(false);
   };
 
   const handleDelete = (id: string) => {
@@ -332,6 +370,45 @@ export default function TasksPage() {
           </span>
         </span>
       </div>
+
+      {/* Natural Language Task Input (Python NLP Engine Bridge) */}
+      <form
+        onSubmit={handleNLPTaskSubmit}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          background: 'var(--bg-surface)',
+          padding: '6px 10px',
+          borderRadius: '8px',
+          border: '1px solid var(--border-default)',
+          boxShadow: 'var(--panel-shadow)',
+        }}
+      >
+        <Sparkles size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
+        <input
+          type="text"
+          placeholder="Natural Language Quick Add: e.g. 'Submit DevOps lab on Friday at 5pm #academics !critical'"
+          value={nlpInput}
+          onChange={(e) => setNlpInput(e.target.value)}
+          style={{
+            flex: 1,
+            background: 'transparent',
+            border: 'none',
+            outline: 'none',
+            fontSize: '12.5px',
+            color: 'var(--text-primary)',
+          }}
+        />
+        <button
+          type="submit"
+          disabled={!nlpInput.trim() || nlpLoading}
+          className="btn btn-secondary btn-sm"
+          style={{ fontSize: '11px', height: '26px', padding: '0 10px' }}
+        >
+          {nlpLoading ? 'Parsing...' : '+ Add with AI'}
+        </button>
+      </form>
 
       {/* =========================================================================
           VIEW MODE 1: LIST VIEW

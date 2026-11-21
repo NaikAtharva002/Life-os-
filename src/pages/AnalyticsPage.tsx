@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import useStore from '../store/useStore';
+import { aiEngine, type DeepAnalyticsResult } from '../services/aiEngineClient';
 import {
   BarChart3,
   TrendingUp,
@@ -13,6 +14,7 @@ import {
   ArrowUpRight,
   ShieldCheck,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
@@ -28,6 +30,23 @@ export default function AnalyticsPage() {
   const settings = useStore((s) => s.settings);
 
   const currency = settings.currencySymbol || '$';
+
+  const [deepResult, setDeepResult] = useState<DeepAnalyticsResult | null>(null);
+  const [deepLoading, setDeepLoading] = useState(false);
+  const [deepError, setDeepError] = useState<string | null>(null);
+
+  const handleRunDeepAnalysis = async () => {
+    setDeepLoading(true);
+    setDeepError(null);
+    const res = await aiEngine.getDeepAnalytics();
+    if (res) {
+      setDeepResult(res);
+    } else {
+      setDeepError('Python AI Engine offline. Displaying local heuristic metrics.');
+      setTimeout(() => setDeepError(null), 4000);
+    }
+    setDeepLoading(false);
+  };
   const todayStr = new Date().toISOString().split('T')[0];
 
   // 1. Productivity Index Calculation (Composite 0-100)
@@ -134,14 +153,32 @@ export default function AnalyticsPage() {
   return (
     <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
-          Central Intelligence & Analytics
-        </h1>
-        <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-          Actionable synthesis across productivity, academics, financial velocity, and physical conditioning.
-        </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
+            Central Intelligence & Analytics
+          </h1>
+          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
+            Actionable synthesis across productivity, academics, financial velocity, and physical conditioning.
+          </p>
+        </div>
+
+        <button
+          onClick={handleRunDeepAnalysis}
+          disabled={deepLoading}
+          className="btn btn-secondary"
+          style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', height: '32px' }}
+        >
+          <Sparkles size={13} color="var(--accent)" />
+          {deepLoading ? 'Synthesizing SQLite Views...' : 'Deep Engine Telemetry (Python)'}
+        </button>
       </div>
+
+      {deepError && (
+        <div style={{ padding: '8px 14px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '6px', color: 'var(--status-warning)', fontSize: '12px', marginBottom: '14px' }}>
+          {deepError}
+        </div>
+      )}
 
       {/* Executive Summary Strip */}
       <div className="summary-strip">
