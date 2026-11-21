@@ -171,136 +171,120 @@ export default function FinancePage() {
   return (
     <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid var(--border-default)', paddingBottom: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
-            Finance Command
-          </h1>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <DollarSign size={18} color="var(--status-success)" />
+            <h1 style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '-0.015em', margin: 0, color: 'var(--text-primary)' }}>
+              Finance Command & Wealth
+            </h1>
+          </div>
+          <p style={{ margin: '3px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
             Local-first wealth management, expense tracking, and savings objectives.
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setShowBudgetModal(true)}
-            className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            className="btn btn-secondary btn-sm"
           >
             Set Budget
           </button>
           <button
             onClick={() => setShowSavingsModal(true)}
-            className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            className="btn btn-secondary btn-sm"
           >
-            <PiggyBank size={16} /> Savings Goal
+            <PiggyBank size={13} /> Savings Goal
           </button>
           <button
             onClick={() => setShowTxModal(true)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            className="btn btn-primary btn-sm"
           >
-            <Plus size={16} /> Add Transaction
+            <Plus size={13} /> Add Transaction
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Row */}
+      {/* Sleek Financial Summary Strip (replaces bulky AI cards) */}
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          display: 'flex',
+          alignItems: 'center',
           gap: '16px',
-          marginBottom: '24px',
+          padding: '8px 14px',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border-default)',
+          borderRadius: 'var(--radius-small)',
+          boxShadow: 'var(--panel-shadow)',
+          fontSize: '12px',
+          color: 'var(--text-secondary)',
+          flexWrap: 'wrap',
+          marginBottom: '20px',
         }}
       >
-        {/* Total Income */}
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Inflow</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.12)', color: 'var(--success)' }}>
-              <TrendingUp size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            {currency}{totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Filtered {timeframe} window
-          </div>
-        </div>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Total Inflow:</span>
+          <span style={{ fontWeight: 700, color: 'var(--status-success)' }} className="tabular">
+            +{currency}{totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </span>
 
-        {/* Total Expenses */}
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Outflow</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--danger)' }}>
-              <TrendingDown size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            {currency}{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Total spent across categories
-          </div>
-        </div>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
 
-        {/* Net Savings */}
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Net Cashflow</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: netSavings >= 0 ? 'rgba(59, 130, 246, 0.12)' : 'rgba(239, 68, 68, 0.12)', color: netSavings >= 0 ? 'var(--info)' : 'var(--danger)' }}>
-              <DollarSign size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: netSavings >= 0 ? 'var(--success)' : 'var(--danger)', letterSpacing: '-0.02em' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Total Outflow:</span>
+          <span style={{ fontWeight: 700, color: 'var(--status-danger)' }} className="tabular">
+            -{currency}{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Net Cashflow:</span>
+          <span style={{ fontWeight: 700, color: netSavings >= 0 ? 'var(--status-success)' : 'var(--status-danger)' }} className="tabular">
             {netSavings >= 0 ? '+' : '-'}{currency}{Math.abs(netSavings).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            {savingsRate}% net savings rate
-          </div>
-        </div>
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+            ({savingsRate}% rate)
+          </span>
+        </span>
 
-        {/* Savings Reserve */}
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Active Goals</span>
-            <span style={{ padding: '6px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-              <PiggyBank size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            {currency}{savingsGoals.reduce((acc, g) => acc + g.currentAmount, 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Across {savingsGoals.length} targets
-          </div>
-        </div>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Savings Targets:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {currency}{savingsGoals.reduce((acc, g) => acc + g.currentAmount, 0).toLocaleString()} / {currency}{savingsGoals.reduce((acc, g) => acc + g.targetAmount, 0).toLocaleString()}
+          </span>
+        </span>
       </div>
 
       {/* Main Grid: Budgets & Analytics (Left) + Transactions (Right) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '20px', marginBottom: '32px' }}>
         
         {/* Left: Monthly Budgets & Spending Distribution */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* Monthly Budgets Card */}
-          <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Category Budgets ({currentMonthStr})</h2>
-              <button onClick={() => setShowBudgetModal(true)} className="btn btn-ghost" style={{ fontSize: '12px', padding: '4px 8px' }}>
-                + Add Limit
+          <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="section-eyebrow">BUDGET LIMITS</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({currentMonthStr})</span>
+              </div>
+              <button onClick={() => setShowBudgetModal(true)} className="btn btn-ghost" style={{ fontSize: '11px', padding: '3px 8px', height: '26px' }}>
+                + Add Cap
               </button>
             </div>
 
             {budgets.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                No budgets set for this month. Set spending caps to prevent budget overruns.
+                No budgets configured for this month. Set spending caps to prevent budget overruns.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {budgets.map((b) => {
                   const spent = transactions
                     .filter((t) => t.type === 'expense' && t.category === b.category && t.date.startsWith(currentMonthStr))
@@ -310,25 +294,23 @@ export default function FinancePage() {
                   const isExceeded = spent > b.monthlyLimit;
 
                   return (
-                    <div key={b.id}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '6px' }}>
+                    <div key={b.id} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
                         <span style={{ fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {b.category}
-                          {isExceeded && <span title="Budget Exceeded!"><AlertTriangle size={14} color="var(--danger)" /></span>}
-                          {isWarning && <span title="Approaching Limit!"><AlertTriangle size={14} color="var(--warning)" /></span>}
+                          {isExceeded && <span title="Budget Exceeded!"><AlertTriangle size={13} color="var(--status-danger)" /></span>}
+                          {isWarning && <span title="Approaching Limit!"><AlertTriangle size={13} color="var(--status-warning)" /></span>}
                         </span>
-                        <span style={{ color: isExceeded ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--text-secondary)' }}>
-                          {currency}{spent.toFixed(0)} / {currency}{b.monthlyLimit.toFixed(0)} ({percent}%)
+                        <span style={{ color: isExceeded ? 'var(--status-danger)' : isWarning ? 'var(--status-warning)' : 'var(--text-secondary)' }} className="tabular">
+                          {currency}{spent.toFixed(0)} / {currency}{b.monthlyLimit.toFixed(0)} <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>({percent}%)</span>
                         </span>
                       </div>
-                      <div style={{ height: '7px', background: 'var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+                      <div className="progress-hairline">
                         <div
+                          className="progress-hairline-fill"
                           style={{
-                            height: '100%',
                             width: `${percent}%`,
-                            background: isExceeded ? 'var(--danger)' : isWarning ? 'var(--warning)' : 'var(--accent)',
-                            borderRadius: '10px',
-                            transition: 'width 0.4s ease',
+                            background: isExceeded ? 'var(--status-danger)' : isWarning ? 'var(--status-warning)' : 'var(--accent)',
                           }}
                         />
                       </div>
@@ -339,32 +321,33 @@ export default function FinancePage() {
             )}
           </div>
 
-          {/* Category Spending Breakdown (SVG Donut & Bar Representation) */}
-          <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0' }}>Expense Distribution</h2>
+          {/* Category Spending Breakdown */}
+          <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <span className="section-eyebrow">EXPENSE DISTRIBUTION</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                Total: {currency}{totalExpense.toLocaleString(undefined, { minimumFractionDigits: 0 })}
+              </span>
+            </div>
 
             {categorySpending.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+              <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
                 No expenses logged in this timeframe.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {categorySpending.map(([cat, amt]) => {
                   const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
                   return (
-                    <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ minWidth: '110px', fontSize: '13px', color: 'var(--text-secondary)' }}>{cat}</div>
-                      <div className="progress-track" style={{ flex: 1 }}>
-                        <div
-                          className="progress-thumb"
-                          style={{
-                            width: `${pct}%`,
-                            background: 'var(--text-primary)',
-                          }}
-                        />
+                    <div key={cat} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>{cat}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }} className="tabular">
+                          {currency}{amt.toFixed(0)} <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: 400 }}>({pct}%)</span>
+                        </span>
                       </div>
-                      <div style={{ minWidth: '70px', textAlign: 'right', fontSize: '13px', fontWeight: 600 }}>
-                        {currency}{amt.toFixed(0)} <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>({pct}%)</span>
+                      <div className="progress-hairline">
+                        <div className="progress-hairline-fill" style={{ width: `${pct}%`, background: 'var(--text-muted)' }} />
                       </div>
                     </div>
                   );
@@ -374,70 +357,69 @@ export default function FinancePage() {
           </div>
 
           {/* Savings Goals Cards */}
-          <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Savings Targets</h2>
-              <button onClick={() => setShowSavingsModal(true)} className="btn btn-ghost" style={{ fontSize: '12px', padding: '4px 8px' }}>
+          <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <span className="section-eyebrow">SAVINGS TARGETS</span>
+              <button onClick={() => setShowSavingsModal(true)} className="btn btn-ghost" style={{ fontSize: '11px', padding: '3px 8px', height: '26px' }}>
                 + Add Target
               </button>
             </div>
 
             {savingsGoals.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                No savings goals created yet. Set a financial milestone to build wealth.
+                No savings targets set yet.
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {savingsGoals.map((g) => {
                   const pct = Math.min(100, Math.round((g.currentAmount / g.targetAmount) * 100));
                   return (
                     <div
                       key={g.id}
                       style={{
-                        padding: '14px',
-                        background: 'var(--bg-secondary)',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border)',
+                        padding: '12px 14px',
+                        background: 'var(--bg-subtle)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-default)',
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>{g.title}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                            Target: {currency}{g.targetAmount.toLocaleString()} by {g.targetDate || 'No date'}
+                          <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>{g.title}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }} className="tabular">
+                            Target: {currency}{g.targetAmount.toLocaleString()} · Due: {g.targetDate || 'Ongoing'}
                           </div>
                         </div>
                         <div style={{ display: 'flex', gap: '6px' }}>
                           <button
                             onClick={() => setDepositGoalId(g.id)}
                             className="btn btn-secondary"
-                            style={{ padding: '4px 8px', fontSize: '11px' }}
+                            style={{ padding: '3px 8px', fontSize: '11px', height: '24px' }}
                           >
                             + Deposit
                           </button>
                           <button
                             onClick={() => deleteSavingsGoal(g.id)}
                             className="btn btn-ghost"
-                            style={{ padding: '4px', color: 'var(--text-muted)' }}
+                            style={{ padding: '3px 6px', color: 'var(--text-muted)', height: '24px' }}
                           >
-                            <Trash2 size={13} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </div>
 
-                      <div style={{ height: '6px', background: 'var(--border)', borderRadius: '6px', overflow: 'hidden', margin: '8px 0 6px 0' }}>
+                      <div className="progress-hairline" style={{ margin: '8px 0 6px 0' }}>
                         <div
+                          className="progress-hairline-fill"
                           style={{
-                            height: '100%',
                             width: `${pct}%`,
-                            background: pct >= 100 ? 'var(--success)' : 'var(--accent)',
-                            borderRadius: '6px',
+                            background: pct >= 100 ? 'var(--status-success)' : 'var(--accent)',
                           }}
                         />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-                        <span>Saved: {currency}{g.currentAmount.toLocaleString()}</span>
-                        <span style={{ fontWeight: 600 }}>{pct}%</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                        <span className="tabular">Accumulated: {currency}{g.currentAmount.toLocaleString()}</span>
+                        <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }} className="tabular">{pct}%</span>
                       </div>
                     </div>
                   );
@@ -448,25 +430,31 @@ export default function FinancePage() {
         </div>
 
         {/* Right: Transaction Ledger & Filters */}
-        <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
+        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Transaction Ledger</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="section-eyebrow">TRANSACTION LEDGER</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                ({filteredTransactions.length} records)
+              </span>
+            </div>
 
             {/* Timeframe selector */}
-            <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-secondary)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', gap: '3px', background: 'var(--bg-subtle)', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-default)' }}>
               {(['week', 'month', 'year', 'all'] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTimeframe(t)}
                   style={{
                     border: 'none',
-                    background: timeframe === t ? 'var(--bg-card)' : 'transparent',
+                    background: timeframe === t ? 'var(--bg-elevated)' : 'transparent',
                     color: timeframe === t ? 'var(--text-primary)' : 'var(--text-muted)',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    fontSize: '12px',
+                    padding: '3px 9px',
+                    borderRadius: '4px',
+                    fontSize: '11px',
                     fontWeight: timeframe === t ? 600 : 500,
                     cursor: 'pointer',
+                    boxShadow: timeframe === t ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
                   }}
                 >
                   {t.toUpperCase()}
@@ -476,23 +464,23 @@ export default function FinancePage() {
           </div>
 
           {/* Filter Bar */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
               className="input"
-              style={{ fontSize: '12px', padding: '6px 10px', width: 'auto' }}
+              style={{ fontSize: '11.5px', padding: '5px 10px', width: 'auto', height: '30px' }}
             >
-              <option value="all">All Types</option>
-              <option value="expense">Expenses Only</option>
-              <option value="income">Incomes Only</option>
+              <option value="all">All Flow Types</option>
+              <option value="expense">Expenses (-)</option>
+              <option value="income">Inflow (+)</option>
             </select>
 
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
               className="input"
-              style={{ fontSize: '12px', padding: '6px 10px', width: 'auto' }}
+              style={{ fontSize: '11.5px', padding: '5px 10px', width: 'auto', height: '30px' }}
             >
               <option value="all">All Categories</option>
               {categories.map((c) => (
@@ -503,79 +491,92 @@ export default function FinancePage() {
             </select>
           </div>
 
-          {/* Transactions List */}
+          {/* Structured Transactions Table */}
           {filteredTransactions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-              No transactions found matching your criteria.
+            <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+              No transactions matching the selected filters.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '680px', overflowY: 'auto' }}>
-              {filteredTransactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border)',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div
+            <div style={{ overflowX: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border-default)', color: 'var(--text-muted)', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '90px' }}>Type</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Description</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '130px' }}>Category</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '100px' }}>Date</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '100px' }}>Method</th>
+                    <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right', width: '110px' }}>Amount</th>
+                    <th style={{ padding: '8px 8px', width: '40px' }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredTransactions.map((tx) => (
+                    <tr
+                      key={tx.id}
+                      className="task-row"
                       style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '8px',
-                        background: tx.type === 'income' ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)',
-                        color: tx.type === 'income' ? 'var(--success)' : 'var(--danger)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        flexShrink: 0,
+                        borderBottom: '1px solid var(--border-default)',
+                        transition: 'background 0.12s ease',
                       }}
                     >
-                      {tx.type === 'income' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text-primary)' }}>
-                        {tx.description}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        <span>{tx.date}</span>
-                        <span>•</span>
-                        <span>{tx.category}</span>
-                        <span>•</span>
-                        <span>{tx.paymentMethod}</span>
-                      </div>
-                    </div>
-                  </div>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            padding: '2px 7px',
+                            borderRadius: '4px',
+                            background: tx.type === 'income' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                            color: tx.type === 'income' ? 'var(--status-success)' : 'var(--status-danger)',
+                          }}
+                        >
+                          {tx.type === 'income' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                          {tx.type === 'income' ? 'INFLOW' : 'OUTFLOW'}
+                        </span>
+                      </td>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        fontSize: '14px',
-                        color: tx.type === 'income' ? 'var(--success)' : 'var(--text-primary)',
-                        textAlign: 'right',
-                      }}
-                    >
-                      {tx.type === 'income' ? '+' : '-'}{currency}{tx.amount.toFixed(2)}
-                    </div>
-                    <button
-                      onClick={() => deleteTransaction(tx.id)}
-                      className="btn btn-ghost"
-                      style={{ padding: '6px', color: 'var(--text-muted)' }}
-                      title="Delete transaction"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                      <td style={{ padding: '10px 12px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                        {tx.description}
+                      </td>
+
+                      <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
+                        <span style={{ background: 'var(--bg-subtle)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid var(--border-default)' }}>
+                          {tx.category}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }} className="tabular">
+                        {tx.date}
+                      </td>
+
+                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>
+                        {tx.paymentMethod}
+                      </td>
+
+                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className="tabular">
+                        <span style={{ color: tx.type === 'income' ? 'var(--status-success)' : 'var(--text-primary)' }}>
+                          {tx.type === 'income' ? '+' : '-'}{currency}{tx.amount.toFixed(2)}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => deleteTransaction(tx.id)}
+                          className="btn btn-ghost"
+                          style={{ padding: '3px', color: 'var(--text-muted)', height: '24px', width: '24px' }}
+                          title="Delete entry"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

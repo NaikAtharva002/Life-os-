@@ -221,87 +221,41 @@ export default function EveningReviewPage() {
         </div>
       )}
 
-      {/* SECTION 1: Productivity Summary KPI Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '14px',
-        }}
-      >
-        {/* Productivity Score */}
-        <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              background:
-                productivityScore >= 80
-                  ? 'rgba(34, 197, 94, 0.15)'
-                  : productivityScore >= 50
-                  ? 'rgba(245, 158, 11, 0.15)'
-                  : 'rgba(239, 68, 68, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px',
-              fontWeight: 800,
-              color:
-                productivityScore >= 80
-                  ? 'var(--success)'
-                  : productivityScore >= 50
-                  ? 'var(--warning)'
-                  : 'var(--danger)',
-            }}
-          >
-            {productivityScore}%
-          </div>
-          <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-              TODAY'S PRODUCTIVITY
-            </div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {productivityScore >= 80
-                ? 'High Momentum 🚀'
-                : productivityScore >= 50
-                ? 'Solid Effort 💪'
-                : 'Room for Reset 🌱'}
-            </div>
-          </div>
-        </div>
+      {/* Executive Reflection Strip */}
+      <div className="summary-strip">
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Productivity:</span>
+          <span style={{ fontWeight: 700, color: productivityScore >= 70 ? 'var(--status-success)' : 'var(--status-warning)' }} className="tabular">
+            {productivityScore}% composite
+          </span>
+        </span>
 
-        {/* Tasks Summary */}
-        <div className="card">
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-            TASKS COMPLETED
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--success)' }}>
-            {completedTasksToday.length}{' '}
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
-              / {completedTasksToday.length + pendingAndOverdueTasks.length} total
-            </span>
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {pendingAndOverdueTasks.length} pending / overdue
-          </div>
-        </div>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
 
-        {/* Habits Summary */}
-        <div className="card">
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>
-            HABITS COMPLETED
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent)' }}>
-            {completedHabits.length}{' '}
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
-              / {habits.length} habits
-            </span>
-          </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-            {missedHabits.length} missed today
-          </div>
-        </div>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Tasks Completed:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {completedTasksToday.length} / {completedTasksToday.length + pendingAndOverdueTasks.length} tasks
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Habit Adherence:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {completedHabits.length} / {habits.length} habits
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Day Rating:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {rating} / 5 stars
+          </span>
+        </span>
       </div>
 
       {/* SECTION 2: Tasks Review (Completed vs Pending/Overdue) */}
@@ -516,19 +470,34 @@ export default function EveningReviewPage() {
                   title="Click to toggle completion"
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '20px' }}>{h.icon || '🎯'}</span>
+                    <div
+                      style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '4px',
+                        background: isCompleted ? 'var(--status-success)' : 'transparent',
+                        border: isCompleted ? 'none' : '1.5px solid var(--border-default)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                      }}
+                    >
+                      {isCompleted && <Check size={12} color="#ffffff" strokeWidth={2.5} />}
+                    </div>
                     <div>
                       <div
                         style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: isCompleted ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          fontSize: '12.5px',
+                          fontWeight: 500,
+                          color: isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)',
+                          textDecoration: isCompleted ? 'line-through' : 'none',
                         }}
                       >
                         {h.name}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#f97316', fontWeight: 600 }}>
-                        🔥 {h.streak} day streak
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+                        🔥 {h.streak}d streak
                       </div>
                     </div>
                   </div>

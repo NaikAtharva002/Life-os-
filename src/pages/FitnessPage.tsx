@@ -228,95 +228,70 @@ export default function FitnessPage() {
         </div>
       </div>
 
-      {/* Fitness KPI Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px',
-        }}
-      >
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Current Weight</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--info)' }}>
-              <Scale size={16} />
+      {/* Athletic Training Status Ribbon */}
+      <div className="summary-strip">
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Weight:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {latestMetric ? `${latestMetric.weightKg} kg` : 'None'}
+          </span>
+          {latestMetric?.bodyFatPercentage && (
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+              ({latestMetric.bodyFatPercentage}% BF)
             </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            {latestMetric ? `${latestMetric.weightKg} kg` : 'Not recorded'}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            {latestMetric?.bodyFatPercentage ? `${latestMetric.bodyFatPercentage}% est. body fat` : 'Log weekly to track trend'}
-          </div>
-        </div>
+          )}
+        </span>
 
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Workouts (This Month)</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.12)', color: 'var(--danger)' }}>
-              <Flame size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            {totalWorkoutsThisMonth} sessions
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Target: 16 sessions/month
-          </div>
-        </div>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
 
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Total Volume Lifted</span>
-            <span style={{ padding: '6px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-              <Dumbbell size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Monthly Workouts:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {totalWorkoutsThisMonth} / 16 sessions
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Cumulative Load:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
             {(totalVolumeAllTime / 1000).toFixed(1)}k kg
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Cumulative resistance load
-          </div>
-        </div>
+          </span>
+        </span>
 
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Fitness Milestones</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(34, 197, 94, 0.12)', color: 'var(--success)' }}>
-              <Award size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Strength Milestones:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
             {fitnessGoals.filter((g) => g.isAchieved).length} / {fitnessGoals.length}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Strength & physique goals achieved
-          </div>
-        </div>
+          </span>
+        </span>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', width: 'fit-content' }}>
         {[
           { id: 'workouts', label: 'Workout Sessions' },
-          { id: 'metrics', label: 'Weight & Body Composition' },
-          { id: 'goals', label: 'Strength Goals' },
+          { id: 'metrics', label: 'Body Metrics & Trajectory' },
+          { id: 'goals', label: 'Strength Milestones' },
           { id: 'exercises', label: 'Exercise Library' },
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className="btn btn-ghost"
             style={{
-              fontWeight: activeTab === tab.id ? 700 : 500,
-              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
-              borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
-              borderRadius: '0',
-              padding: '8px 14px',
-              fontSize: '14px',
+              border: 'none',
+              fontWeight: activeTab === tab.id ? 600 : 500,
+              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
+              background: activeTab === tab.id ? 'var(--bg-elevated)' : 'transparent',
+              borderRadius: '6px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              boxShadow: activeTab === tab.id ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+              transition: 'all 0.12s ease',
             }}
           >
             {tab.label}
@@ -337,10 +312,11 @@ export default function FitnessPage() {
                 key={ws.id}
                 className="card"
                 style={{
-                  padding: '20px',
-                  background: 'var(--bg-card)',
-                  borderRadius: '14px',
-                  border: '1px solid var(--border)',
+                  padding: '18px 20px',
+                  background: 'var(--bg-surface)',
+                  borderRadius: '10px',
+                  border: '1px solid var(--border-default)',
+                  boxShadow: 'var(--panel-shadow)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
@@ -348,29 +324,30 @@ export default function FitnessPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span
                         style={{
-                          fontSize: '11px',
-                          fontWeight: 600,
+                          fontSize: '10px',
+                          fontWeight: 700,
                           padding: '2px 7px',
-                          borderRadius: 'var(--radius-xs)',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border)',
+                          borderRadius: '4px',
+                          background: 'var(--bg-subtle)',
+                          border: '1px solid var(--border-default)',
                           color: 'var(--text-secondary)',
                           textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
                         }}
                       >
-                        {ws.splitType} Split
+                        {ws.splitType} SPLIT
                       </span>
-                      <h2 style={{ fontSize: '17px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                      <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                         {ws.title}
                       </h2>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: '12px' }}>
-                      <span>{ws.date}</span>
-                      <span>•</span>
-                      <span>{ws.durationMinutes} minutes</span>
-                      <span>•</span>
-                      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>
-                        Volume: {ws.totalVolumeKg?.toLocaleString()} kg
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', gap: '10px' }}>
+                      <span className="tabular">{ws.date}</span>
+                      <span>·</span>
+                      <span className="tabular">{ws.durationMinutes} min</span>
+                      <span>·</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }} className="tabular">
+                        Load: {ws.totalVolumeKg?.toLocaleString()} kg
                       </span>
                     </div>
                   </div>
@@ -378,23 +355,24 @@ export default function FitnessPage() {
                   <button
                     onClick={() => deleteWorkoutSession(ws.id)}
                     className="btn btn-ghost"
-                    style={{ padding: '6px', color: 'var(--text-muted)' }}
+                    style={{ padding: '4px', color: 'var(--text-muted)', height: '26px', width: '26px' }}
                     title="Delete workout log"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
 
                 {ws.notes && (
                   <div
                     style={{
-                      fontSize: '13px',
+                      fontSize: '12px',
                       color: 'var(--text-secondary)',
-                      background: 'var(--bg-secondary)',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      marginBottom: '14px',
+                      background: 'var(--bg-subtle)',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      marginBottom: '12px',
                       fontStyle: 'italic',
+                      border: '1px solid var(--border-default)',
                     }}
                   >
                     "{ws.notes}"
@@ -402,34 +380,33 @@ export default function FitnessPage() {
                 )}
 
                 {/* Exercises in Session */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
                   {ws.exercises?.map((ex, eIdx) => (
                     <div
                       key={eIdx}
                       style={{
-                        padding: '12px 14px',
-                        background: 'var(--bg-secondary)',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border)',
+                        padding: '10px 12px',
+                        background: 'var(--bg-subtle)',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-default)',
                       }}
                     >
-                      <div style={{ fontWeight: 700, fontSize: '13.5px', marginBottom: '8px', color: 'var(--text-primary)' }}>
+                      <div style={{ fontWeight: 600, fontSize: '12.5px', marginBottom: '6px', color: 'var(--text-primary)' }}>
                         {ex.exerciseName}
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                         {ex.sets.map((s, sIdx) => (
                           <div
                             key={sIdx}
                             style={{
                               display: 'flex',
                               justifyContent: 'space-between',
-                              fontSize: '12px',
-                              color: 'var(--text-secondary)',
-                              padding: '2px 0',
+                              fontSize: '11px',
+                              color: 'var(--text-muted)',
                             }}
                           >
                             <span>Set {s.setNumber}:</span>
-                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }} className="tabular">
                               {s.reps} reps × {s.weightKg} kg
                             </span>
                           </div>

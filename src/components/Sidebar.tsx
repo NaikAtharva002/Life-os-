@@ -139,21 +139,21 @@ export default function Sidebar({
       <aside
         className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
-          width: collapsed ? '64px' : '240px',
-          background: 'var(--bg-secondary)',
-          borderRight: '1px solid var(--border)',
+          width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
+          background: 'var(--bg-surface)',
+          borderRight: '1px solid var(--border-default)',
           transition: 'width 0.15s ease',
         }}
       >
-        {/* Brand Header — Editorial Monochrome */}
+        {/* Brand Header — Editorial Precision */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
-            padding: collapsed ? '16px 0' : '16px 14px',
-            borderBottom: '1px solid var(--border)',
-            height: '56px',
+            padding: collapsed ? '12px 0' : '10px 14px',
+            borderBottom: '1px solid var(--border-default)',
+            height: 'var(--toolbar-height)',
             boxSizing: 'border-box',
           }}
         >
@@ -162,23 +162,23 @@ export default function Sidebar({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '9px',
+              gap: '8px',
               cursor: 'pointer',
             }}
           >
             {/* Crisp minimalist mark */}
             <div
               style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: 'var(--radius-sm)',
+                width: '24px',
+                height: '24px',
+                borderRadius: 'var(--radius-small)',
                 background: 'var(--text-primary)',
-                color: 'var(--bg-primary)',
+                color: 'var(--bg-main)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 700,
-                fontSize: '13px',
+                fontSize: '12px',
                 letterSpacing: '-0.02em',
                 flexShrink: 0,
               }}
@@ -186,13 +186,13 @@ export default function Sidebar({
               Ω
             </div>
             {!collapsed && (
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)', lineHeight: 1.2 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
                   LIFE OS
-                </div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '0.02em' }}>
-                  Workspace
-                </div>
+                </span>
+                <span style={{ fontSize: '9px', fontWeight: 600, background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', padding: '1px 4px', borderRadius: '3px', color: 'var(--text-muted)' }}>
+                  v2.4
+                </span>
               </div>
             )}
           </div>
@@ -201,40 +201,40 @@ export default function Sidebar({
             <button
               onClick={() => setCollapsed(true)}
               className="btn btn-ghost"
-              style={{ padding: '4px', color: 'var(--text-muted)' }}
+              style={{ padding: '3px', color: 'var(--text-muted)' }}
               title="Collapse sidebar"
             >
-              <ChevronLeft size={15} />
+              <ChevronLeft size={14} />
             </button>
           )}
         </div>
 
         {/* Expand toggle when collapsed */}
         {collapsed && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0', borderBottom: '1px solid var(--border-default)' }}>
             <button
               onClick={() => setCollapsed(false)}
               className="btn btn-ghost"
-              style={{ padding: '4px', color: 'var(--text-muted)' }}
+              style={{ padding: '3px', color: 'var(--text-muted)' }}
               title="Expand sidebar"
             >
-              <ChevronRight size={15} />
+              <ChevronRight size={14} />
             </button>
           </div>
         )}
 
         {/* Nav Items List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '10px 4px' : '12px 8px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '8px 4px' : '10px 8px' }}>
           {navSections.map((section, sIdx) => (
-            <div key={sIdx} style={{ marginBottom: '14px' }}>
+            <div key={sIdx} style={{ marginBottom: '12px' }}>
               {!collapsed && (
                 <div
                   style={{
-                    fontSize: '10px',
+                    fontSize: '9.5px',
                     fontWeight: 600,
                     color: 'var(--text-muted)',
-                    letterSpacing: '0.06em',
-                    padding: '2px 8px 6px 8px',
+                    letterSpacing: '0.08em',
+                    padding: '4px 8px 4px 8px',
                     textTransform: 'uppercase',
                   }}
                 >
@@ -256,17 +256,18 @@ export default function Sidebar({
                         alignItems: 'center',
                         justifyContent: collapsed ? 'center' : 'space-between',
                         width: '100%',
-                        padding: collapsed ? '8px 0' : '7px 8px',
-                        borderRadius: 'var(--radius-sm)',
+                        padding: collapsed ? '7px 0' : '5px 8px',
+                        borderRadius: 'var(--radius-small)',
                         border: 'none',
-                        background: isActive ? 'var(--bg-hover)' : 'transparent',
-                        color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                        fontWeight: isActive ? 600 : 500,
-                        fontSize: '13px',
+                        background: isActive ? 'var(--bg-active)' : 'transparent',
+                        color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                        fontWeight: isActive ? 600 : 450,
+                        fontSize: '12.5px',
                         cursor: 'pointer',
-                        transition: 'background 0.1s ease, color 0.1s ease',
+                        transition: 'all 0.1s ease',
                         textAlign: 'left',
                         position: 'relative',
+                        boxShadow: isActive ? 'inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
                       }}
                       onMouseEnter={(e) => {
                         if (!isActive) {
@@ -282,7 +283,7 @@ export default function Sidebar({
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Icon size={16} strokeWidth={isActive ? 2 : 1.6} color={isActive ? 'var(--text-primary)' : 'var(--text-secondary)'} />
+                        <Icon size={14} strokeWidth={isActive ? 2 : 1.6} color={isActive ? 'var(--accent-primary)' : 'var(--text-muted)'} />
                         {!collapsed && <span>{item.label}</span>}
                       </div>
 
@@ -290,17 +291,17 @@ export default function Sidebar({
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {item.warning && (
                             <span title="Attendance alert">
-                              <AlertCircle size={13} color="var(--warning)" />
+                              <AlertCircle size={12} color="var(--status-warning)" />
                             </span>
                           )}
                           {item.badge !== undefined && (
                             <span
                               style={{
                                 fontSize: '10px',
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 padding: '1px 5px',
-                                borderRadius: 'var(--radius-xs)',
-                                background: item.badgeColor || 'var(--bg-active)',
+                                borderRadius: 'var(--radius-small)',
+                                background: item.badgeColor || 'var(--bg-subtle)',
                                 color: '#ffffff',
                                 fontVariantNumeric: 'tabular-nums',
                               }}
@@ -321,24 +322,24 @@ export default function Sidebar({
         {/* Footer / Profile */}
         <div
           style={{
-            padding: collapsed ? '10px 0' : '10px 12px',
-            borderTop: '1px solid var(--border)',
+            padding: collapsed ? '8px 0' : '8px 12px',
+            borderTop: '1px solid var(--border-default)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
             gap: '8px',
-            background: 'var(--bg-secondary)',
+            background: 'var(--bg-surface)',
           }}
         >
           {!collapsed ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
               <div
                 style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: 'var(--radius-xs)',
-                  background: 'var(--bg-hover)',
-                  border: '1px solid var(--border)',
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: 'var(--radius-small)',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-default)',
                   color: 'var(--text-primary)',
                   display: 'flex',
                   alignItems: 'center',
@@ -351,7 +352,7 @@ export default function Sidebar({
                 {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U'}
               </div>
               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.2 }}>
                   {settings.userName}
                 </div>
               </div>
@@ -359,11 +360,11 @@ export default function Sidebar({
           ) : (
             <div
               style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--bg-hover)',
-                border: '1px solid var(--border)',
+                width: '22px',
+                height: '22px',
+                borderRadius: 'var(--radius-small)',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-default)',
                 color: 'var(--text-primary)',
                 display: 'flex',
                 alignItems: 'center',

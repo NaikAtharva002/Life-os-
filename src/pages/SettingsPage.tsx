@@ -145,15 +145,15 @@ export default function SettingsPage() {
       )}
 
       {/* SECTION 1: USER PROFILE & CURRENCY */}
-      <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <User size={18} color="var(--accent)" /> Personal Profile & Regional Formatting
-        </h2>
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+          <span className="section-eyebrow">IDENTITY & LOCALIZATION</span>
+        </div>
 
         <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
             <div>
-              <label className="label">User Name</label>
+              <label className="label">Operator Name</label>
               <input
                 type="text"
                 className="input"
@@ -178,7 +178,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Key size={14} /> Optional Gemini API Key (Advanced AI Copilot Mode)
+              <Key size={13} /> Optional Gemini API Key (Advanced AI Copilot Mode)
             </label>
             <input
               type="password"
@@ -187,13 +187,13 @@ export default function SettingsPage() {
               onChange={(e) => setGeminiApiKey(e.target.value)}
               placeholder="Paste Google AI Studio Gemini API Key (Optional)..."
             />
-            <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              * Optional. Life OS works 100% offline with full rule-based heuristics without any API key.
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+              * Optional. Life OS works 100% offline with full local heuristic intelligence without any API key.
             </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn btn-primary" style={{ fontSize: '13px' }}>
+            <button type="submit" className="btn btn-primary" style={{ fontSize: '12px', height: '32px' }}>
               Save Profile Preferences
             </button>
           </div>
@@ -201,25 +201,24 @@ export default function SettingsPage() {
       </div>
 
       {/* SECTION 2: EVENING REMINDERS & NOTIFICATIONS */}
-      <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Bell size={18} color="var(--accent)" />
-            <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>End-of-Day Review Reminders</h2>
+            <span className="section-eyebrow">DAILY REVIEW REMINDERS</span>
           </div>
           <input
             type="checkbox"
             checked={reminderEnabled}
             onChange={handleToggleReminder}
-            style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+            style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--accent)' }}
           />
         </div>
 
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px 0' }}>
+        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 14px 0', lineHeight: '1.45' }}>
           Prompts you every evening to celebrate accomplishments, reschedule incomplete tasks, review habits, and declare tomorrow's top 3 priorities.
         </p>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <div>
             <label className="label">Daily Reminder Time</label>
             <input
@@ -227,94 +226,95 @@ export default function SettingsPage() {
               className="input"
               value={reminderTime}
               onChange={(e) => handleTimeChange(e.target.value)}
-              style={{ width: '140px' }}
+              style={{ width: '130px', height: '30px', fontSize: '12px' }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '18px' }}>
             {notificationPermission !== 'granted' && (
-              <button onClick={handleRequestPermission} className="btn btn-secondary" style={{ fontSize: '12px' }}>
+              <button onClick={handleRequestPermission} className="btn btn-secondary" style={{ fontSize: '11.5px', height: '30px' }}>
                 Enable Browser Notifications
               </button>
             )}
-            <button onClick={handleTestNotification} className="btn btn-secondary" style={{ fontSize: '12px' }}>
+            <button onClick={handleTestNotification} className="btn btn-secondary" style={{ fontSize: '11.5px', height: '30px' }}>
               Send Test Notification
             </button>
           </div>
         </div>
 
         {testNotificationSent && (
-          <div style={{ fontSize: '12px', color: 'var(--success)', fontWeight: 600, marginTop: '10px' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--status-success)', fontWeight: 600, marginTop: '10px' }}>
             ✓ Notification dispatched! Check your desktop notification tray.
           </div>
         )}
       </div>
 
       {/* SECTION 3: THEME */}
-      <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 14px 0' }}>Interface Theme</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ marginBottom: '12px' }}>
+          <span className="section-eyebrow">INTERFACE THEME</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <button
             onClick={() => setTheme('dark')}
             className="btn"
             style={{
-              padding: '14px',
-              border: settings.theme === 'dark' ? '2px solid var(--accent)' : '1px solid var(--border)',
-              background: settings.theme === 'dark' ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+              padding: '10px 14px',
+              border: settings.theme === 'dark' ? '1px solid var(--accent)' : '1px solid var(--border-default)',
+              background: settings.theme === 'dark' ? 'var(--bg-elevated)' : 'var(--bg-subtle)',
               color: 'var(--text-primary)',
-              fontWeight: 700,
+              fontWeight: 600,
+              fontSize: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
             }}
           >
-            <Moon size={16} color="var(--accent)" /> Dark Theme (Recommended)
+            <Moon size={14} color="var(--accent)" /> Dark Theme (Obsidian)
           </button>
           <button
             onClick={() => setTheme('light')}
             className="btn"
             style={{
-              padding: '14px',
-              border: settings.theme === 'light' ? '2px solid var(--accent)' : '1px solid var(--border)',
-              background: settings.theme === 'light' ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+              padding: '10px 14px',
+              border: settings.theme === 'light' ? '1px solid var(--accent)' : '1px solid var(--border-default)',
+              background: settings.theme === 'light' ? 'var(--bg-elevated)' : 'var(--bg-subtle)',
               color: 'var(--text-primary)',
-              fontWeight: 700,
+              fontWeight: 600,
+              fontSize: '12px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
             }}
           >
-            <Sun size={16} color="var(--warning)" /> Light Theme
+            <Sun size={14} color="var(--status-warning)" /> Light Theme
           </button>
         </div>
       </div>
 
       {/* SECTION 4: DATA SOVEREIGNTY, INDEXEDDB BACKUP & RESTORE */}
-      <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <Database size={18} color="var(--success)" />
-          <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
-            IndexedDB Data Sovereignty & Backup
-          </h2>
+          <span className="section-eyebrow">LOCAL STORAGE & PRIVACY</span>
         </div>
-        <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-          All your personal data (goals, tasks, habits, financial transactions, workouts, academic records, and obsidian notes) is stored securely in your browser's persistent <strong>IndexedDB (Dexie.js)</strong> database. No data is sent to external cloud servers.
+        <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+          All personal data (goals, tasks, habits, finances, workouts, academics, and obsidian notes) is stored securely in your browser's persistent <strong>IndexedDB (Dexie.js)</strong> database. Zero data leaves your machine.
         </p>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button onClick={handleExportData} className="btn btn-secondary" style={{ fontSize: '13px' }}>
-            <Download size={15} /> Export JSON Backup
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button onClick={handleExportData} className="btn btn-secondary" style={{ fontSize: '11.5px', height: '30px' }}>
+            <Download size={13} /> Export JSON Backup
           </button>
 
-          <label className="btn btn-secondary" style={{ cursor: 'pointer', fontSize: '13px' }}>
-            <Upload size={15} /> Restore JSON Backup
+          <label className="btn btn-secondary" style={{ cursor: 'pointer', fontSize: '11.5px', height: '30px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <Upload size={13} /> Restore JSON Backup
             <input type="file" accept=".json" onChange={handleImportData} style={{ display: 'none' }} />
           </label>
 
-          <button onClick={handleClearData} className="btn btn-danger" style={{ fontSize: '13px', marginLeft: 'auto' }}>
-            <Trash2 size={15} /> Factory Reset Database
+          <button onClick={handleClearData} className="btn btn-danger" style={{ fontSize: '11.5px', height: '30px', marginLeft: 'auto' }}>
+            <Trash2 size={13} /> Reset Database
           </button>
         </div>
       </div>

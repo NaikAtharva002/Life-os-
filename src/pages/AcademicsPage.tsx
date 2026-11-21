@@ -173,78 +173,51 @@ export default function AcademicsPage() {
         </div>
       </div>
 
-      {/* KPI Cards Row */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '16px',
-          marginBottom: '24px',
-        }}
-      >
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Overall Attendance</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: parseFloat(overallPercentage) >= 75 ? 'rgba(34, 197, 94, 0.12)' : 'rgba(239, 68, 68, 0.12)', color: parseFloat(overallPercentage) >= 75 ? 'var(--success)' : 'var(--danger)' }}>
-              <UserCheck size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+      {/* Academic Status Strip */}
+      <div className="summary-strip">
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Attendance:</span>
+          <span style={{ fontWeight: 700, color: parseFloat(overallPercentage) >= 75 ? 'var(--status-success)' : 'var(--status-danger)' }} className="tabular">
             {overallPercentage}%
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            {totalAttended} / {totalClassesOverall} classes attended
-          </div>
-        </div>
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+            ({totalAttended}/{totalClassesOverall} classes)
+          </span>
+        </span>
 
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Target SGPA</span>
-            <span style={{ padding: '6px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-hover)', color: 'var(--text-primary)' }}>
-              <Award size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Target SGPA:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
             {currentSemester?.achievedGpa ? `${currentSemester.achievedGpa} / ` : ''}{currentSemester?.targetGpa || '9.5'}
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Cumulative CGPA: 9.18
-          </div>
-        </div>
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">
+            (CGPA: 9.18)
+          </span>
+        </span>
 
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Pending Deadlines</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.12)', color: 'var(--warning)' }}>
-              <Clock size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Pending Deadlines:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
             {assignments.filter((a) => !a.isSubmitted).length} assignments
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Due over next 14 days
-          </div>
-        </div>
+          </span>
+        </span>
 
-        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 600 }}>Enrolled Courses</span>
-            <span style={{ padding: '6px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.12)', color: 'var(--info)' }}>
-              <BookOpen size={16} />
-            </span>
-          </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            {subjects.length} subjects
-          </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-            {subjects.reduce((acc, s) => acc + s.credits, 0)} total credit units
-          </div>
-        </div>
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Courses:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {subjects.length} subjects ({subjects.reduce((acc, s) => acc + s.credits, 0)} credits)
+          </span>
+        </span>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '8px', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', width: 'fit-content', overflowX: 'auto' }}>
         {[
           { id: 'attendance', label: 'Attendance Tracker' },
           { id: 'assignments', label: `Assignments (${assignments.filter((a) => !a.isSubmitted).length})` },
@@ -255,15 +228,18 @@ export default function AcademicsPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className="btn btn-ghost"
             style={{
-              fontWeight: activeTab === tab.id ? 700 : 500,
-              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
-              borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
-              borderRadius: '0',
-              padding: '8px 14px',
-              fontSize: '14px',
+              border: 'none',
+              fontWeight: activeTab === tab.id ? 600 : 500,
+              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
+              background: activeTab === tab.id ? 'var(--bg-elevated)' : 'transparent',
+              borderRadius: '6px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              cursor: 'pointer',
               whiteSpace: 'nowrap',
+              boxShadow: activeTab === tab.id ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+              transition: 'all 0.12s ease',
             }}
           >
             {tab.label}
@@ -295,64 +271,65 @@ export default function AcademicsPage() {
                 key={sub.id}
                 className="card"
                 style={{
-                  padding: '20px',
-                  background: 'var(--bg-card)',
-                  borderRadius: '14px',
-                  border: isDanger ? '1px solid var(--danger)' : '1px solid var(--border)',
+                  padding: '18px 20px',
+                  background: 'var(--bg-surface)',
+                  borderRadius: '10px',
+                  border: isDanger ? '1px solid var(--status-danger)' : '1px solid var(--border-default)',
+                  boxShadow: 'var(--panel-shadow)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 7px', borderRadius: '4px', background: `${sub.color}22`, color: sub.color }}>
+                      <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'var(--bg-subtle)', color: 'var(--text-primary)', border: '1px solid var(--border-default)' }}>
                         {sub.code}
                       </span>
-                      <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                      <h2 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
                         {sub.name}
                       </h2>
                     </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                      {sub.professor ? `${sub.professor} • ` : ''}{sub.credits} Credits • {sub.roomOrLink || 'Lecture Room'}
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      {sub.professor ? `${sub.professor} · ` : ''}{sub.credits} Credits · {sub.roomOrLink || 'Lecture Hall'}
                     </div>
                   </div>
 
                   <button
                     onClick={() => deleteSubject(sub.id)}
                     className="btn btn-ghost"
-                    style={{ padding: '6px', color: 'var(--text-muted)' }}
+                    style={{ padding: '3px', color: 'var(--text-muted)', height: '24px', width: '24px' }}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
 
                 {/* Progress bar */}
-                <div style={{ height: '8px', background: 'var(--border)', borderRadius: '10px', overflow: 'hidden', margin: '14px 0 8px 0' }}>
+                <div className="progress-hairline" style={{ margin: '12px 0 8px 0' }}>
                   <div
+                    className="progress-hairline-fill"
                     style={{
-                      height: '100%',
                       width: `${Math.min(100, pct)}%`,
-                      background: isDanger ? 'var(--danger)' : 'var(--success)',
-                      borderRadius: '10px',
+                      background: isDanger ? 'var(--status-danger)' : 'var(--status-success)',
                     }}
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: isDanger ? 'var(--danger)' : 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: isDanger ? 'var(--status-danger)' : 'var(--text-primary)' }} className="tabular">
                     {pct.toFixed(1)}% ({sub.attendedClasses} / {sub.totalClasses})
                   </span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Target: {target}%</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }} className="tabular">Target: {target}%</span>
                 </div>
 
                 {/* Warning / Safe Banner */}
                 <div
                   style={{
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    fontSize: '12px',
-                    marginBottom: '16px',
-                    background: isDanger ? 'rgba(239, 68, 68, 0.1)' : 'rgba(34, 197, 94, 0.1)',
-                    color: isDanger ? 'var(--danger)' : 'var(--success)',
+                    padding: '7px 10px',
+                    borderRadius: '6px',
+                    fontSize: '11.5px',
+                    marginBottom: '14px',
+                    background: isDanger ? 'rgba(239, 68, 68, 0.08)' : 'rgba(34, 197, 94, 0.08)',
+                    border: isDanger ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(34, 197, 94, 0.2)',
+                    color: isDanger ? 'var(--status-danger)' : 'var(--status-success)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
@@ -360,12 +337,12 @@ export default function AcademicsPage() {
                 >
                   {isDanger ? (
                     <>
-                      <AlertTriangle size={14} />
+                      <AlertTriangle size={13} />
                       <span>Must attend next <strong>{mustAttend}</strong> consecutive classes!</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle2 size={14} />
+                      <CheckCircle2 size={13} />
                       <span>Safe to miss <strong>{safeToBunk}</strong> classes safely.</span>
                     </>
                   )}
@@ -376,9 +353,9 @@ export default function AcademicsPage() {
                   <button
                     onClick={() => updateSubjectAttendance(sub.id, 1, 1)}
                     className="btn btn-secondary"
-                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '12.5px', color: 'var(--success)' }}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--status-success)', height: '28px' }}
                   >
-                    <UserCheck size={14} /> Present (+1)
+                    <UserCheck size={13} /> Present (+1)
                   </button>
                   <button
                     onClick={() => updateSubjectAttendance(sub.id, 0, 1)}

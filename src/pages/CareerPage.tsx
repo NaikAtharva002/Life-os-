@@ -168,8 +168,45 @@ export default function CareerPage() {
         </div>
       </div>
 
+      {/* Career Metrics Strip */}
+      <div className="summary-strip">
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Active Applications:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {careerApplications.length} opportunities
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>In Review / Interview:</span>
+          <span style={{ fontWeight: 700, color: 'var(--status-warning)' }} className="tabular">
+            {careerApplications.filter((a) => ['interviewing', 'offer'].includes(a.stage)).length} stages
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Skills Indexed:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {careerSkills.length} competencies
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Portfolio Repos:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {careerProjects.length} showcases
+          </span>
+        </span>
+      </div>
+
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', width: 'fit-content' }}>
         {[
           { id: 'applications', label: `Application Pipeline (${careerApplications.length})` },
           { id: 'skills', label: `Technical Skills (${careerSkills.length})` },
@@ -179,14 +216,17 @@ export default function CareerPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className="btn btn-ghost"
             style={{
-              fontWeight: activeTab === tab.id ? 700 : 500,
-              color: activeTab === tab.id ? 'var(--accent)' : 'var(--text-secondary)',
-              borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
-              borderRadius: '0',
-              padding: '8px 14px',
-              fontSize: '14px',
+              border: 'none',
+              fontWeight: activeTab === tab.id ? 600 : 500,
+              color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
+              background: activeTab === tab.id ? 'var(--bg-elevated)' : 'transparent',
+              borderRadius: '6px',
+              padding: '6px 14px',
+              fontSize: '12px',
+              cursor: 'pointer',
+              boxShadow: activeTab === tab.id ? '0 1px 2px rgba(0,0,0,0.2)' : 'none',
+              transition: 'all 0.12s ease',
             }}
           >
             {tab.label}

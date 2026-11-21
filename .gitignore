@@ -36,6 +36,8 @@ dist-ssr
 coverage/
 playwright-report/
 test-results/
+view-*.png
+*.png
 
 # OS temporary files
 Thumbs.db

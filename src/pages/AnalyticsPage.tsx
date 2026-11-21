@@ -143,42 +143,80 @@ export default function AnalyticsPage() {
         </p>
       </div>
 
+      {/* Executive Summary Strip */}
+      <div className="summary-strip">
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Life OS Index:</span>
+          <span style={{ fontWeight: 700, color: 'var(--status-success)' }} className="tabular">
+            {productivityScore}% composite
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Tasks Rate:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {taskCompletionRate}%
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Habit Consistency:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
+            {habitAdherenceRate}%
+          </span>
+        </span>
+
+        <span style={{ color: 'var(--border-default)' }}>·</span>
+
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Savings Velocity:</span>
+          <span style={{ fontWeight: 700, color: 'var(--status-success)' }} className="tabular">
+            {savingsRate}%
+          </span>
+        </span>
+      </div>
+
       {/* Main Executive Summary Row */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '20px',
-          marginBottom: '28px',
+          gap: '16px',
+          marginBottom: '24px',
         }}
       >
         {/* Productivity Index Score Card */}
         <div
           className="card"
           style={{
-            padding: '20px',
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius)',
-            border: '1px solid var(--border)',
+            padding: '18px 20px',
+            background: 'var(--bg-surface)',
+            borderRadius: '10px',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--panel-shadow)',
             display: 'flex',
             alignItems: 'center',
-            gap: '20px',
+            gap: '18px',
           }}
         >
           {/* Circular SVG Gauge (Solid, high contrast) */}
-          <div style={{ position: 'relative', width: '84px', height: '84px', flexShrink: 0 }}>
+          <div style={{ position: 'relative', width: '74px', height: '74px', flexShrink: 0 }}>
             <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
               <path
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 fill="none"
-                stroke="var(--border)"
-                strokeWidth="3.5"
+                stroke="var(--border-default)"
+                strokeWidth="3"
               />
               <path
                 d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                 fill="none"
                 stroke="var(--text-primary)"
-                strokeWidth="3.5"
+                strokeWidth="3"
                 strokeDasharray={`${productivityScore}, 100`}
                 strokeLinecap="round"
               />
@@ -196,21 +234,21 @@ export default function AnalyticsPage() {
                 justifyContent: 'center',
               }}
             >
-              <span style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)' }} className="tabular">
                 {productivityScore}
               </span>
-              <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '8.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 INDEX
               </span>
             </div>
           </div>
 
           <div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
-              Overall Life OS Index
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>
+              Life OS Operational Index
             </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              Synthesized from tasks ({taskCompletionRate}%), habit adherence ({habitAdherenceRate}%), and goal progress ({goalVelocity}%).
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+              Synthesized from tasks ({taskCompletionRate}%), habit adherence ({habitAdherenceRate}%), and goal trajectory ({goalVelocity}%).
             </div>
           </div>
         </div>
@@ -219,80 +257,82 @@ export default function AnalyticsPage() {
         <div
           className="card"
           style={{
-            padding: '22px',
-            background: 'var(--bg-card)',
-            borderRadius: '16px',
-            border: '1px solid var(--border)',
+            padding: '18px 20px',
+            background: 'var(--bg-surface)',
+            borderRadius: '10px',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--panel-shadow)',
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
-            gap: '14px',
+            gap: '12px',
           }}
         >
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>FINANCIAL VELOCITY</div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--success)', marginTop: '2px' }}>
+            <div className="section-eyebrow" style={{ marginBottom: '2px' }}>FINANCIAL VELOCITY</div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--status-success)', marginTop: '2px' }} className="tabular">
               {savingsRate}%
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Savings Ratio</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Net Savings Ratio</div>
           </div>
 
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>ACADEMIC STATUS</div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: overallAttendancePct >= 75 ? 'var(--text-primary)' : 'var(--danger)', marginTop: '2px' }}>
+            <div className="section-eyebrow" style={{ marginBottom: '2px' }}>ACADEMIC STATUS</div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: overallAttendancePct >= 75 ? 'var(--text-primary)' : 'var(--status-danger)', marginTop: '2px' }} className="tabular">
               {overallAttendancePct}%
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Attendance Health</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Attendance Rate</div>
           </div>
 
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>TRAINING SESSIONS</div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--accent)', marginTop: '2px' }}>
+            <div className="section-eyebrow" style={{ marginBottom: '2px' }}>TRAINING LOAD</div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }} className="tabular">
               {workoutSessions.length}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Completed Workouts</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Completed Sessions</div>
           </div>
 
           <div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>CAREER PIPELINE</div>
-            <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--info)', marginTop: '2px' }}>
+            <div className="section-eyebrow" style={{ marginBottom: '2px' }}>CAREER PIPELINE</div>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }} className="tabular">
               {careerApplications.length}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Active Applications</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Active Pipelines</div>
           </div>
         </div>
       </div>
 
       {/* Actionable Strategic Insights */}
       <div style={{ marginBottom: '28px' }}>
-        <h2 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 14px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sparkles size={18} color="var(--accent)" /> Intelligent Data Insights & Recommendations
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <span className="section-eyebrow">INTELLIGENT INSIGHTS & INTERVENTIONS</span>
+        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '14px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '12px' }}>
           {actionableInsights.map((ins, iIdx) => (
             <div
               key={iIdx}
               className="card"
               style={{
-                padding: '16px 18px',
-                background: 'var(--bg-card)',
-                borderRadius: '12px',
-                borderLeft: `4px solid ${
+                padding: '14px 16px',
+                background: 'var(--bg-surface)',
+                borderRadius: '8px',
+                borderLeft: `3px solid ${
                   ins.type === 'positive'
-                    ? 'var(--success)'
+                    ? 'var(--status-success)'
                     : ins.type === 'warning'
-                    ? 'var(--warning)'
+                    ? 'var(--status-warning)'
                     : 'var(--accent)'
                 }`,
-                borderTop: '1px solid var(--border)',
-                borderRight: '1px solid var(--border)',
-                borderBottom: '1px solid var(--border)',
+                borderTop: '1px solid var(--border-default)',
+                borderRight: '1px solid var(--border-default)',
+                borderBottom: '1px solid var(--border-default)',
+                boxShadow: 'var(--panel-shadow)',
               }}
             >
-              <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '4px' }}>
+              <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', marginBottom: '3px' }}>
                 {ins.title}
               </div>
-              <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
                 {ins.desc}
               </div>
             </div>
@@ -303,8 +343,10 @@ export default function AnalyticsPage() {
       {/* Multi-Domain Analytics Grids */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
         {/* Habit Consistency Distribution */}
-        <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0' }}>Habit Consistency Rates</h3>
+        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+          <div style={{ marginBottom: '14px' }}>
+            <span className="section-eyebrow">HABIT ADHERENCE RATES</span>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {habits.map((h) => {
               const entries = habitEntries.filter((e) => e.habitId === h.id && e.completed).length;
@@ -312,17 +354,16 @@ export default function AnalyticsPage() {
 
               return (
                 <div key={h.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                     <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{h.name}</span>
-                    <span style={{ color: 'var(--text-secondary)' }}>Streak: {h.streak}d ({pct}%)</span>
+                    <span style={{ color: 'var(--text-muted)' }} className="tabular">Streak: {h.streak}d ({pct}%)</span>
                   </div>
-                  <div style={{ height: '6px', background: 'var(--border)', borderRadius: '6px', overflow: 'hidden' }}>
+                  <div className="progress-hairline">
                     <div
+                      className="progress-hairline-fill"
                       style={{
-                        height: '100%',
                         width: `${pct}%`,
-                        background: h.color || 'var(--accent)',
-                        borderRadius: '6px',
+                        background: 'var(--text-primary)',
                       }}
                     />
                   </div>
@@ -333,21 +374,23 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Goal Milestone Velocity */}
-        <div className="card" style={{ padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0' }}>Goal Progress Milestones</h3>
+        <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+          <div style={{ marginBottom: '14px' }}>
+            <span className="section-eyebrow">GOAL MILESTONE TRAJECTORY</span>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {goals.filter((g) => !g.isArchived).map((g) => (
               <div key={g.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{g.title}</span>
-                  <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{g.progress}%</span>
+                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">{g.progress}%</span>
                 </div>
-                <div className="progress-track" style={{ marginTop: '4px' }}>
+                <div className="progress-hairline" style={{ marginTop: '4px' }}>
                   <div
-                    className="progress-thumb"
+                    className="progress-hairline-fill"
                     style={{
                       width: `${g.progress}%`,
-                      background: 'var(--text-primary)',
+                      background: 'var(--status-success)',
                     }}
                   />
                 </div>
