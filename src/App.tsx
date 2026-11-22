@@ -20,6 +20,8 @@ import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
 import { Menu, Plus, Search, Sparkles, Terminal } from 'lucide-react';
 import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
+import VariantHeaderBanner from './components/VariantHeaderBanner';
+import ComparisonDrawer from './components/ComparisonDrawer';
 
 export default function App() {
   const isLoaded = useStore((s) => s.isLoaded);
@@ -36,6 +38,7 @@ export default function App() {
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
+  const [comparisonMatrixOpen, setComparisonMatrixOpen] = useState(false);
   const [engineStatus, setEngineStatus] = useState<AIEngineStatus>({ isAvailable: false });
 
   // 1. Initialize IndexedDB database on startup
@@ -145,6 +148,12 @@ export default function App() {
 
       {/* Main Workspace Area (Section 2.B & 2.C) */}
       <main className="main-content">
+        {/* Variant Comparison & Direct Port Switcher Strip */}
+        <VariantHeaderBanner
+          currentVariant="taste"
+          onOpenMatrix={() => setComparisonMatrixOpen(true)}
+        />
+
         {/* Global Top Toolbar (Single consistent toolbar across all pages) */}
         <header className="global-toolbar">
           {/* Left: Mobile menu toggle + Search Command Palette trigger */}
@@ -342,6 +351,13 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* INTERACTIVE COMPARISON MATRIX DRAWER */}
+      <ComparisonDrawer
+        currentVariant="taste"
+        isOpen={comparisonMatrixOpen}
+        onClose={() => setComparisonMatrixOpen(false)}
+      />
     </div>
   );
 }
