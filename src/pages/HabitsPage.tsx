@@ -151,7 +151,7 @@ export default function HabitsPage() {
             >
               The Architecture of Consistency
             </h1>
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255, 255, 255, 0.85)', maxWidth: '520px' }}>
               We don't rise to the level of our goals; we fall to the level of our daily systems.
             </p>
           </div>
@@ -192,7 +192,7 @@ export default function HabitsPage() {
             Completed Today: <strong className="tabular">{completedToday}/{totalHabits}</strong> ({totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 100}%)
           </span>
           <span style={{ width: '1px', height: '14px', background: 'var(--border-default)' }} />
-          <span style={{ color: '#f59e0b' }}>
+          <span style={{ color: 'var(--status-warning)' }}>
             Best Active Streak: <strong className="tabular">{bestStreak} days</strong>
           </span>
         </div>
@@ -314,7 +314,7 @@ export default function HabitsPage() {
                       gap: '5px',
                       fontSize: '11px',
                       fontWeight: 600,
-                      color: '#fef08a',
+                      color: 'var(--status-warning)',
                       background: 'rgba(20, 19, 1, 0.85)',
                       padding: '3px 9px',
                       borderRadius: '12px',
@@ -343,7 +343,7 @@ export default function HabitsPage() {
                         if (window.confirm(`Delete habit "${h.name}"?`)) deleteHabit(h.id);
                       }}
                       className="btn btn-secondary btn-sm"
-                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.8)', color: '#f87171', backdropFilter: 'blur(6px)' }}
+                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.8)', color: 'var(--status-danger)', backdropFilter: 'blur(6px)' }}
                     >
                       <Trash2 size={12} />
                     </button>
@@ -422,7 +422,7 @@ export default function HabitsPage() {
                     <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{h.name}</td>
                     <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{h.category}</td>
                     <td style={{ padding: '10px 14px' }}>
-                      <span className="tabular" style={{ color: '#f59e0b', fontWeight: 600 }}>🔥 {h.streak || 0}d</span>
+                      <span className="tabular" style={{ color: 'var(--status-warning)', fontWeight: 600 }}>🔥 {h.streak || 0}d</span>
                     </td>
                     <td style={{ padding: '10px 14px' }} className="tabular">{h.longestStreak || 0}d</td>
                     <td style={{ padding: '10px 14px', textAlign: 'center' }}>
@@ -449,7 +449,7 @@ export default function HabitsPage() {
                           if (window.confirm(`Delete habit "${h.name}"?`)) deleteHabit(h.id);
                         }}
                         className="btn btn-ghost btn-sm"
-                        style={{ color: '#f87171' }}
+                        style={{ color: 'var(--status-danger)' }}
                       >
                         <Trash2 size={12} />
                       </button>

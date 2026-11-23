@@ -183,7 +183,7 @@ export default function AcademicsPage() {
             >
               University Command &amp; Scholarship
             </h1>
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255, 255, 255, 0.85)', maxWidth: '520px' }}>
               Attendance safety calculus, assignment pipeline, and examination preparation.
             </p>
           </div>
@@ -628,7 +628,7 @@ export default function AcademicsPage() {
                 >
                   <div>
                     <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>
-                      {sem.name} {sem.isCurrent && <span style={{ fontSize: '10px', background: 'var(--accent)', color: '#fff', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>CURRENT</span>}
+                      {sem.name} {sem.isCurrent && <span style={{ fontSize: '10px', background: 'var(--accent)', color: 'var(--text-on-accent)', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>CURRENT</span>}
                     </div>
                     <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Year: {sem.year}</div>
                   </div>

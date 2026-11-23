@@ -193,7 +193,7 @@ export default function GoalsPage() {
             >
               Long-Term Objectives &amp; Milestones
             </h1>
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255, 255, 255, 0.85)', maxWidth: '520px' }}>
               Bridge the gap between ambition and reality with tangible milestone architecture.
             </p>
           </div>
@@ -429,7 +429,7 @@ export default function GoalsPage() {
                     <button
                       onClick={(e) => handleDelete(g.id, e)}
                       className="btn btn-secondary btn-sm"
-                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.85)', color: '#f87171', backdropFilter: 'blur(6px)', borderColor: 'var(--border-default)' }}
+                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.85)', color: 'var(--status-danger)', backdropFilter: 'blur(6px)', borderColor: 'var(--border-default)' }}
                       title="Delete Goal"
                     >
                       <Trash2 size={12} />
@@ -502,7 +502,7 @@ export default function GoalsPage() {
                               flexShrink: 0,
                             }}
                           >
-                            {m.isCompleted && <Check size={10} color="#04120a" strokeWidth={3} />}
+                            {m.isCompleted && <Check size={10} color="var(--text-on-accent)" strokeWidth={3} />}
                           </div>
                           <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {m.title}
@@ -573,7 +573,7 @@ export default function GoalsPage() {
                         <button onClick={(e) => handleEdit(g, e)} className="btn btn-ghost btn-sm" style={{ padding: '2px 4px' }}>
                           <Edit2 size={12} />
                         </button>
-                        <button onClick={(e) => handleDelete(g.id, e)} className="btn btn-ghost btn-sm" style={{ padding: '2px 4px', color: '#f87171' }}>
+                        <button onClick={(e) => handleDelete(g.id, e)} className="btn btn-ghost btn-sm" style={{ padding: '2px 4px', color: 'var(--status-danger)' }}>
                           <Trash2 size={12} />
                         </button>
                       </td>

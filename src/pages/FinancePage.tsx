@@ -209,7 +209,7 @@ export default function FinancePage() {
             >
               Financial Velocity &amp; Cashflow
             </h1>
-            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255, 255, 255, 0.85)', maxWidth: '520px' }}>
               Local-first expense tracking, savings runways, and disciplined allocation.
             </p>
           </div>

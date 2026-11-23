@@ -15,6 +15,7 @@ import {
   DollarSign,
   Database,
   RefreshCw,
+  Code2,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { LifeOSRepository } from '../db/repository';
@@ -28,6 +29,7 @@ export default function SettingsPage() {
   const settings = useStore((s) => s.settings);
   const setTheme = useStore((s) => s.setTheme);
   const updateSettings = useStore((s) => s.updateSettings);
+  const setActiveView = useStore((s) => s.setActiveView);
   const updateReminderSettings = useStore((s) => s.updateReminderSettings);
 
   const [userName, setUserName] = useState(settings.userName || 'Atharva');
@@ -343,6 +345,26 @@ export default function SettingsPage() {
             <Trash2 size={13} /> Reset Database
           </button>
         </div>
+      </div>
+
+      {/* SECTION 5: DEVELOPER TOOLS & DESIGN SYSTEM */}
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="section-eyebrow">DEVELOPER TOOLS</span>
+            <span className="badge badge-brick" style={{ fontSize: '9.5px', padding: '1px 6px' }}>INTERNAL</span>
+          </div>
+        </div>
+        <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+          Inspect design system tokens, typography scales, spacing primitives, and interactive UI component states in the isolated developer component gallery.
+        </p>
+        <button
+          onClick={() => setActiveView('design-system')}
+          className="btn btn-secondary"
+          style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Code2 size={13} color="var(--palette-brick)" /> Open Design System Component Gallery →
+        </button>
       </div>
     </div>
   );

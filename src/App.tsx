@@ -16,6 +16,7 @@ import EveningReviewPage from './pages/EveningReviewPage';
 import ReviewHistoryPage from './pages/ReviewHistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import FocusModePage from './pages/FocusModePage';
+import DesignSystemPage from './pages/DesignSystemPage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
@@ -141,6 +142,8 @@ export default function App() {
         return <ReviewHistoryPage />;
       case 'settings':
         return <SettingsPage />;
+      case 'design-system':
+        return <DesignSystemPage />;
       default:
         return <Dashboard />;
     }
@@ -417,6 +420,7 @@ export default function App() {
                 { id: 'assistant', label: 'Ask Astra AI Copilot', shortcut: 'G I' },
                 { id: 'review', label: 'Start Evening Review', shortcut: 'G R' },
                 { id: 'settings', label: 'Open Settings', shortcut: 'G S' },
+                { id: 'design-system', label: 'Developer: Design System Showcase', shortcut: 'G DS' },
               ].map((cmd) => (
                 <button
                   key={cmd.id}
