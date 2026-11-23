@@ -487,6 +487,83 @@ html, body {
   margin-bottom: 16px;
 }
 
+/* Editorial Layout & Triage Utilities */
+.editorial-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--spring-fast);
+}
+
+.editorial-stat-card:hover {
+  border-color: var(--border-light);
+}
+
+.editorial-triage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  transition: all var(--spring-fast);
+  cursor: pointer;
+}
+
+.editorial-triage-row:hover {
+  border-color: var(--palette-brick-border);
+  background: var(--bg-hover);
+}
+
+.summary-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  font-size: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.tab-pill {
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all var(--spring-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-pill.active {
+  background: var(--palette-brick);
+  color: #FFFFFF;
+  border-color: var(--palette-brick);
+}
+
+.tab-pill:not(.active) {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+}
+
+.tab-pill:not(.active):hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 /* Buttons */
 .btn {
   display: inline-flex;
@@ -691,4 +768,144 @@ tr:hover td {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================================
+   VARIANT ARCHITECTURES (SHOWDOWN SPECIFICATION)
+   1. [data-variant="agent"] — Antigravity Strategic OS (Editorial)
+   2. [data-variant="taste"] — Taste-Skill Craft (Tactile & Luxury Space)
+   3. [data-variant="impeccable"] — Impeccable Precision (Token & Swiss Grid)
+   ============================================================ */
+
+/* --- VARIANT 1: ANTIGRAVITY EDITORIAL ARCHITECTURE --- */
+[data-variant="agent"] {
+  --font-heading: var(--font-editorial);
+  --layout-density: 'balanced';
+}
+[data-variant="agent"] .editorial-island {
+  border-radius: var(--radius-md);
+  padding: 20px 24px;
+}
+[data-variant="agent"] .hero-title-editorial {
+  font-family: var(--font-editorial);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+}
+
+/* --- VARIANT 2: TASTE-SKILL CRAFTSMANSHIP --- */
+/* Influenced by: https://github.com/Leonxlnx/taste-skill */
+[data-variant="taste"] {
+  --spring-fast: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Rule 1: Tabular Numerals on all metrics, counters, currency, percentages */
+[data-variant="taste"] .metric-tabular,
+[data-variant="taste"] .tabular-num,
+[data-variant="taste"] [data-metric="true"],
+[data-variant="taste"] .metric-value,
+[data-variant="taste"] .stat-num {
+  font-family: var(--font-mono) !important;
+  font-feature-settings: 'tnum' 1, 'cv05' 1 !important;
+  font-variant-numeric: tabular-nums !important;
+  letter-spacing: -0.04em !important;
+  font-weight: 600 !important;
+}
+/* Rule 2: Luxury negative space & floating islands of context */
+[data-variant="taste"] .editorial-island {
+  padding: 26px 30px !important;
+  margin-bottom: 24px !important;
+  background: var(--bg-surface) !important;
+  border: 1px solid rgba(183, 181, 179, 0.18) !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 32px rgba(0, 0, 0, 0.25) !important;
+}
+/* Rule 3: Subtle tactile click and micro-spring curves */
+[data-variant="taste"] .btn,
+[data-variant="taste"] .editorial-triage-row,
+[data-variant="taste"] .photo-focus-card {
+  transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+[data-variant="taste"] .btn:active,
+[data-variant="taste"] .editorial-triage-row:active {
+  transform: scale(0.985) !important;
+}
+[data-variant="taste"] .photo-focus-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 16px 36px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* --- VARIANT 3: IMPECCABLE SYSTEM PRECISION --- */
+/* Influenced by: https://github.com/pbakaus/impeccable */
+/* Rule 1: Rigid Radius Harmony */
+[data-variant="impeccable"] .editorial-island,
+[data-variant="impeccable"] .editorial-stat-card,
+[data-variant="impeccable"] .photo-focus-card,
+[data-variant="impeccable"] .card {
+  border-radius: 16px !important; /* Cards strictly 16px */
+}
+[data-variant="impeccable"] .btn,
+[data-variant="impeccable"] .input,
+[data-variant="impeccable"] select,
+[data-variant="impeccable"] textarea {
+  border-radius: 10px !important; /* Controls strictly 10px */
+}
+[data-variant="impeccable"] .badge,
+[data-variant="impeccable"] .tab-pill,
+[data-variant="impeccable"] .tag {
+  border-radius: 6px !important; /* Badges strictly 6px */
+}
+/* Rule 2: Strict 8px/4px Rhythm Grid */
+[data-variant="impeccable"] .editorial-island {
+  padding: 16px !important;
+  margin-bottom: 16px !important;
+}
+[data-variant="impeccable"] .editorial-stat-card {
+  padding: 16px !important;
+}
+[data-variant="impeccable"] .editorial-triage-row {
+  padding: 8px 16px !important;
+  margin-bottom: 8px !important;
+  border-radius: 8px !important;
+}
+/* Rule 3: Linear / Raycast Command-Center density & optical baseline */
+[data-variant="impeccable"] .hero-title-editorial {
+  font-family: var(--font-sans) !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* --- SPLIT-VIEW COMPARISON SHOWDOWN CONTAINER --- */
+.showdown-split-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(320px, 1fr));
+  gap: 16px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  align-items: flex-start;
+}
+@media (max-width: 1200px) {
+  .showdown-split-container {
+    grid-template-columns: 1fr;
+  }
+}
+.showdown-column {
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  background: var(--bg-surface);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+}
+.showdown-column-header {
+  padding: 12px 16px;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border-default);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }

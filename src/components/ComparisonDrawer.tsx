@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { X, ExternalLink, Sparkles, Check, ArrowRight, ShieldCheck, Layers, Gauge, Sliders, Palette, Zap } from 'lucide-react';
+import useStore from '../store/useStore';
+import type { DesignVariant } from '../types';
 
 export interface ComparisonDrawerProps {
-  currentVariant: 'agent' | 'taste' | 'impeccable';
+  currentVariant?: 'agent' | 'taste' | 'impeccable';
   isOpen: boolean;
   onClose: () => void;
 }
 
 export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: ComparisonDrawerProps) {
   const [activeTab, setActiveTab] = useState<'matrix' | 'rubrics' | 'verdict'>('matrix');
+  const storeVariant = useStore((s) => s.designVariant);
+  const effectiveVariant = currentVariant || storeVariant;
+  const setDesignVariant = useStore((s) => s.setDesignVariant);
 
   if (!isOpen) return null;
 
@@ -194,13 +199,13 @@ export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: Co
           }}
         >
           {variants.map((v) => {
-            const isCurrent = v.id === currentVariant;
+            const isCurrent = v.id === effectiveVariant;
             return (
-              <a
+              <div
                 key={v.id}
-                href={v.url}
+                onClick={() => setDesignVariant(v.id as any)}
                 style={{
-                  textDecoration: 'none',
+                  cursor: 'pointer',
                   padding: '10px 12px',
                   borderRadius: '8px',
                   background: isCurrent ? v.bgTag : '#10131c',
@@ -213,21 +218,23 @@ export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: Co
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '10px', fontWeight: 700, color: v.color, textTransform: 'uppercase' }}>
-                    Port :{v.port}
+                    {v.id.toUpperCase()}
                   </span>
-                  {isCurrent && (
+                  {isCurrent ? (
                     <span style={{ fontSize: '9px', fontWeight: 700, padding: '1px 5px', borderRadius: '3px', background: v.color, color: '#000' }}>
                       ACTIVE
                     </span>
+                  ) : (
+                    <span style={{ fontSize: '9px', color: '#9ca3af' }}>Click to Apply</span>
                   )}
                 </div>
                 <span style={{ fontSize: '12px', fontWeight: 600, color: '#f3f4f6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {v.name.split(':')[1]}
                 </span>
                 <span style={{ fontSize: '10px', color: '#9ca3af', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Open instance <ExternalLink size={10} />
+                  Score: <strong style={{ color: v.color }}>{v.score}</strong>
                 </span>
-              </a>
+              </div>
             );
           })}
         </div>
@@ -341,7 +348,7 @@ export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: Co
                       padding: '16px',
                       borderRadius: '10px',
                       background: '#121622',
-                      border: `1px solid ${v.id === currentVariant ? v.color : '#232733'}`
+                      border: `1px solid ${v.id === effectiveVariant ? v.color : '#232733'}`
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>

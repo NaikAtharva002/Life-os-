@@ -1,14 +1,39 @@
 import React from 'react';
-import { ExternalLink, BarChart3, Sparkles, Compass, Target, Dumbbell } from 'lucide-react';
+import { BarChart3, Columns, Sparkles, Layers, Sliders, Check } from 'lucide-react';
 import useStore from '../store/useStore';
+import type { DesignVariant } from '../types';
 
 export interface VariantHeaderBannerProps {
-  currentVariant?: 'agent' | 'taste' | 'impeccable';
+  currentVariant?: DesignVariant;
   onOpenMatrix: () => void;
 }
 
-export default function VariantHeaderBanner({ currentVariant = 'agent', onOpenMatrix }: VariantHeaderBannerProps) {
-  const setActiveView = useStore((s) => s.setActiveView);
+export default function VariantHeaderBanner({ onOpenMatrix }: VariantHeaderBannerProps) {
+  const designVariant = useStore((s) => s.designVariant);
+  const setDesignVariant = useStore((s) => s.setDesignVariant);
+  const comparisonMode = useStore((s) => s.comparisonMode);
+  const setComparisonMode = useStore((s) => s.setComparisonMode);
+
+  const variants: { id: DesignVariant; name: string; tag: string; icon: string }[] = [
+    {
+      id: 'agent',
+      name: '1. Antigravity',
+      tag: 'Strategic Editorial',
+      icon: '🏛️'
+    },
+    {
+      id: 'taste',
+      name: '2. Taste-Skill',
+      tag: 'Tactile Craft',
+      icon: '✨'
+    },
+    {
+      id: 'impeccable',
+      name: '3. Impeccable',
+      tag: 'Token Precision',
+      icon: '📐'
+    }
+  ];
 
   return (
     <div
@@ -16,7 +41,7 @@ export default function VariantHeaderBanner({ currentVariant = 'agent', onOpenMa
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '6px 20px',
+        padding: '8px 20px',
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--border-default)',
         fontSize: '12px',
@@ -24,17 +49,17 @@ export default function VariantHeaderBanner({ currentVariant = 'agent', onOpenMa
         top: 0,
         zIndex: 100,
         flexWrap: 'wrap',
-        gap: '10px'
+        gap: '12px'
       }}
     >
-      {/* Brand Identity */}
+      {/* Brand Identity & Variant Tag */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <span
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '2px 8px',
+            padding: '3px 9px',
             borderRadius: '12px',
             background: 'var(--palette-brick-subtle)',
             color: 'var(--palette-brick)',
@@ -47,83 +72,115 @@ export default function VariantHeaderBanner({ currentVariant = 'agent', onOpenMa
           <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--palette-brick)' }} />
           LIFE OS
         </span>
-        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Personal Operating System</span>
-        <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>Brick Ember · Dark Walnut · Alabaster</span>
+        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+          3-Way Design Showdown
+        </span>
+        <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'none', md: 'inline' } as any}>
+          Brick Ember · Dark Walnut · Alabaster
+        </span>
       </div>
 
-      {/* Quick Navigation Shortcuts */}
+      {/* 3-Variant Live Switcher Bar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          background: 'var(--bg-elevated)',
+          padding: '3px',
+          borderRadius: '20px',
+          border: '1px solid var(--border-default)',
+          gap: '3px'
+        }}
+      >
+        {variants.map((v) => {
+          const isActive = designVariant === v.id;
+          return (
+            <button
+              key={v.id}
+              onClick={() => {
+                setDesignVariant(v.id);
+                if (comparisonMode === 'split') {
+                  setComparisonMode('single');
+                }
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 12px',
+                borderRadius: '16px',
+                fontSize: '11.5px',
+                fontWeight: isActive ? 700 : 500,
+                background: isActive ? 'var(--palette-brick)' : 'transparent',
+                color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
+                boxShadow: isActive ? '0 2px 6px rgba(184, 12, 9, 0.28)' : 'none'
+              }}
+              title={`Switch to ${v.name} (${v.tag})`}
+            >
+              <span>{v.icon}</span>
+              <span>{v.name}</span>
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  opacity: isActive ? 0.9 : 0.6,
+                  fontWeight: 400
+                }}
+              >
+                · {v.tag}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Comparison Actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Split View Toggle */}
         <button
-          onClick={() => setActiveView('focus')}
-          className="btn btn-secondary btn-sm"
+          onClick={() => setComparisonMode(comparisonMode === 'split' ? 'single' : 'split')}
           style={{
-            padding: '3px 10px',
+            padding: '4px 12px',
             borderRadius: '14px',
-            fontSize: '11px',
+            background: comparisonMode === 'split' ? 'var(--palette-brick-subtle)' : 'var(--bg-elevated)',
+            border: `1px solid ${comparisonMode === 'split' ? 'var(--palette-brick-border)' : 'var(--border-default)'}`,
+            color: comparisonMode === 'split' ? 'var(--palette-brick)' : 'var(--text-secondary)',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '5px',
-            background: 'var(--bg-elevated)',
-            borderColor: 'var(--palette-brick-border)',
-            color: 'var(--accent-primary)'
+            gap: '6px',
+            fontSize: '11.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease'
           }}
+          title="Toggle side-by-side comparison"
         >
-          <Compass size={12} /> Focus Sanctuary
+          <Columns size={13} />
+          <span>{comparisonMode === 'split' ? 'Exit Split View' : 'Split Compare'}</span>
         </button>
 
-        <button
-          onClick={() => setActiveView('goals')}
-          className="btn btn-secondary btn-sm"
-          style={{
-            padding: '3px 10px',
-            borderRadius: '14px',
-            fontSize: '11px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px',
-            background: 'var(--bg-elevated)'
-          }}
-        >
-          <Target size={12} /> Strategic Goals
-        </button>
-
-        <button
-          onClick={() => setActiveView('fitness')}
-          className="btn btn-secondary btn-sm"
-          style={{
-            padding: '3px 10px',
-            borderRadius: '14px',
-            fontSize: '11px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '5px',
-            background: 'var(--bg-elevated)'
-          }}
-        >
-          <Dumbbell size={12} /> Gym
-        </button>
-
-        <div style={{ width: '1px', height: '14px', background: 'var(--border-default)', margin: '0 4px' }} />
-
+        {/* Design Matrix Modal Button */}
         <button
           onClick={onOpenMatrix}
           style={{
-            padding: '3px 10px',
+            padding: '4px 12px',
             borderRadius: '14px',
             background: 'var(--palette-walnut-subtle)',
             border: '1px solid var(--border-default)',
             color: 'var(--text-secondary)',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '5px',
-            fontSize: '11px',
-            fontWeight: 500,
+            gap: '6px',
+            fontSize: '11.5px',
+            fontWeight: 600,
             cursor: 'pointer',
             transition: 'all 0.15s ease'
           }}
         >
-          <BarChart3 size={12} color="var(--accent-primary)" />
-          <span>Design Matrix</span>
+          <BarChart3 size={13} color="var(--palette-brick)" />
+          <span>Scorecard Matrix</span>
         </button>
       </div>
     </div>

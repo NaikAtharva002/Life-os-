@@ -31,6 +31,9 @@ export default function App() {
   const settings = useStore((s) => s.settings);
   const markOverdueTasks = useStore((s) => s.markOverdueTasks);
   const initializeFromDB = useStore((s) => s.initializeFromDB);
+  const designVariant = useStore((s) => s.designVariant);
+  const setDesignVariant = useStore((s) => s.setDesignVariant);
+  const comparisonMode = useStore((s) => s.comparisonMode);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -58,10 +61,14 @@ export default function App() {
     return () => clearInterval(interval);
   }, []);
 
-  // 2. Set dark/light theme
+  // 2. Set dark/light theme & design variant
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme);
   }, [settings.theme]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-variant', designVariant);
+  }, [designVariant]);
 
   // 3. Hourly overdue task check
   useEffect(() => {
@@ -264,9 +271,94 @@ export default function App() {
         </header>
 
         {/* Workspace Body */}
-        <div className="workspace-content">
-          {renderActiveView()}
-        </div>
+        {comparisonMode === 'split' ? (
+          <div className="showdown-split-container">
+            {/* Column 1: Antigravity Strategic */}
+            <div className="showdown-column" data-variant="agent">
+              <div className="showdown-column-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '15px' }}>🏛️</span>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      1. Antigravity Editorial
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      Strategic · Question-Driven Architecture
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDesignVariant('agent')}
+                  className="btn btn-sm btn-primary"
+                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
+                >
+                  {designVariant === 'agent' ? '✓ Active' : 'Select'}
+                </button>
+              </div>
+              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 180px)', padding: '12px' }}>
+                {renderActiveView()}
+              </div>
+            </div>
+
+            {/* Column 2: Taste-Skill Craft */}
+            <div className="showdown-column" data-variant="taste">
+              <div className="showdown-column-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '15px' }}>✨</span>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      2. Taste-Skill Craft
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      Tactile Luminescence · Luxury Space
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDesignVariant('taste')}
+                  className="btn btn-sm btn-primary"
+                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
+                >
+                  {designVariant === 'taste' ? '✓ Active' : 'Select'}
+                </button>
+              </div>
+              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 180px)', padding: '12px' }}>
+                {renderActiveView()}
+              </div>
+            </div>
+
+            {/* Column 3: Impeccable Precision */}
+            <div className="showdown-column" data-variant="impeccable">
+              <div className="showdown-column-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '15px' }}>📐</span>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      3. Impeccable Precision
+                    </div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                      Rigid 8px Swiss Grid · Radius Harmony
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setDesignVariant('impeccable')}
+                  className="btn btn-sm btn-primary"
+                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
+                >
+                  {designVariant === 'impeccable' ? '✓ Active' : 'Select'}
+                </button>
+              </div>
+              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 180px)', padding: '12px' }}>
+                {renderActiveView()}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="workspace-content" data-variant={designVariant}>
+            {renderActiveView()}
+          </div>
+        )}
       </main>
 
       {/* GLOBAL MODALS */}
@@ -357,7 +449,7 @@ export default function App() {
 
       {/* INTERACTIVE COMPARISON MATRIX DRAWER */}
       <ComparisonDrawer
-        currentVariant="agent"
+        currentVariant={designVariant}
         isOpen={comparisonMatrixOpen}
         onClose={() => setComparisonMatrixOpen(false)}
       />

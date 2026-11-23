@@ -26,6 +26,7 @@ import type {
   EveningReview,
   ObsidianNote,
   AppSettings,
+  DesignVariant,
   AssistantMessage,
   ReminderSettings,
 } from '../types';
@@ -133,6 +134,10 @@ interface StoreState {
 
   // 11. Settings & Nav
   settings: AppSettings;
+  designVariant: DesignVariant;
+  comparisonMode: 'single' | 'split';
+  setDesignVariant: (variant: DesignVariant) => Promise<void>;
+  setComparisonMode: (mode: 'single' | 'split') => void;
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
   updateReminderSettings: (updates: Partial<ReminderSettings>) => Promise<void>;
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
@@ -143,6 +148,8 @@ interface StoreState {
 export const useStore = create<StoreState>((set, get) => ({
   isLoaded: false,
   activeView: 'dashboard',
+  designVariant: 'agent',
+  comparisonMode: 'single',
 
   goals: [],
   tasks: [],
@@ -196,11 +203,14 @@ export const useStore = create<StoreState>((set, get) => ({
         entries: data.habitEntries.filter((e) => e.habitId === h.id),
       }));
 
+      const loadedVariant = (data.settings?.designVariant as DesignVariant) || 'agent';
       set({
         ...data,
         habits: habitsWithEntries,
+        designVariant: loadedVariant,
         isLoaded: true,
       });
+      document.documentElement.setAttribute('data-variant', loadedVariant);
       get().markOverdueTasks();
     } catch (err) {
       console.error('[LifeOS Store] Failed to initialize from IndexedDB:', err);
@@ -923,6 +933,17 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ settings: newSettings });
     document.documentElement.setAttribute('data-theme', theme);
     await LifeOSRepository.saveSettings(newSettings);
+  },
+
+  setDesignVariant: async (variant) => {
+    const newSettings = { ...get().settings, designVariant: variant };
+    set({ designVariant: variant, settings: newSettings });
+    document.documentElement.setAttribute('data-variant', variant);
+    await LifeOSRepository.saveSettings(newSettings);
+  },
+
+  setComparisonMode: (mode) => {
+    set({ comparisonMode: mode });
   },
 
   setActiveView: (view) => {

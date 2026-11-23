@@ -479,11 +479,16 @@ export default function Dashboard() {
         <div className="editorial-island">
           <div className="editorial-island-header">
             <div>
-              <h2 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-                Today's Focus Actions
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--palette-brick)' }}>
+                  Question 1 · Daily Execution
+                </span>
+              </div>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                What should I do today?
               </h2>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                High-leverage tasks scheduled for today
+                Rule of 3: Top focus actions for maximum leverage
               </span>
             </div>
             <button
@@ -491,18 +496,18 @@ export default function Dashboard() {
               className="btn btn-ghost btn-sm"
               style={{ color: 'var(--accent-primary)' }}
             >
-              All Tasks <ArrowRight size={13} />
+              All Tasks ({todayTasks.length}) <ArrowRight size={13} />
             </button>
           </div>
 
-          {/* Overdue Alert Strip */}
+          {/* Overdue Alert Strip (Answers: What am I falling behind on?) */}
           {overdueTasks.length > 0 && (
             <div
               style={{
                 padding: '12px 16px',
                 borderRadius: 'var(--radius-md)',
-                background: 'rgba(239, 68, 68, 0.08)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
+                background: 'var(--palette-brick-subtle)',
+                border: '1px solid var(--palette-brick-border)',
                 marginBottom: '16px',
                 display: 'flex',
                 alignItems: 'center',
@@ -511,45 +516,41 @@ export default function Dashboard() {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <AlertTriangle size={16} color="var(--status-danger)" />
+                <AlertTriangle size={16} color="var(--palette-brick)" />
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#fca5a5' }}>
-                    {overdueTasks[0].title}
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--palette-brick)' }}>
+                    Falling behind: {overdueTasks[0].title}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--status-danger)' }}>
-                    Overdue from {overdueTasks[0].dueDate} · Requires immediate action
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    Overdue from {overdueTasks[0].dueDate} · Requires resolution
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => handleRescheduleOverdue(overdueTasks[0].id)}
-                className="btn btn-sm"
-                style={{
-                  background: 'rgba(239, 68, 68, 0.2)',
-                  color: '#fee2e2',
-                  border: '1px solid rgba(239, 68, 68, 0.4)',
-                }}
+                className="btn btn-sm btn-primary"
+                style={{ fontSize: '11.5px', padding: '4px 10px' }}
               >
                 Do Today
               </button>
             </div>
           )}
 
-          {/* Today Tasks List */}
+          {/* Today Tasks List (Top 3) */}
           {todayTasks.length === 0 && overdueTasks.length === 0 ? (
             <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13.5px' }}>
               ✓ All tasks for today are complete. Enjoy your evening or explore long-term goals.
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {todayTasks.map((t) => (
+              {todayTasks.slice(0, 3).map((t, idx) => (
                 <div
                   key={t.id}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '10px 14px',
+                    padding: '11px 15px',
                     borderRadius: 'var(--radius-sm)',
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--border-default)',
@@ -557,6 +558,24 @@ export default function Dashboard() {
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div
+                      style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        border: '1px solid var(--border-default)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        background: 'var(--bg-subtle)',
+                        flexShrink: 0
+                      }}
+                    >
+                      {idx + 1}
+                    </div>
                     <input
                       type="checkbox"
                       checked={t.isCompleted}
@@ -564,7 +583,7 @@ export default function Dashboard() {
                       style={{ cursor: 'pointer', accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
                     />
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                         {t.title}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -597,11 +616,16 @@ export default function Dashboard() {
       <section>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              Strategic Horizons
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+              <span style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--palette-brick)' }}>
+                Question 2 · Long-Term Vision
+              </span>
+            </div>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              What is most important?
             </h2>
             <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-              Contextual goal architecture and milestone progress
+              Strategic Horizons: Goal architecture & milestone progress
             </span>
           </div>
           <button
@@ -854,25 +878,25 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Evening Shutdown & Review */}
+        {/* Evening Shutdown & Review (Question 5) */}
         <div
           className="editorial-island"
-          style={{ cursor: 'pointer' }}
+          style={{ cursor: 'pointer', border: '1px solid var(--palette-brick-border)', background: 'var(--palette-brick-subtle)' }}
           onClick={() => setActiveView('review')}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Daily Shutdown Review
+            <span style={{ fontSize: '11px', color: 'var(--palette-brick)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Question 5 · Daily Reflection
             </span>
-            <Moon size={16} color="#818cf8" />
+            <Moon size={16} color="var(--palette-brick)" />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              Reflect & Plan
+            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              What should I improve tomorrow?
             </span>
           </div>
           <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-            Log gratitude, review tomorrow's top 3, and clear mental cache
+            Complete evening shutdown, log gratitude & lock in tomorrow's Rule of 3 →
           </p>
         </div>
 

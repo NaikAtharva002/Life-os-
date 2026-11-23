@@ -358,8 +358,11 @@ export interface ReminderSettings {
   timezone: string;
 }
 
+export type DesignVariant = 'agent' | 'taste' | 'impeccable';
+
 export interface AppSettings {
   theme: 'dark' | 'light';
+  designVariant?: DesignVariant;
   userName: string;
   currencySymbol: string;
   geminiApiKey?: string;
