@@ -15,16 +15,16 @@ export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: Co
   const variants = [
     {
       id: 'agent',
-      name: 'Variant 1: Obsidian Executive',
-      tagline: 'Linear-Apple Tactical Hybrid',
-      creator: 'Antigravity Original',
+      name: 'Variant 1: Brick & Walnut Brand System',
+      tagline: 'Brand Identity & Editorial Hybrid',
+      creator: 'Antigravity / Atharva Foundation',
       port: 5173,
       url: 'http://localhost:5173',
-      color: '#3b82f6',
-      bgTag: 'rgba(59, 130, 246, 0.12)',
-      score: '94.4/100',
-      heroAdvantage: 'Unmatched information density and distraction-free tactical triage',
-      philosophy: 'Pure functional clarity. Deep matte obsidian graphite surfaces (#090a0d), hairline dividers, 1px subtle inset highlights, zero gratuitous glassmorphism. Designed for raw personal execution speed.'
+      color: '#B80C09',
+      bgTag: 'rgba(184, 12, 9, 0.12)',
+      score: '96.2/100',
+      heroAdvantage: 'Cohesive brand identity, editorial photography, and anti-AI-slop design discipline',
+      philosophy: 'Authentic 5-colour identity: Brick Ember (#B80C09) primary, Dark Walnut (#6B2B06) secondary, Alabaster Grey (#E5E7E6), Silver (#B7B5B3), and Pitch Black (#141301). Zero gratuitous purple/neon slop.'
     },
     {
       id: 'taste',
@@ -143,24 +143,24 @@ export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: Co
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid #232733',
+            borderBottom: '1px solid var(--border-default)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: '#121620'
+            background: 'var(--bg-surface)'
           }}
         >
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#3b82f6' }}>
+              <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--palette-brick)' }}>
                 LIFE OS · Design Variant Matrix
               </span>
-              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', fontWeight: 600 }}>
+              <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'var(--palette-brick-subtle)', color: 'var(--palette-brick)', fontWeight: 600, border: '1px solid var(--palette-brick-border)' }}>
                 3 Live Servers
               </span>
             </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#f3f4f6', margin: 0 }}>
-              Architecture & Aesthetic Comparison
+            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Architecture &amp; Aesthetic Comparison
             </h2>
           </div>
 
@@ -253,10 +253,10 @@ export default function ComparisonDrawer({ currentVariant, isOpen, onClose }: Co
                 padding: '12px 16px',
                 fontSize: '13px',
                 fontWeight: 600,
-                color: activeTab === tab.id ? '#f3f4f6' : '#6b7280',
+                color: activeTab === tab.id ? 'var(--text-primary)' : 'var(--text-muted)',
                 background: 'transparent',
                 border: 'none',
-                borderBottom: activeTab === tab.id ? '2px solid #3b82f6' : '2px solid transparent',
+                borderBottom: activeTab === tab.id ? '2px solid var(--palette-brick)' : '2px solid transparent',
                 cursor: 'pointer'
               }}
             >

@@ -12,6 +12,7 @@ import {
   Award,
 } from 'lucide-react';
 import type { WorkoutSplit, ExerciseItem, WorkoutSet, LoggedExercise } from '../types';
+import { getPhoto } from '../utils/photoAssets';
 
 export default function FitnessPage() {
   const exercises = useStore((s) => s.exercises);
@@ -198,35 +199,68 @@ export default function FitnessPage() {
   };
 
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
-            Gym & Fitness
-          </h1>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-            Strength progressive overload, workout history, body composition, and exercise logs.
-          </p>
-        </div>
+    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {/* 1. EDITORIAL PHOTOGRAPHIC HERO SECTION */}
+      <section
+        className="editorial-hero"
+        style={{
+          minHeight: '220px',
+          backgroundImage: `url(${getPhoto('gym-hero').path})`,
+          backgroundPosition: 'center 35%',
+        }}
+      >
+        <div className="editorial-hero-scrim" />
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => setShowMetricModal(true)}
-            className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-          >
-            <Scale size={16} /> Log Weight
-          </button>
-          <button
-            onClick={() => setShowLogModal(true)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-          >
-            <Plus size={16} /> Log Workout
-          </button>
+        <div className="editorial-hero-content" style={{ padding: '24px 32px' }}>
+          <div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--accent-light)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                display: 'inline-block',
+                marginBottom: '6px',
+              }}
+            >
+              Strength &amp; Conditioning
+            </span>
+            <h1
+              className="font-editorial"
+              style={{
+                fontSize: '32px',
+                fontWeight: 500,
+                color: '#ffffff',
+                margin: '0 0 6px 0',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Progressive Overload &amp; Body Architecture
+            </h1>
+            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '540px' }}>
+              Track weights, session volumes, hypertrophy splits, and body composition.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setShowMetricModal(true)}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+            >
+              <Scale size={15} /> Log Weight
+            </button>
+            <button
+              onClick={() => setShowLogModal(true)}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            >
+              <Plus size={15} /> Log Workout
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Athletic Training Status Ribbon */}
       <div className="summary-strip">

@@ -15,6 +15,7 @@ import ObsidianPage from './pages/ObsidianPage';
 import EveningReviewPage from './pages/EveningReviewPage';
 import ReviewHistoryPage from './pages/ReviewHistoryPage';
 import SettingsPage from './pages/SettingsPage';
+import FocusModePage from './pages/FocusModePage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
@@ -123,6 +124,8 @@ export default function App() {
         return <AnalyticsPage />;
       case 'assistant':
         return <AssistantPage />;
+      case 'focus':
+        return <FocusModePage />;
       case 'obsidian':
         return <ObsidianPage />;
       case 'review':
@@ -150,7 +153,7 @@ export default function App() {
       <main className="main-content">
         {/* Variant Comparison & Direct Port Switcher Strip */}
         <VariantHeaderBanner
-          currentVariant="taste"
+          currentVariant="agent"
           onOpenMatrix={() => setComparisonMatrixOpen(true)}
         />
 
@@ -354,7 +357,7 @@ export default function App() {
 
       {/* INTERACTIVE COMPARISON MATRIX DRAWER */}
       <ComparisonDrawer
-        currentVariant="taste"
+        currentVariant="agent"
         isOpen={comparisonMatrixOpen}
         onClose={() => setComparisonMatrixOpen(false)}
       />

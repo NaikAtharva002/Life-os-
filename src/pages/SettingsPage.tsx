@@ -282,7 +282,7 @@ export default function SettingsPage() {
             className="btn"
             style={{
               padding: '10px 14px',
-              border: settings.theme === 'dark' ? '1px solid var(--accent)' : '1px solid var(--border-default)',
+              border: settings.theme === 'dark' ? '1px solid var(--accent-primary)' : '1px solid var(--border-default)',
               background: settings.theme === 'dark' ? 'var(--bg-elevated)' : 'var(--bg-subtle)',
               color: 'var(--text-primary)',
               fontWeight: 600,
@@ -293,14 +293,14 @@ export default function SettingsPage() {
               gap: '8px',
             }}
           >
-            <Moon size={14} color="var(--accent)" /> Dark Theme (Obsidian)
+            <Moon size={14} color="var(--accent-primary)" /> Dark Theme (Pitch Black &amp; Walnut)
           </button>
           <button
             onClick={() => setTheme('light')}
             className="btn"
             style={{
               padding: '10px 14px',
-              border: settings.theme === 'light' ? '1px solid var(--accent)' : '1px solid var(--border-default)',
+              border: settings.theme === 'light' ? '1px solid var(--accent-primary)' : '1px solid var(--border-default)',
               background: settings.theme === 'light' ? 'var(--bg-elevated)' : 'var(--bg-subtle)',
               color: 'var(--text-primary)',
               fontWeight: 600,
@@ -311,7 +311,7 @@ export default function SettingsPage() {
               gap: '8px',
             }}
           >
-            <Sun size={14} color="var(--status-warning)" /> Light Theme
+            <Sun size={14} color="var(--status-warning)" /> Light Theme (Alabaster &amp; Brick Ember)
           </button>
         </div>
       </div>

@@ -21,12 +21,12 @@ const CATEGORY_OPTIONS = [
 const EMOJI_OPTIONS = ['🏃', '🧘', '💧', '📚', '💪', '🍎', '😴', '🎯', '🧠', '✍️', '🎵', '🚴', '💻', '🌿', '☕', '🎨'];
 
 const COLOR_OPTIONS = [
-  '#3b82f6', // Slate Blue
-  '#10b981', // Emerald
-  '#f59e0b', // Amber
-  '#ef4444', // Red
-  '#64748b', // Slate
-  '#0d9488', // Teal
+  '#B80C09', // Brick Ember
+  '#6B2B06', // Dark Walnut
+  '#B7B5B3', // Silver
+  '#141301', // Pitch Black
+  '#8F5419', // Warm Amber
+  '#4E632D', // Olive Sage
 ];
 
 export default function HabitModal({ habit, onClose }: HabitModalProps) {
@@ -37,7 +37,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
   const [description, setDescription] = useState(habit?.description || '');
   const [category, setCategory] = useState(habit?.category || 'Productivity');
   const [icon, setIcon] = useState(habit?.icon || '⚡');
-  const [color, setColor] = useState(habit?.color || '#3b82f6');
+  const [color, setColor] = useState(habit?.color || '#B80C09');
   const [frequency, setFrequency] = useState<'daily' | 'weekly'>(habit?.frequency || 'daily');
   const [targetDays, setTargetDays] = useState<number[]>(habit?.targetDays || [0, 1, 2, 3, 4, 5, 6]);
 

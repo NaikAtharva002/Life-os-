@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Repeat, Calendar, Check, Edit2, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Repeat, Calendar, Check, Edit2, Trash2, LayoutGrid, List, Flame, ArrowRight } from 'lucide-react';
 import useStore from '../store/useStore';
-import HabitCard from '../components/HabitCard';
 import HabitModal from '../components/HabitModal';
 import type { Habit } from '../types';
+import { getPhoto } from '../utils/photoAssets';
 
 export default function HabitsPage() {
   const habits = useStore((s) => s.habits);
@@ -14,7 +14,7 @@ export default function HabitsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [viewMode, setViewMode] = useState<'photographic' | 'table'>('photographic');
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -27,29 +27,11 @@ export default function HabitsPage() {
   const bestStreak = habits.reduce((max, h) => Math.max(max, h.longestStreak || 0), 0);
   const activeStreaksCount = habits.filter((h) => (h.streak || 0) > 0).length;
 
-  // Last 7 days dates for mini-trackers
-  const last7Days = useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      const str = d.toISOString().split('T')[0];
-      const days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-      return {
-        dateStr: str,
-        dayName: days[d.getDay()],
-        isToday: str === todayStr,
-      };
-    });
-  }, [todayStr]);
-
-  // Past 70 days (10 weeks) for weekly structured heatmap
+  // Past 70 days (10 weeks) for weekly consistency heatmap
   const heatmapWeeks = useMemo(() => {
-    // Generate dates aligned to weeks (Sun to Sat or Mon to Sun)
-    // 10 weeks = 70 days ending on today's week end
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 is Sun
     const totalDays = 70;
-    const days: { dateStr: string; date: Date; month: string; dayIndex: number }[] = [];
+    const days: { dateStr: string; date: Date; dayIndex: number }[] = [];
 
     for (let i = totalDays - 1; i >= 0; i--) {
       const d = new Date();
@@ -58,511 +40,425 @@ export default function HabitsPage() {
       days.push({
         dateStr: str,
         date: d,
-        month: d.toLocaleString('default', { month: 'short' }),
         dayIndex: d.getDay(),
       });
     }
 
-    // Group into 7 rows (one per day of week 0-6: Sun-Sat)
-    // or group into columns of weeks
-    const weeks: typeof days[] = [];
-    let currentWeek: typeof days = [];
+    const weeks: { dateStr: string; date: Date; dayIndex: number }[][] = [];
+    let currentWeek: { dateStr: string; date: Date; dayIndex: number }[] = [];
 
-    days.forEach((day, idx) => {
-      currentWeek.push(day);
-      if (currentWeek.length === 7 || idx === days.length - 1) {
+    days.forEach((item) => {
+      currentWeek.push(item);
+      if (item.dayIndex === 6) {
         weeks.push(currentWeek);
         currentWeek = [];
       }
     });
+    if (currentWeek.length > 0) weeks.push(currentWeek);
 
-    return { weeks, days };
+    return weeks;
   }, []);
 
-  const categories = ['all', ...Array.from(new Set(habits.map((h) => h.category || 'General')))];
-
-  const filteredHabits = habits.filter((h) => {
-    if (selectedCategory !== 'all' && (h.category || 'General') !== selectedCategory) return false;
-    return true;
-  });
-
-  const handleEdit = (h: Habit) => {
-    setEditingHabit(h);
-    setIsModalOpen(true);
+  // Compute daily completion count across all habits for heatmap
+  const getDailyCompletionLevel = (dateStr: string) => {
+    if (habits.length === 0) return 0;
+    const doneCount = habits.filter((h) =>
+      habitEntries.some((e) => e.habitId === h.id && e.date === dateStr && e.completed)
+    ).length;
+    const ratio = doneCount / habits.length;
+    if (ratio === 0) return 0;
+    if (ratio <= 0.33) return 1;
+    if (ratio <= 0.66) return 2;
+    return 3;
   };
 
-  const handleDelete = (id: string) => {
-    if (window.confirm('Delete this habit and its historical entries?')) {
-      deleteHabit(id);
+  const getHeatmapColor = (level: number) => {
+    switch (level) {
+      case 1:
+        return 'rgba(107, 43, 6, 0.35)';
+      case 2:
+        return 'rgba(184, 12, 9, 0.55)';
+      case 3:
+        return 'var(--palette-brick)';
+      default:
+        return 'var(--bg-subtle)';
     }
   };
 
+  // Habit photo mapping helper
+  const getHabitImage = (name: string, idx: number) => {
+    const n = (name || '').toLowerCase();
+    if (n.includes('read') || n.includes('book')) return getPhoto('habit-reading').path;
+    if (n.includes('sleep') || n.includes('rest')) return getPhoto('habit-sleep').path;
+    if (n.includes('water') || n.includes('hydrat')) return getPhoto('habit-hydration').path;
+    if (n.includes('work') || n.includes('code') || n.includes('study')) return getPhoto('habit-deepwork').path;
+    if (n.includes('gym') || n.includes('workout') || n.includes('run')) return getPhoto('gym-weights').path;
+    const pool = [getPhoto('habit-reading').path, getPhoto('habit-deepwork').path, getPhoto('habit-sleep').path, getPhoto('habit-hydration').path];
+    return pool[idx % pool.length];
+  };
+
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    habits.forEach((h) => {
+      if (h.category) set.add(h.category);
+    });
+    return Array.from(set);
+  }, [habits]);
+
+  const filteredHabits = useMemo(() => {
+    if (selectedCategory === 'all') return habits;
+    return habits.filter((h) => h.category === selectedCategory);
+  }, [habits, selectedCategory]);
+
   return (
-    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Header */}
+    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      
+      {/* 1. EDITORIAL PHOTOGRAPHIC HERO BANNER */}
+      <section
+        className="editorial-hero"
+        style={{
+          minHeight: '220px',
+          backgroundImage: `url(${getPhoto('habit-reading').path})`,
+          backgroundPosition: 'center 45%',
+        }}
+      >
+        <div className="editorial-hero-scrim" />
+
+        <div className="editorial-hero-content" style={{ padding: '24px 32px' }}>
+          <div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--accent-light)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                display: 'inline-block',
+                marginBottom: '6px',
+              }}
+            >
+              Daily Rituals &amp; Habits
+            </span>
+            <h1
+              className="font-editorial"
+              style={{
+                fontSize: '32px',
+                fontWeight: 500,
+                color: '#ffffff',
+                margin: '0 0 6px 0',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              The Architecture of Consistency
+            </h1>
+            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+              We don't rise to the level of our goals; we fall to the level of our daily systems.
+            </p>
+          </div>
+
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setEditingHabit(undefined);
+              setIsModalOpen(true);
+            }}
+            style={{ padding: '8px 18px', fontSize: '13px' }}
+          >
+            <Plus size={15} /> Add Habit
+          </button>
+        </div>
+      </section>
+
+      {/* 2. STATS & SUMMARY STRIP */}
       <div
         style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '12px',
-          paddingBottom: '12px',
-          borderBottom: '1px solid var(--border)',
+          gap: '16px',
+          padding: '12px 18px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-default)',
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Repeat size={18} color="var(--accent)" />
-            <h1 style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '-0.015em', margin: 0 }}>
-              Habits & Daily Consistency
-            </h1>
-          </div>
-          <p style={{ margin: '3px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
-            Build consistency through daily routines and longitudinal tracking.
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', fontSize: '12.5px' }}>
+          <span style={{ color: 'var(--text-muted)' }}>
+            Total Habits: <strong style={{ color: 'var(--text-primary)' }} className="tabular">{totalHabits}</strong>
+          </span>
+          <span style={{ width: '1px', height: '14px', background: 'var(--border-default)' }} />
+          <span style={{ color: 'var(--accent-primary)' }}>
+            Completed Today: <strong className="tabular">{completedToday}/{totalHabits}</strong> ({totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 100}%)
+          </span>
+          <span style={{ width: '1px', height: '14px', background: 'var(--border-default)' }} />
+          <span style={{ color: '#f59e0b' }}>
+            Best Active Streak: <strong className="tabular">{bestStreak} days</strong>
+          </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* View Toggle */}
-          <div
-            style={{
-              display: 'flex',
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-sm)',
-              padding: '2px',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <button
-              onClick={() => setViewMode('table')}
-              className="btn btn-sm"
-              style={{
-                background: viewMode === 'table' ? 'var(--bg-card)' : 'transparent',
-                color: viewMode === 'table' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                border: 'none',
-                boxShadow: viewMode === 'table' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                padding: '4px 8px',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              title="Table View"
-            >
-              <List size={13} /> Table
-            </button>
-            <button
-              onClick={() => setViewMode('cards')}
-              className="btn btn-sm"
-              style={{
-                background: viewMode === 'cards' ? 'var(--bg-card)' : 'transparent',
-                color: viewMode === 'cards' ? 'var(--text-primary)' : 'var(--text-secondary)',
-                border: 'none',
-                boxShadow: viewMode === 'cards' ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
-                padding: '4px 8px',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-              title="Card Grid View"
-            >
-              <LayoutGrid size={13} /> Cards
-            </button>
-          </div>
-
+        {/* View mode toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
-            className="btn btn-primary btn-sm"
-            onClick={() => {
-              setEditingHabit(undefined);
-              setIsModalOpen(true);
-            }}
+            onClick={() => setViewMode('photographic')}
+            className={`btn btn-sm ${viewMode === 'photographic' ? 'btn-primary' : 'btn-secondary'}`}
+            title="Photographic Cards"
           >
-            <Plus size={14} /> New Habit
+            <LayoutGrid size={13} /> Photographic
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`btn btn-sm ${viewMode === 'table' ? 'btn-primary' : 'btn-secondary'}`}
+            title="Data Table"
+          >
+            <List size={13} /> Table
           </button>
         </div>
       </div>
 
-      {/* Compact Overview Line (replaces bulky cards) */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '16px',
-          padding: '8px 14px',
-          background: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--border)',
-          fontSize: '12px',
-          color: 'var(--text-secondary)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Completed today:</span>
-          <span style={{ fontWeight: 700, color: completedToday === totalHabits && totalHabits > 0 ? 'var(--success)' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-            {completedToday}/{totalHabits}
-          </span>
-          {totalHabits > 0 && (
-            <span style={{ color: 'var(--text-muted)', fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>
-              ({Math.round((completedToday / totalHabits) * 100)}%)
-            </span>
-          )}
-        </span>
-
-        <span style={{ color: 'var(--border)' }}>·</span>
-
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Active habits:</span>
-          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-            {totalHabits}
-          </span>
-        </span>
-
-        <span style={{ color: 'var(--border)' }}>·</span>
-
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Active streaks:</span>
-          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-            {activeStreaksCount}
-          </span>
-        </span>
-
-        <span style={{ color: 'var(--border)' }}>·</span>
-
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Current best streak:</span>
-          <span style={{ fontWeight: 700, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
-            {bestStreak}d
-          </span>
-        </span>
-      </div>
-
-      {/* Labeled Consistency Heatmap */}
-      <div
-        style={{
-          background: 'var(--bg-card)',
-          borderRadius: 'var(--radius-sm)',
-          border: '1px solid var(--border)',
-          padding: '12px 14px',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={13} color="var(--text-muted)" />
-            <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              Consistency Heatmap (Past 70 Days)
+      {/* 3. 70-DAY NATURAL EMERALD CONSISTENCY HEATMAP */}
+      <section className="editorial-island">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 2px 0' }}>
+              10-Week Consistency Heatmap
+            </h3>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              Daily adherence rhythm across all active habits
             </span>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '10.5px', color: 'var(--text-muted)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
             <span>Less</span>
-            <span style={{ width: '9px', height: '9px', borderRadius: '1px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }} />
-            <span style={{ width: '9px', height: '9px', borderRadius: '1px', background: 'rgba(16, 185, 129, 0.25)' }} />
-            <span style={{ width: '9px', height: '9px', borderRadius: '1px', background: 'rgba(16, 185, 129, 0.55)' }} />
-            <span style={{ width: '9px', height: '9px', borderRadius: '1px', background: 'var(--success)' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--bg-subtle)' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(107, 43, 6, 0.35)' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(184, 12, 9, 0.55)' }} />
+            <span style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'var(--palette-brick)' }} />
             <span>More</span>
           </div>
         </div>
 
-        {/* Heatmap with Weekday and Month labels */}
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-          {/* Weekday labels */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '3px',
-              fontSize: '9px',
-              color: 'var(--text-muted)',
-              lineHeight: '12px',
-              paddingRight: '2px',
-            }}
-          >
-            <span style={{ height: '12px' }}>Sun</span>
-            <span style={{ height: '12px' }}>Mon</span>
-            <span style={{ height: '12px' }}>Tue</span>
-            <span style={{ height: '12px' }}>Wed</span>
-            <span style={{ height: '12px' }}>Thu</span>
-            <span style={{ height: '12px' }}>Fri</span>
-            <span style={{ height: '12px' }}>Sat</span>
-          </div>
-
-          {/* Weeks Columns */}
-          <div style={{ display: 'flex', gap: '3px', flex: 1 }}>
-            {heatmapWeeks.weeks.map((week, wIdx) => {
-              const firstDay = week[0];
-              const showMonth = wIdx === 0 || (firstDay && firstDay.date.getDate() <= 7);
-
-              return (
-                <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, minWidth: '12px' }}>
-                  {week.map((item) => {
-                    const countOnDay = habitEntries.filter((e) => e.date === item.dateStr && e.completed).length;
-                    const intensity =
-                      totalHabits === 0 ? 0 : countOnDay === 0 ? 0 : countOnDay / totalHabits;
-
-                    const bg =
-                      intensity === 0
-                        ? 'var(--bg-secondary)'
-                        : intensity < 0.35
-                        ? 'rgba(16, 185, 129, 0.25)'
-                        : intensity < 0.7
-                        ? 'rgba(16, 185, 129, 0.55)'
-                        : 'var(--success)';
-
-                    const isToday = item.dateStr === todayStr;
-
-                    return (
-                      <div
-                        key={item.dateStr}
-                        title={`${item.dateStr}: ${countOnDay}/${totalHabits} completed`}
-                        style={{
-                          height: '12px',
-                          borderRadius: '2px',
-                          background: bg,
-                          border: isToday
-                            ? '1px solid var(--accent)'
-                            : intensity === 0
-                            ? '1px solid var(--border)'
-                            : 'none',
-                          cursor: 'pointer',
-                          transition: 'opacity 0.1s ease',
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
+        <div style={{ display: 'flex', gap: '5px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {heatmapWeeks.map((week, wIdx) => (
+            <div key={wIdx} style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {week.map((day) => {
+                const level = getDailyCompletionLevel(day.dateStr);
+                const isToday = day.dateStr === todayStr;
+                return (
+                  <div
+                    key={day.dateStr}
+                    style={{
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '3px',
+                      background: getHeatmapColor(level),
+                      border: isToday ? '1px solid #ffffff' : 'none',
+                      cursor: 'pointer',
+                    }}
+                    title={`${day.dateStr}: ${level > 0 ? `Level ${level}` : 'No completion'}`}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
-      </div>
+      </section>
 
-      {/* Category Filter Pills */}
-      {categories.length > 2 && (
-        <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', paddingBottom: '2px' }}>
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat;
+      {/* 4. CONTENT: PHOTOGRAPHIC HABIT TILES OR TABLE */}
+      {filteredHabits.length === 0 ? (
+        <div
+          style={{
+            padding: '48px 20px',
+            border: '1px dashed var(--border-default)',
+            borderRadius: 'var(--radius-lg)',
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+            fontSize: '13.5px',
+            background: 'var(--bg-surface)',
+          }}
+        >
+          No habits defined yet. Add your first habit ritual to begin tracking.
+        </div>
+      ) : viewMode === 'photographic' ? (
+        /* PHOTOGRAPHIC HABIT TILES GRID */
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' }}>
+          {filteredHabits.map((h, idx) => {
+            const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
+            const photoUrl = getHabitImage(h.name, idx);
+
             return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className="btn btn-sm"
+              <div
+                key={h.id}
+                className="photo-tile"
                 style={{
-                  borderRadius: 'var(--radius-sm)',
-                  fontSize: '11px',
-                  padding: '2px 8px',
-                  fontWeight: isSelected ? 600 : 500,
-                  background: isSelected ? 'var(--bg-hover)' : 'transparent',
-                  color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
-                  border: isSelected ? '1px solid var(--border)' : '1px solid transparent',
-                  textTransform: 'capitalize',
+                  borderColor: isDone ? 'var(--palette-brick-border)' : 'var(--border-default)',
                 }}
               >
-                {cat}
-              </button>
+                {/* Visual Header */}
+                <div className="photo-tile-image-wrap" style={{ height: '140px' }}>
+                  <img
+                    src={photoUrl}
+                    alt={h.name}
+                    className="photo-tile-img"
+                    loading="lazy"
+                  />
+                  <div className="photo-tile-scrim" />
+
+                  {/* Streak Flame Badge */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '12px',
+                      left: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: '#fef08a',
+                      background: 'rgba(20, 19, 1, 0.85)',
+                      padding: '3px 9px',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(6px)',
+                      border: '1px solid rgba(184, 12, 9, 0.3)',
+                    }}
+                  >
+                    <Flame size={13} color="var(--palette-brick)" fill="var(--palette-brick)" />
+                    <span className="tabular">{h.streak || 7}d streak</span>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', gap: '4px' }}>
+                    <button
+                      onClick={() => {
+                        setEditingHabit(h);
+                        setIsModalOpen(true);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.8)', backdropFilter: 'blur(6px)' }}
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete habit "${h.name}"?`)) deleteHabit(h.id);
+                      }}
+                      className="btn btn-secondary btn-sm"
+                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.8)', color: '#f87171', backdropFilter: 'blur(6px)' }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Habit Body */}
+                <div style={{ padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 2px 0' }}>
+                        {h.name}
+                      </h3>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {h.category || 'Daily Habit'} · {h.frequency === 'weekly' ? 'Weekly' : 'Daily'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => toggleHabitEntry(h.id, todayStr)}
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        border: isDone ? 'none' : '1px solid var(--border-default)',
+                        background: isDone ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                        color: isDone ? '#FFFFFF' : 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      title={isDone ? 'Completed today' : 'Mark complete'}
+                    >
+                      <Check size={18} strokeWidth={2.5} />
+                    </button>
+                  </div>
+
+                  {h.description && (
+                    <p style={{ margin: '0 0 10px 0', fontSize: '11.5px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      {h.description}
+                    </p>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <span>Longest streak: <strong style={{ color: 'var(--text-primary)' }} className="tabular">{h.longestStreak || h.streak || 0}d</strong></span>
+                    <span style={{ color: isDone ? 'var(--status-success)' : 'var(--text-muted)' }}>
+                      {isDone ? '✓ Completed today' : 'Pending today'}
+                    </span>
+                  </div>
+                </div>
+              </div>
             );
           })}
         </div>
-      )}
-
-      {/* =========================================================================
-          VIEW MODE 1: STRUCTURED HABIT TABLE (Primary View)
-      ========================================================================= */}
-      {viewMode === 'table' && (
-        <div
-          style={{
-            background: 'var(--bg-card)',
-            borderRadius: 'var(--radius-sm)',
-            border: '1px solid var(--border)',
-            overflow: 'hidden',
-          }}
-        >
-          {filteredHabits.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--text-muted)', fontSize: '13px' }}>
-              No habits found. Create a new habit to start tracking.
-            </div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
-                <thead>
-                  <tr style={{ background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Habit</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600 }}>Category</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'center' }}>Streak</th>
-                    <th style={{ padding: '8px 10px', fontWeight: 600, textAlign: 'center' }}>Best</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'center' }}>Last 7 Days</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'center' }}>Today</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredHabits.map((habit) => {
-                    const entries = habit.entries || habitEntries.filter((e) => e.habitId === habit.id);
-                    const isTodayCompleted = entries.some((e) => e.date === todayStr && e.completed);
-
-                    return (
-                      <tr
-                        key={habit.id}
-                        style={{
-                          borderBottom: '1px solid var(--border)',
-                          transition: 'background 0.1s ease',
-                        }}
+      ) : (
+        /* TABLE VIEW */
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ background: 'var(--bg-subtle)', borderBottom: '1px solid var(--border-default)' }}>
+                <th style={{ padding: '10px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>Habit</th>
+                <th style={{ padding: '10px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>Category</th>
+                <th style={{ padding: '10px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>Current Streak</th>
+                <th style={{ padding: '10px 14px', color: 'var(--text-muted)', fontWeight: 600 }}>Best Streak</th>
+                <th style={{ padding: '10px 14px', textAlign: 'center', color: 'var(--text-muted)', fontWeight: 600 }}>Today</th>
+                <th style={{ padding: '10px 14px', textAlign: 'right', color: 'var(--text-muted)', fontWeight: 600 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredHabits.map((h) => {
+                const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
+                return (
+                  <tr key={h.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                    <td style={{ padding: '10px 14px', fontWeight: 600, color: 'var(--text-primary)' }}>{h.name}</td>
+                    <td style={{ padding: '10px 14px', color: 'var(--text-secondary)' }}>{h.category}</td>
+                    <td style={{ padding: '10px 14px' }}>
+                      <span className="tabular" style={{ color: '#f59e0b', fontWeight: 600 }}>🔥 {h.streak || 0}d</span>
+                    </td>
+                    <td style={{ padding: '10px 14px' }} className="tabular">{h.longestStreak || 0}d</td>
+                    <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                      <button
+                        onClick={() => toggleHabitEntry(h.id, todayStr)}
+                        className={`btn btn-sm ${isDone ? 'btn-primary' : 'btn-secondary'}`}
+                        style={{ padding: '2px 8px' }}
                       >
-                        {/* Habit Title & Desc */}
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '13px' }}>
-                            {habit.name}
-                          </div>
-                          {habit.description && (
-                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                              {habit.description}
-                            </div>
-                          )}
-                        </td>
-
-                        {/* Category */}
-                        <td style={{ padding: '10px 10px' }}>
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              padding: '2px 6px',
-                              borderRadius: 'var(--radius-sm)',
-                              background: 'var(--bg-secondary)',
-                              border: '1px solid var(--border)',
-                              color: 'var(--text-secondary)',
-                              textTransform: 'capitalize',
-                            }}
-                          >
-                            {habit.category || 'General'}
-                          </span>
-                        </td>
-
-                        {/* Current Streak */}
-                        <td style={{ padding: '10px 10px', textAlign: 'center' }}>
-                          <span
-                            style={{
-                              fontVariantNumeric: 'tabular-nums',
-                              fontWeight: 700,
-                              color: (habit.streak || 0) > 0 ? 'var(--accent)' : 'var(--text-muted)',
-                            }}
-                          >
-                            {habit.streak || 0}d
-                          </span>
-                        </td>
-
-                        {/* Best Streak */}
-                        <td style={{ padding: '10px 10px', textAlign: 'center' }}>
-                          <span
-                            style={{
-                              fontVariantNumeric: 'tabular-nums',
-                              fontWeight: 600,
-                              color: 'var(--text-secondary)',
-                            }}
-                          >
-                            {habit.longestStreak || 0}d
-                          </span>
-                        </td>
-
-                        {/* Last 7 Days Mini-Dots */}
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                            {last7Days.map((day) => {
-                              const done = entries.some((e) => e.date === day.dateStr && e.completed);
-                              return (
-                                <button
-                                  key={day.dateStr}
-                                  onClick={() => toggleHabitEntry(habit.id, day.dateStr)}
-                                  title={`${day.dateStr} (${day.dayName}): ${done ? 'Completed' : 'Missed'} (click to toggle)`}
-                                  style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '3px',
-                                    border: done ? 'none' : '1px solid var(--border)',
-                                    background: done ? 'var(--success)' : 'var(--bg-secondary)',
-                                    cursor: 'pointer',
-                                    padding: 0,
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.1s ease',
-                                  }}
-                                >
-                                  {done && <Check size={10} color="#fff" />}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </td>
-
-                        {/* Today Quick Toggle */}
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                          <button
-                            onClick={() => toggleHabitEntry(habit.id, todayStr)}
-                            className="btn btn-sm"
-                            style={{
-                              background: isTodayCompleted ? 'var(--success)' : 'var(--bg-secondary)',
-                              color: isTodayCompleted ? '#ffffff' : 'var(--text-secondary)',
-                              border: isTodayCompleted ? '1px solid var(--success)' : '1px solid var(--border)',
-                              borderRadius: 'var(--radius-sm)',
-                              padding: '4px 10px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                            }}
-                          >
-                            <Check size={12} />
-                            <span>{isTodayCompleted ? 'Done' : 'Check'}</span>
-                          </button>
-                        </td>
-
-                        {/* Actions */}
-                        <td style={{ padding: '10px 12px', textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: '4px' }}>
-                            <button
-                              onClick={() => handleEdit(habit)}
-                              className="btn btn-ghost btn-sm"
-                              style={{ padding: '3px 6px', color: 'var(--text-muted)' }}
-                              title="Edit habit"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(habit.id)}
-                              className="btn btn-ghost btn-sm"
-                              style={{ padding: '3px 6px', color: 'var(--danger)' }}
-                              title="Delete habit"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* =========================================================================
-          VIEW MODE 2: CARD GRID VIEW
-      ========================================================================= */}
-      {viewMode === 'cards' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-          {filteredHabits.map((h) => (
-            <HabitCard
-              key={h.id}
-              habit={h}
-              onEdit={() => handleEdit(h)}
-              onDelete={() => handleDelete(h.id)}
-            />
-          ))}
+                        {isDone ? '✓ Done' : 'Log'}
+                      </button>
+                    </td>
+                    <td style={{ padding: '10px 14px', textAlign: 'right' }}>
+                      <button
+                        onClick={() => {
+                          setEditingHabit(h);
+                          setIsModalOpen(true);
+                        }}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete habit "${h.name}"?`)) deleteHabit(h.id);
+                        }}
+                        className="btn btn-ghost btn-sm"
+                        style={{ color: '#f87171' }}
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 

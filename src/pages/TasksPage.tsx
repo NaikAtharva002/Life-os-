@@ -773,12 +773,12 @@ export default function TasksPage() {
                                 fontWeight: 700,
                                 background:
                                   t.priority === 'critical'
-                                    ? 'rgba(239, 68, 68, 0.15)'
+                                    ? 'var(--priority-critical-bg)'
                                     : t.priority === 'high'
-                                    ? 'rgba(249, 115, 22, 0.15)'
+                                    ? 'var(--priority-high-bg)'
                                     : t.priority === 'medium'
-                                    ? 'rgba(59, 130, 246, 0.15)'
-                                    : 'rgba(16, 185, 129, 0.15)',
+                                    ? 'var(--priority-medium-bg)'
+                                    : 'var(--priority-low-bg)',
                                 color:
                                   t.priority === 'critical'
                                     ? 'var(--priority-critical)'
@@ -1025,14 +1025,14 @@ export default function TasksPage() {
                       style={{
                         fontSize: '12px',
                         fontWeight: isToday ? 800 : 600,
-                        color: isToday ? 'var(--accent)' : 'var(--text-primary)',
+                        color: isToday ? 'var(--accent-primary)' : 'var(--text-primary)',
                         width: '20px',
                         height: '20px',
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: isToday ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                        background: isToday ? 'var(--palette-brick-subtle)' : 'transparent',
                       }}
                     >
                       {item.dayNum}

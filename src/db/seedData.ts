@@ -246,7 +246,7 @@ export function getInitialSeedData() {
       category: 'Fitness',
       frequency: 'daily',
       targetDays: [1, 2, 4, 5, 6],
-      color: '#10b981',
+      color: '#B80C09',
       icon: 'Dumbbell',
       streak: 9,
       longestStreak: 18,
@@ -526,7 +526,7 @@ export function getInitialSeedData() {
       credits: 4,
       professor: 'Dr. Alan Vance',
       roomOrLink: 'Hall 302',
-      color: '#3b82f6',
+      color: '#B80C09',
       targetAttendancePercentage: 75,
       totalClasses: 26,
       attendedClasses: 23, // 88.5%
@@ -539,7 +539,7 @@ export function getInitialSeedData() {
       credits: 4,
       professor: 'Dr. Sarah Jenkins',
       roomOrLink: 'Lab B',
-      color: '#8b5cf6',
+      color: '#6B2B06',
       targetAttendancePercentage: 75,
       totalClasses: 24,
       attendedClasses: 19, // 79.2%
@@ -552,7 +552,7 @@ export function getInitialSeedData() {
       credits: 4,
       professor: 'Dr. Rajesh Kumar',
       roomOrLink: 'Auditorium 1',
-      color: '#10b981',
+      color: '#4E632D',
       targetAttendancePercentage: 75,
       totalClasses: 22,
       attendedClasses: 21, // 95.5%

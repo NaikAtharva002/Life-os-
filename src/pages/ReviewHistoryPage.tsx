@@ -100,11 +100,11 @@ export default function ReviewHistoryPage() {
           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Days documented</div>
         </div>
 
-        <div className="card card-sm" style={{ borderLeft: '4px solid #f97316' }}>
-          <div style={{ fontSize: '11px', color: '#f97316', fontWeight: 700 }}>
+        <div className="card card-sm" style={{ borderLeft: '4px solid var(--palette-brick)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--palette-brick)', fontWeight: 700 }}>
             CURRENT REVIEW STREAK
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 800, color: '#f97316' }}>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--palette-brick)' }}>
             {reviewStreak} {reviewStreak === 1 ? 'day' : 'days'}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Consecutive nights</div>

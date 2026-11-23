@@ -14,6 +14,7 @@ import {
   Award,
   Layers,
 } from 'lucide-react';
+import { getPhoto } from '../utils/photoAssets';
 
 export default function AcademicsPage() {
   const semesters = useStore((s) => s.academicSemesters);
@@ -46,7 +47,7 @@ export default function AcademicsPage() {
   const [subCredits, setSubCredits] = useState('4');
   const [subProf, setSubProf] = useState('');
   const [subRoom, setSubRoom] = useState('');
-  const [subColor, setSubColor] = useState('#3b82f6');
+  const [subColor, setSubColor] = useState('#B80C09');
   const [subTargetAtt, setSubTargetAtt] = useState('75');
 
   const [asgTitle, setAsgTitle] = useState('');
@@ -143,35 +144,68 @@ export default function AcademicsPage() {
   };
 
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px 0', letterSpacing: '-0.02em' }}>
-            Academic Command
-          </h1>
-          <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
-            {currentSemester ? currentSemester.name : 'University Academic Dashboard'} • Attendance safety, assignment pipeline & exam prep.
-          </p>
-        </div>
+    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {/* 1. EDITORIAL PHOTOGRAPHIC HERO SECTION */}
+      <section
+        className="editorial-hero"
+        style={{
+          minHeight: '220px',
+          backgroundImage: `url(${getPhoto('academics-hero').path})`,
+          backgroundPosition: 'center 45%',
+        }}
+      >
+        <div className="editorial-hero-scrim" />
 
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => setShowAsgModal(true)}
-            className="btn btn-secondary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-          >
-            <Clock size={16} /> New Assignment
-          </button>
-          <button
-            onClick={() => setShowSubjectModal(true)}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-          >
-            <Plus size={16} /> Add Subject
-          </button>
+        <div className="editorial-hero-content" style={{ padding: '24px 32px' }}>
+          <div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--accent-light)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                display: 'inline-block',
+                marginBottom: '6px',
+              }}
+            >
+              Academic Excellence
+            </span>
+            <h1
+              className="font-editorial"
+              style={{
+                fontSize: '32px',
+                fontWeight: 500,
+                color: '#ffffff',
+                margin: '0 0 6px 0',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              University Command &amp; Scholarship
+            </h1>
+            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+              Attendance safety calculus, assignment pipeline, and examination preparation.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setShowAsgModal(true)}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+            >
+              <Clock size={15} /> New Assignment
+            </button>
+            <button
+              onClick={() => setShowSubjectModal(true)}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            >
+              <Plus size={15} /> Add Subject
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Academic Status Strip */}
       <div className="summary-strip">

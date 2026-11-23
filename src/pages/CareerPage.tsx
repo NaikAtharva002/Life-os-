@@ -65,12 +65,12 @@ export default function CareerPage() {
   const [goalDate, setGoalDate] = useState('');
 
   const stages: { id: JobApplication['stage']; label: string; color: string }[] = [
-    { id: 'wishlist', label: 'Wishlist', color: '#64748b' },
-    { id: 'applied', label: 'Applied', color: '#3b82f6' },
-    { id: 'oa', label: 'Online Assessment', color: '#f59e0b' },
-    { id: 'interview', label: 'Interviewing', color: '#8b5cf6' },
-    { id: 'offer', label: 'Offer Received', color: '#10b981' },
-    { id: 'rejected', label: 'Archived', color: '#ef4444' },
+    { id: 'wishlist', label: 'Wishlist', color: 'var(--text-muted)' },
+    { id: 'applied', label: 'Applied', color: 'var(--palette-walnut)' },
+    { id: 'oa', label: 'Online Assessment', color: 'var(--status-warning)' },
+    { id: 'interview', label: 'Interviewing', color: 'var(--palette-brick)' },
+    { id: 'offer', label: 'Offer Received', color: 'var(--status-success)' },
+    { id: 'rejected', label: 'Archived', color: 'var(--text-muted)' },
   ];
 
   const handleAddApp = async (e: React.FormEvent) => {

@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertCircle,
+  Compass,
   type LucideIcon,
 } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -86,6 +87,7 @@ export default function Sidebar({
           badgeColor: 'var(--danger)',
         },
         { id: 'habits', label: 'Habits', icon: Repeat },
+        { id: 'focus', label: 'Focus Mode', icon: Compass },
       ],
     },
     {
@@ -172,8 +174,8 @@ export default function Sidebar({
                 width: '24px',
                 height: '24px',
                 borderRadius: 'var(--radius-small)',
-                background: 'var(--text-primary)',
-                color: 'var(--bg-main)',
+                background: 'var(--palette-brick)',
+                color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -190,8 +192,8 @@ export default function Sidebar({
                 <span style={{ fontSize: '13px', fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
                   LIFE OS
                 </span>
-                <span style={{ fontSize: '9px', fontWeight: 600, background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', padding: '1px 4px', borderRadius: '3px', color: 'var(--text-muted)' }}>
-                  v2.4
+                <span style={{ fontSize: '9px', fontWeight: 700, background: 'var(--palette-brick-subtle)', border: '1px solid var(--palette-brick-border)', padding: '1px 5px', borderRadius: '4px', color: 'var(--palette-brick)' }}>
+                  v3.0
                 </span>
               </div>
             )}
@@ -258,16 +260,15 @@ export default function Sidebar({
                         width: '100%',
                         padding: collapsed ? '7px 0' : '5px 8px',
                         borderRadius: 'var(--radius-small)',
-                        border: 'none',
-                        background: isActive ? 'var(--bg-active)' : 'transparent',
-                        color: isActive ? '#ffffff' : 'var(--text-secondary)',
+                        border: isActive ? '1px solid var(--palette-brick-border)' : '1px solid transparent',
+                        background: isActive ? 'var(--palette-brick-subtle)' : 'transparent',
+                        color: isActive ? 'var(--palette-brick)' : 'var(--text-secondary)',
                         fontWeight: isActive ? 600 : 450,
                         fontSize: '12.5px',
                         cursor: 'pointer',
                         transition: 'all 0.1s ease',
                         textAlign: 'left',
                         position: 'relative',
-                        boxShadow: isActive ? 'inset 0 1px 0 rgba(255,255,255,0.06)' : 'none',
                       }}
                       onMouseEnter={(e) => {
                         if (!isActive) {

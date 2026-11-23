@@ -13,6 +13,7 @@ import {
   Trash2,
   Filter,
 } from 'lucide-react';
+import { getPhoto } from '../utils/photoAssets';
 import type { TransactionType } from '../types';
 
 export default function FinancePage() {
@@ -169,42 +170,74 @@ export default function FinancePage() {
   };
 
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid var(--border-default)', paddingBottom: '16px' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <DollarSign size={18} color="var(--status-success)" />
-            <h1 style={{ fontSize: '18px', fontWeight: 600, letterSpacing: '-0.015em', margin: 0, color: 'var(--text-primary)' }}>
-              Finance Command & Wealth
-            </h1>
-          </div>
-          <p style={{ margin: '3px 0 0', color: 'var(--text-secondary)', fontSize: '12.5px' }}>
-            Local-first wealth management, expense tracking, and savings objectives.
-          </p>
-        </div>
+    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+      {/* 1. EDITORIAL PHOTOGRAPHIC HERO SECTION */}
+      <section
+        className="editorial-hero"
+        style={{
+          minHeight: '220px',
+          backgroundImage: `url(${getPhoto('finance-hero').path})`,
+          backgroundPosition: 'center 40%',
+        }}
+      >
+        <div className="editorial-hero-scrim" />
 
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            onClick={() => setShowBudgetModal(true)}
-            className="btn btn-secondary btn-sm"
-          >
-            Set Budget
-          </button>
-          <button
-            onClick={() => setShowSavingsModal(true)}
-            className="btn btn-secondary btn-sm"
-          >
-            <PiggyBank size={13} /> Savings Goal
-          </button>
-          <button
-            onClick={() => setShowTxModal(true)}
-            className="btn btn-primary btn-sm"
-          >
-            <Plus size={13} /> Add Transaction
-          </button>
+        <div className="editorial-hero-content" style={{ padding: '24px 32px' }}>
+          <div>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--accent-light)',
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                display: 'inline-block',
+                marginBottom: '6px',
+              }}
+            >
+              Capital &amp; Wealth Architecture
+            </span>
+            <h1
+              className="font-editorial"
+              style={{
+                fontSize: '32px',
+                fontWeight: 500,
+                color: '#ffffff',
+                margin: '0 0 6px 0',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              Financial Velocity &amp; Cashflow
+            </h1>
+            <p style={{ margin: 0, fontSize: '13.5px', color: '#cbd5e1', maxWidth: '520px' }}>
+              Local-first expense tracking, savings runways, and disciplined allocation.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowBudgetModal(true)}
+              className="btn btn-secondary btn-sm"
+              style={{ background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+            >
+              Set Budget
+            </button>
+            <button
+              onClick={() => setShowSavingsModal(true)}
+              className="btn btn-secondary btn-sm"
+              style={{ background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+            >
+              <PiggyBank size={13} /> Savings Goal
+            </button>
+            <button
+              onClick={() => setShowTxModal(true)}
+              className="btn btn-primary btn-sm"
+            >
+              <Plus size={13} /> Add Transaction
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
       {/* Sleek Financial Summary Strip (replaces bulky AI cards) */}
       <div
