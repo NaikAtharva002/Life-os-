@@ -547,87 +547,157 @@ export default function FinancePage() {
               />
             </div>
           ) : (
-            <div style={{ overflowX: 'auto', flex: 1 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border-default)', color: 'var(--text-muted)', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '90px' }}>Type</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600 }}>Description</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '130px' }}>Category</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '100px' }}>Date</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, width: '100px' }}>Method</th>
-                    <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right', width: '110px' }}>Amount</th>
-                    <th style={{ padding: '8px 8px', width: '40px' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((tx) => (
-                    <tr
-                      key={tx.id}
-                      className="task-row"
-                      style={{
-                        borderBottom: '1px solid var(--border-default)',
-                        transition: 'background 0.12s ease',
-                      }}
-                    >
-                      <td style={{ padding: '10px 12px' }}>
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            fontSize: '10px',
-                            fontWeight: 600,
-                            padding: '2px 7px',
-                            borderRadius: '4px',
-                            background: tx.type === 'income' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                            color: tx.type === 'income' ? 'var(--status-success)' : 'var(--status-danger)',
-                          }}
-                        >
-                          {tx.type === 'income' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
-                          {tx.type === 'income' ? 'INFLOW' : 'OUTFLOW'}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '10px 12px', fontWeight: 500, color: 'var(--text-primary)' }}>
-                        {tx.description}
-                      </td>
-
-                      <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
-                        <span style={{ background: 'var(--bg-subtle)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid var(--border-default)' }}>
-                          {tx.category}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }} className="tabular">
-                        {tx.date}
-                      </td>
-
-                      <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>
-                        {tx.paymentMethod}
-                      </td>
-
-                      <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className="tabular">
-                        <span style={{ color: tx.type === 'income' ? 'var(--status-success)' : 'var(--text-primary)' }}>
-                          {tx.type === 'income' ? '+' : '-'}{currency}{tx.amount.toFixed(2)}
-                        </span>
-                      </td>
-
-                      <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => deleteTransaction(tx.id)}
-                          className="btn btn-ghost"
-                          style={{ padding: '3px', color: 'var(--text-muted)', height: '24px', width: '24px' }}
-                          title="Delete entry"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </td>
+            <>
+              {/* Desktop Table View */}
+              <div className="desktop-only" style={{ overflowX: 'auto', flex: 1 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border-default)', color: 'var(--text-muted)', fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <th style={{ padding: '8px 12px', fontWeight: 600, width: '90px' }}>Type</th>
+                      <th style={{ padding: '8px 12px', fontWeight: 600 }}>Description</th>
+                      <th style={{ padding: '8px 12px', fontWeight: 600, width: '130px' }}>Category</th>
+                      <th style={{ padding: '8px 12px', fontWeight: 600, width: '100px' }}>Date</th>
+                      <th style={{ padding: '8px 12px', fontWeight: 600, width: '100px' }}>Method</th>
+                      <th style={{ padding: '8px 12px', fontWeight: 600, textAlign: 'right', width: '110px' }}>Amount</th>
+                      <th style={{ padding: '8px 8px', width: '40px' }}></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredTransactions.map((tx) => (
+                      <tr
+                        key={tx.id}
+                        className="task-row"
+                        style={{
+                          borderBottom: '1px solid var(--border-default)',
+                          transition: 'background 0.12s ease',
+                        }}
+                      >
+                        <td style={{ padding: '10px 12px' }}>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '2px 7px',
+                              borderRadius: '4px',
+                              background: tx.type === 'income' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                              color: tx.type === 'income' ? 'var(--status-success)' : 'var(--status-danger)',
+                            }}
+                          >
+                            {tx.type === 'income' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                            {tx.type === 'income' ? 'INFLOW' : 'OUTFLOW'}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: '10px 12px', fontWeight: 500, color: 'var(--text-primary)' }}>
+                          {tx.description}
+                        </td>
+
+                        <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
+                          <span style={{ background: 'var(--bg-subtle)', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', border: '1px solid var(--border-default)' }}>
+                            {tx.category}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }} className="tabular">
+                          {tx.date}
+                        </td>
+
+                        <td style={{ padding: '10px 12px', color: 'var(--text-muted)' }}>
+                          {tx.paymentMethod}
+                        </td>
+
+                        <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700 }} className="tabular">
+                          <span style={{ color: tx.type === 'income' ? 'var(--status-success)' : 'var(--text-primary)' }}>
+                            {tx.type === 'income' ? '+' : '-'}{currency}{tx.amount.toFixed(2)}
+                          </span>
+                        </td>
+
+                        <td style={{ padding: '10px 8px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => deleteTransaction(tx.id)}
+                            className="btn btn-ghost"
+                            style={{ padding: '3px', color: 'var(--text-muted)', height: '24px', width: '24px' }}
+                            title="Delete entry"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card List View (Eliminates horizontal scrolling on phones) */}
+              <div className="mobile-only" style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                {filteredTransactions.map((tx) => (
+                  <div
+                    key={tx.id}
+                    className="card mobile-tx-card"
+                    style={{
+                      padding: '12px 14px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: 'var(--bg-surface)',
+                      borderRadius: 'var(--radius-sm)',
+                      border: '1px solid var(--border-default)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                          background: tx.type === 'income' ? 'rgba(78, 99, 45, 0.12)' : 'rgba(184, 12, 9, 0.12)',
+                          color: tx.type === 'income' ? 'var(--status-success)' : 'var(--palette-brick)',
+                        }}
+                      >
+                        {tx.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {tx.description}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '6px', marginTop: '2px' }}>
+                          <span>{tx.category}</span>
+                          <span>·</span>
+                          <span>{tx.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                      <span
+                        className="tabular"
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '13.5px',
+                          color: tx.type === 'income' ? 'var(--status-success)' : 'var(--text-primary)',
+                        }}
+                      >
+                        {tx.type === 'income' ? '+' : '-'}{currency}{tx.amount.toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => deleteTransaction(tx.id)}
+                        className="btn btn-ghost"
+                        style={{ padding: '6px', color: 'var(--text-muted)' }}
+                        aria-label="Delete transaction"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       </div>

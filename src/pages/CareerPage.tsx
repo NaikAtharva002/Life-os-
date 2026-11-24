@@ -206,7 +206,7 @@ export default function CareerPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', width: 'fit-content' }}>
+      <div className="responsive-tabs-bar" style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', maxWidth: '100%', overflowX: 'auto' }}>
         {[
           { id: 'applications', label: `Application Pipeline (${careerApplications.length})` },
           { id: 'skills', label: `Technical Skills (${careerSkills.length})` },

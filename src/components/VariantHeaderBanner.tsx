@@ -36,62 +36,34 @@ export default function VariantHeaderBanner({ onOpenMatrix }: VariantHeaderBanne
   ];
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '8px 20px',
-        background: 'var(--bg-surface)',
-        borderBottom: '1px solid var(--border-default)',
-        fontSize: '12px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 100,
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}
-    >
+    <div className="variant-header-banner">
       {/* Brand Identity & Variant Tag */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="variant-brand-tag" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '6px',
-            padding: '3px 9px',
+            gap: '5px',
+            padding: '2px 8px',
             borderRadius: '12px',
             background: 'var(--palette-brick-subtle)',
             color: 'var(--palette-brick)',
             fontWeight: 700,
-            fontSize: '11px',
+            fontSize: '10.5px',
             letterSpacing: '0.04em',
             border: '1px solid var(--palette-brick-border)'
           }}
         >
-          <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--palette-brick)' }} />
+          <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--palette-brick)' }} />
           LIFE OS
         </span>
-        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-          3-Way Design Showdown
-        </span>
-        <span style={{ color: 'var(--text-muted)', fontSize: '11px', display: 'none', md: 'inline' } as any}>
-          Brick Ember · Dark Walnut · Alabaster
+        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '11.5px' }}>
+          3-Way Showdown
         </span>
       </div>
 
       {/* 3-Variant Live Switcher Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          background: 'var(--bg-elevated)',
-          padding: '3px',
-          borderRadius: '20px',
-          border: '1px solid var(--border-default)',
-          gap: '3px'
-        }}
-      >
+      <div className="variant-switcher-bar">
         {variants.map((v) => {
           const isActive = designVariant === v.id;
           return (
@@ -103,41 +75,18 @@ export default function VariantHeaderBanner({ onOpenMatrix }: VariantHeaderBanne
                   setComparisonMode('single');
                 }
               }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '4px 12px',
-                borderRadius: '16px',
-                fontSize: '11.5px',
-                fontWeight: isActive ? 700 : 500,
-                background: isActive ? 'var(--palette-brick)' : 'transparent',
-                color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
-                border: 'none',
-                cursor: 'pointer',
-                transition: 'all 0.16s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: isActive ? '0 2px 6px rgba(184, 12, 9, 0.28)' : 'none'
-              }}
+              className={`variant-pill-btn ${isActive ? 'active' : ''}`}
               title={`Switch to ${v.name} (${v.tag})`}
             >
               <span>{v.icon}</span>
               <span>{v.name}</span>
-              <span
-                style={{
-                  fontSize: '9.5px',
-                  opacity: isActive ? 0.9 : 0.6,
-                  fontWeight: 400
-                }}
-              >
-                · {v.tag}
-              </span>
             </button>
           );
         })}
       </div>
 
       {/* Comparison Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="variant-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         {/* Split View Toggle */}
         <button
           onClick={() => setComparisonMode(comparisonMode === 'split' ? 'single' : 'split')}

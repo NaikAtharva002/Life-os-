@@ -18,6 +18,7 @@ import {
   ChevronRight,
   AlertCircle,
   Compass,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -199,16 +200,26 @@ export default function Sidebar({
             )}
           </div>
 
-          {!collapsed && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <button
-              onClick={() => setCollapsed(true)}
-              className="btn btn-ghost"
-              style={{ padding: '3px', color: 'var(--text-muted)' }}
-              title="Collapse sidebar"
+              onClick={() => setMobileOpen(false)}
+              className="btn btn-ghost mobile-only"
+              style={{ padding: '4px', color: 'var(--text-muted)' }}
+              aria-label="Close menu drawer"
             >
-              <ChevronLeft size={14} />
+              <X size={16} />
             </button>
-          )}
+            {!collapsed && (
+              <button
+                onClick={() => setCollapsed(true)}
+                className="btn btn-ghost desktop-only"
+                style={{ padding: '3px', color: 'var(--text-muted)' }}
+                title="Collapse sidebar"
+              >
+                <ChevronLeft size={14} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Expand toggle when collapsed */}

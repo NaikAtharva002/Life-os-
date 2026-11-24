@@ -252,7 +252,7 @@ export default function AcademicsPage() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', width: 'fit-content', overflowX: 'auto' }}>
+      <div className="responsive-tabs-bar" style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', maxWidth: '100%', overflowX: 'auto' }}>
         {[
           { id: 'attendance', label: 'Attendance Tracker' },
           { id: 'assignments', label: `Assignments (${assignments.filter((a) => !a.isSubmitted).length})` },

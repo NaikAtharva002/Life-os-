@@ -369,11 +369,11 @@ export default function Dashboard() {
       {/* =========================================================================
           2. ASYMMETRIC DUAL ROW: PHOTOGRAPHIC FOCUS TIMER & TODAY'S TRIAGE
       ========================================================================= */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 1.75fr)', gap: '28px' }}>
+      <section className="dashboard-focus-triage-grid">
         
         {/* Left: Large Photographic Focus Timer */}
         <div
-          className="photo-focus-card"
+          className="photo-focus-card dashboard-timer-column"
           style={{
             backgroundImage: `url(${getPhoto('dashboard-focus-timer').path})`,
           }}
@@ -495,7 +495,7 @@ export default function Dashboard() {
         </div>
 
         {/* Right: Today's Focus Tasks & Overdue Resolution */}
-        <div className="editorial-island">
+        <div className="editorial-island dashboard-triage-column">
           <div className="editorial-island-header">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>

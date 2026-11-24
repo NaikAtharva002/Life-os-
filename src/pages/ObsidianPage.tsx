@@ -222,7 +222,7 @@ Room: ${sub.roomOrLink || 'Lecture Hall'}
       </div>
 
       {/* Main Workspace: Left Note Browser + Right Markdown Editor */}
-      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '18px', flex: 1, minHeight: 0 }}>
+      <div className="obsidian-workspace-grid" style={{ minHeight: 0, flex: 1 }}>
         
         {/* Left: Notes List & Folders */}
         <div

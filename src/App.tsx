@@ -24,6 +24,7 @@ import { Menu, Plus, Search, Sparkles, Terminal } from 'lucide-react';
 import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
 import VariantHeaderBanner from './components/VariantHeaderBanner';
 import ComparisonDrawer from './components/ComparisonDrawer';
+import MobileBottomNav from './components/MobileBottomNav';
 import { ToastContainer } from './components/ui';
 
 export default function App() {
@@ -171,55 +172,33 @@ export default function App() {
         {/* Global Top Toolbar (Single consistent toolbar across all pages) */}
         <header className="global-toolbar">
           {/* Left: Mobile menu toggle + Search Command Palette trigger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <button
               className="btn btn-ghost btn-sm mobile-only"
               onClick={() => setMobileMenuOpen(true)}
-              style={{ display: 'none' }}
               aria-label="Open navigation menu"
             >
-              <Menu size={16} />
+              <Menu size={18} />
             </button>
 
             <button
               onClick={() => setCommandPaletteOpen(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-default)',
-                borderRadius: 'var(--radius-small)',
-                padding: '4px 10px',
-                color: 'var(--text-muted)',
-                fontSize: '12px',
-                cursor: 'pointer',
-                minWidth: '220px',
-                transition: 'border-color 0.12s ease',
-              }}
+              className="toolbar-search-btn"
               aria-label="Search and command palette"
             >
-              <Search size={13} />
-              <span style={{ flex: 1, textAlign: 'left' }}>Search or type command...</span>
-              <kbd
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-default)',
-                  padding: '1px 5px',
-                  borderRadius: '3px',
-                  fontSize: '10px',
-                  fontFamily: 'var(--font-mono)',
-                }}
-              >
+              <Search size={13} style={{ flexShrink: 0 }} />
+              <span className="toolbar-search-text">Search or type command...</span>
+              <kbd className="desktop-only toolbar-search-kbd">
                 ⌘K
               </kbd>
             </button>
           </div>
 
           {/* Right: Architecture Engine Status + New Task, New Goal, AI Assistant */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {/* Ambient Multi-Engine Badge */}
             <div
+              className="desktop-only"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -252,14 +231,14 @@ export default function App() {
 
             <button
               onClick={() => setQuickTaskModalOpen(true)}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm desktop-only"
               title="Create new task"
             >
               <Plus size={13} /> New Task
             </button>
             <button
               onClick={() => setQuickGoalModalOpen(true)}
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm desktop-only"
               title="Create new goal"
             >
               <Plus size={13} /> New Goal
@@ -269,7 +248,7 @@ export default function App() {
               className="btn btn-primary btn-sm"
               title="Open Astra AI Assistant"
             >
-              <Sparkles size={13} /> AI Assistant
+              <Sparkles size={13} /> <span className="desktop-only">AI Assistant</span>
             </button>
           </div>
         </header>
@@ -363,6 +342,12 @@ export default function App() {
             {renderActiveView()}
           </div>
         )}
+
+        {/* MOBILE BOTTOM NAVIGATION BAR */}
+        <MobileBottomNav
+          onOpenMenu={() => setMobileMenuOpen(true)}
+          onQuickCreate={() => setQuickTaskModalOpen(true)}
+        />
       </main>
 
       {/* GLOBAL MODALS */}
