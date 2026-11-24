@@ -15,6 +15,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { getPhoto } from '../utils/photoAssets';
+import { EmptyState } from '../components/ui';
 
 export default function AcademicsPage() {
   const semesters = useStore((s) => s.academicSemesters);
@@ -283,8 +284,25 @@ export default function AcademicsPage() {
 
       {/* TAB 1: ATTENDANCE TRACKER */}
       {activeTab === 'attendance' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '18px' }}>
-          {subjects.map((sub) => {
+        subjects.length === 0 ? (
+          <div className="card" style={{ padding: '36px 20px' }}>
+            <EmptyState
+              illustration="academics"
+              title="No Academic Subjects Enrolled"
+              description="Track current semester courses, minimum attendance thresholds, and safe bunk margins."
+              action={
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowSubjectModal(true)}
+                >
+                  <Plus size={15} /> Enroll First Subject
+                </button>
+              }
+            />
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '18px' }}>
+            {subjects.map((sub) => {
             const pct = sub.totalClasses > 0 ? (sub.attendedClasses / sub.totalClasses) * 100 : 100;
             const target = sub.targetAttendancePercentage || 75;
             const isDanger = pct < target;
@@ -403,14 +421,27 @@ export default function AcademicsPage() {
             );
           })}
         </div>
+        )
       )}
 
       {/* TAB 2: ASSIGNMENTS */}
       {activeTab === 'assignments' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {assignments.length === 0 ? (
-            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              No assignments recorded.
+            <div className="card" style={{ padding: '36px 20px' }}>
+              <EmptyState
+                illustration="academics"
+                title="No Academic Assignments"
+                description="Keep track of upcoming homework, lab submissions, and semester projects."
+                action={
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowAsgModal(true)}
+                  >
+                    <Plus size={15} /> Add Assignment
+                  </button>
+                }
+              />
             </div>
           ) : (
             assignments.map((asg) => {

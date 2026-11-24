@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Flag } from 'lucide-react';
+import { X, Plus, Trash2, Flag, Image as ImageIcon } from 'lucide-react';
 import type { Goal, Priority, Milestone, GoalType } from '../types';
 import useStore from '../store/useStore';
 
@@ -9,6 +9,15 @@ interface GoalModalProps {
   editingGoal?: Goal;
   onClose: () => void;
 }
+
+const COVER_PRESETS = [
+  { id: 'goal-tech', label: 'Tech & Career', path: '/images/goals/goal-tech.jpg' },
+  { id: 'goal-finance', label: 'Wealth & Finance', path: '/images/goals/goal-finance.jpg' },
+  { id: 'goal-fitness', label: 'Endurance & Trail', path: '/images/goals/goal-fitness.jpg' },
+  { id: 'goal-academics', label: 'Library & Academics', path: '/images/goals/goal-academics.jpg' },
+  { id: 'dashboard-nature', label: 'Deep Nature Focus', path: '/images/dashboard/dashboard-nature.jpg' },
+  { id: 'dashboard-workspace', label: 'Minimal Workspace', path: '/images/dashboard/dashboard-workspace.jpg' },
+];
 
 const CATEGORY_PRESETS = [
   'Career & Work',
@@ -66,6 +75,9 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
   const [category, setCategory] = useState(targetGoal?.category || 'Career & Work');
   const [targetDate, setTargetDate] = useState(targetGoal?.targetDate || '');
   const [progress, setProgress] = useState(targetGoal?.progress || 0);
+  const [coverImage, setCoverImage] = useState<string | undefined>(targetGoal?.coverImage);
+  const [customUrl, setCustomUrl] = useState<string>('');
+  const [showCustomUrlInput, setShowCustomUrlInput] = useState<boolean>(false);
 
   const [milestones, setMilestones] = useState<Milestone[]>(targetGoal?.milestones || []);
   const [newMilestoneText, setNewMilestoneText] = useState('');
@@ -101,6 +113,7 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
         targetDate: targetDate || undefined,
         progress,
         milestones,
+        coverImage: coverImage || undefined,
       });
     } else {
       addGoal({
@@ -112,6 +125,7 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
         targetDate: targetDate || undefined,
         progress,
         milestones,
+        coverImage: coverImage || undefined,
       });
     }
     onClose();
@@ -195,6 +209,141 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
                   </option>
                 ))}
               </select>
+            </div>
+
+            {/* Customizable Cover Image */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <label className="label" style={{ margin: 0 }}>Cover Image</label>
+                {coverImage && (
+                  <button
+                    type="button"
+                    onClick={() => setCoverImage(undefined)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--status-danger)',
+                      fontSize: '11px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <X size={12} /> Remove Cover
+                  </button>
+                )}
+              </div>
+
+              {/* Cover Image Presets Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                {COVER_PRESETS.map((preset) => {
+                  const isSelected = coverImage === preset.path || coverImage === preset.id;
+                  return (
+                    <div
+                      key={preset.id}
+                      onClick={() => setCoverImage(preset.path)}
+                      style={{
+                        position: 'relative',
+                        height: '56px',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        border: isSelected ? '2px solid var(--palette-brick)' : '1px solid var(--border-default)',
+                        boxShadow: isSelected ? '0 2px 8px rgba(184, 12, 9, 0.3)' : 'none',
+                        transition: 'all 0.15s ease',
+                      }}
+                    >
+                      <img
+                        src={preset.path}
+                        alt={preset.label}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          background: 'linear-gradient(180deg, transparent 20%, rgba(20, 19, 1, 0.8) 100%)',
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          padding: '3px 5px',
+                        }}
+                      >
+                        <span style={{ fontSize: '9.5px', color: '#ffffff', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {preset.label}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '4px',
+                            right: '4px',
+                            background: 'var(--palette-brick)',
+                            color: '#ffffff',
+                            width: '14px',
+                            height: '14px',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '9px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          ✓
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Custom Image URL Toggle & Input */}
+              {!showCustomUrlInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomUrlInput(true)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--palette-brick)',
+                    fontSize: '11.5px',
+                    cursor: 'pointer',
+                    padding: '2px 0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    fontWeight: 500,
+                  }}
+                >
+                  <ImageIcon size={12} /> Custom image URL...
+                </button>
+              ) : (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="url"
+                    className="input"
+                    placeholder="https://images.unsplash.com/..."
+                    value={customUrl}
+                    onChange={(e) => setCustomUrl(e.target.value)}
+                    style={{ fontSize: '12px', padding: '5px 8px' }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => {
+                      if (customUrl.trim()) {
+                        setCoverImage(customUrl.trim());
+                        setCustomUrl('');
+                        setShowCustomUrlInput(false);
+                      }
+                    }}
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Priority Selector */}

@@ -20,6 +20,7 @@ import useStore from '../store/useStore';
 import GoalModal from '../components/GoalModal';
 import type { Goal, Priority } from '../types';
 import { getPhoto } from '../utils/photoAssets';
+import { EmptyState, ImageWithFallback } from '../components/ui';
 
 const PRIORITY_ORDER: Record<Priority, number> = {
   critical: 0,
@@ -346,24 +347,28 @@ export default function GoalsPage() {
 
       {/* 4. CONTENT VIEW: EDITORIAL PHOTOGRAPHIC GRID OR TABLE */}
       {filteredGoals.length === 0 ? (
-        <div
-          style={{
-            padding: '48px 20px',
-            border: '1px dashed var(--border-default)',
-            borderRadius: 'var(--radius-lg)',
-            textAlign: 'center',
-            color: 'var(--text-muted)',
-            fontSize: '13.5px',
-            background: 'var(--bg-surface)',
-          }}
-        >
-          No matching goals found. Create a new goal to begin your milestone tracking.
-        </div>
+        <EmptyState
+          illustration="goals"
+          title="No Matching Goals Found"
+          description="Define your next ambitious milestone, career objective, or physical achievement."
+          action={
+            <button
+              onClick={() => {
+                setEditingGoal(undefined);
+                setIsModalOpen(true);
+              }}
+              className="btn btn-primary btn-sm"
+              style={{ marginTop: '8px' }}
+            >
+              <Plus size={14} /> Create First Goal
+            </button>
+          }
+        />
       ) : viewMode === 'editorial' ? (
         /* EDITORIAL PHOTOGRAPHIC CARDS GRID */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
           {filteredGoals.map((g, idx) => {
-            const photoUrl = getGoalImage(g.category, idx);
+            const photoUrl = g.coverImage || getGoalImage(g.category, idx);
             const isCompleted = g.progress === 100;
 
             return (

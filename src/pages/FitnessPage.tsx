@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import type { WorkoutSplit, ExerciseItem, WorkoutSet, LoggedExercise } from '../types';
 import { getPhoto } from '../utils/photoAssets';
+import { EmptyState } from '../components/ui';
 
 export default function FitnessPage() {
   const exercises = useStore((s) => s.exercises);
@@ -337,8 +338,20 @@ export default function FitnessPage() {
       {activeTab === 'workouts' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {workoutSessions.length === 0 ? (
-            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              No workout sessions logged yet. Log your first training session today!
+            <div className="card" style={{ padding: '36px 20px' }}>
+              <EmptyState
+                illustration="fitness"
+                title="No Workout Sessions Logged"
+                description="Record strength training, cardio, or athletic recovery sessions to track volume and progressive overload."
+                action={
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => setShowLogModal(true)}
+                  >
+                    <Plus size={15} /> Log First Workout
+                  </button>
+                }
+              />
             </div>
           ) : (
             workoutSessions.map((ws) => (

@@ -38,7 +38,7 @@ interface StoreState {
 
   // 1. Goals
   goals: Goal[];
-  addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'progress' | 'isArchived'> & { progress?: number; milestones?: Goal['milestones']; type?: Goal['type']; category?: string }) => Promise<void>;
+  addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'progress' | 'isArchived'> & { progress?: number; milestones?: Goal['milestones']; type?: Goal['type']; category?: string; coverImage?: string }) => Promise<void>;
   updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   toggleMilestone: (goalId: string, milestoneId: string) => Promise<void>;
@@ -240,6 +240,7 @@ export const useStore = create<StoreState>((set, get) => ({
       progress: goalData.progress ?? 0,
       isArchived: false,
       milestones: goalData.milestones || [],
+      coverImage: goalData.coverImage,
       createdAt: now,
       updatedAt: now,
     };

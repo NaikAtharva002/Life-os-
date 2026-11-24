@@ -24,6 +24,7 @@ export interface Goal {
   progress: number; // 0-100
   milestones: Milestone[];
   linkedHabitIds?: string[];
+  coverImage?: string;
   createdAt: string;
   updatedAt: string;
   isArchived: boolean;

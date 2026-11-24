@@ -14,6 +14,7 @@ import {
   Check,
 } from 'lucide-react';
 import type { ObsidianNote } from '../types';
+import { EmptyState } from '../components/ui';
 
 export default function ObsidianPage() {
   const notes = useStore((s) => s.obsidianNotes);
@@ -464,8 +465,17 @@ Room: ${sub.roomOrLink || 'Lecture Hall'}
             </div>
           </div>
         ) : (
-          <div className="card" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            Select a note or create a new one to begin writing in Markdown.
+          <div className="card" style={{ padding: '60px 20px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <EmptyState
+              illustration="notes"
+              title="No Active Note Selected"
+              description="Select a note from the left sidebar or create a new note to start drafting in Markdown with bidirectional [[wiki-links]]."
+              action={
+                <button className="btn btn-primary" onClick={handleCreateNew}>
+                  <Plus size={15} /> Create New Note
+                </button>
+              }
+            />
           </div>
         )}
       </div>

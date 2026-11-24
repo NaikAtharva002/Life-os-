@@ -22,6 +22,7 @@ import useStore from '../store/useStore';
 import TaskItem from '../components/TaskItem';
 import TaskModal from '../components/TaskModal';
 import { aiEngine } from '../services/aiEngineClient';
+import { EmptyState } from '../components/ui';
 import type { Task, Priority, TaskStatus } from '../types';
 
 const PRIORITY_ORDER: Record<Priority, number> = {
@@ -609,24 +610,28 @@ export default function TasksPage() {
 
           {/* Task List */}
           {filteredTasks.length === 0 ? (
-            <div className="card empty-state" style={{ padding: '40px 20px' }}>
-              <CheckCircle size={40} style={{ opacity: 0.3, margin: '0 auto 12px' }} />
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '16px' }}>No Tasks in this view</h3>
-              <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: 'var(--text-muted)' }}>
-                {activeTab === 'today'
-                  ? 'All clear for today! Add a task or relax.'
-                  : 'No matching tasks found. Create a new task to get started.'}
-              </p>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setPriorityFilter('all');
-                  setSearchQuery('');
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus size={15} /> Add Task
-              </button>
+            <div className="card" style={{ padding: '32px 20px' }}>
+              <EmptyState
+                illustration="tasks"
+                title="No Tasks in this view"
+                description={
+                  activeTab === 'today'
+                    ? 'All clear for today! Take a breath or schedule a priority item.'
+                    : 'No matching tasks found. Create a new task or adjust your search filter.'
+                }
+                action={
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setPriorityFilter('all');
+                      setSearchQuery('');
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Plus size={15} /> Add Task
+                  </button>
+                }
+              />
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

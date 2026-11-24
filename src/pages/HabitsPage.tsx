@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Repeat, Calendar, Check, Edit2, Trash2, LayoutGrid, List, Flame, ArrowRight } from 'lucide-react';
 import useStore from '../store/useStore';
 import HabitModal from '../components/HabitModal';
+import { EmptyState } from '../components/ui';
 import type { Habit } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 
@@ -265,18 +266,23 @@ export default function HabitsPage() {
 
       {/* 4. CONTENT: PHOTOGRAPHIC HABIT TILES OR TABLE */}
       {filteredHabits.length === 0 ? (
-        <div
-          style={{
-            padding: '48px 20px',
-            border: '1px dashed var(--border-default)',
-            borderRadius: 'var(--radius-lg)',
-            textAlign: 'center',
-            color: 'var(--text-muted)',
-            fontSize: '13.5px',
-            background: 'var(--bg-surface)',
-          }}
-        >
-          No habits defined yet. Add your first habit ritual to begin tracking.
+        <div className="card" style={{ padding: '36px 20px' }}>
+          <EmptyState
+            illustration="habits"
+            title="No Habits Tracked Yet"
+            description="Anchor your daily routine with small disciplines. Build momentum one checkmark at a time."
+            action={
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  setEditingHabit(undefined);
+                  setIsModalOpen(true);
+                }}
+              >
+                <Plus size={15} /> Add First Habit
+              </button>
+            }
+          />
         </div>
       ) : viewMode === 'photographic' ? (
         /* PHOTOGRAPHIC HABIT TILES GRID */

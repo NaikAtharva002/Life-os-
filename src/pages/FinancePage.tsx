@@ -14,6 +14,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { getPhoto } from '../utils/photoAssets';
+import { EmptyState } from '../components/ui';
 import type { TransactionType } from '../types';
 
 export default function FinancePage() {
@@ -526,8 +527,24 @@ export default function FinancePage() {
 
           {/* Structured Transactions Table */}
           {filteredTransactions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-              No transactions matching the selected filters.
+            <div style={{ padding: '36px 16px' }}>
+              <EmptyState
+                illustration="finance"
+                title="No Financial Records Found"
+                description="Log income, expenses, or recurring bills to track your personal cash velocity."
+                action={
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      setFilterCategory('All');
+                      setFilterType('all');
+                      setShowTxModal(true);
+                    }}
+                  >
+                    <Plus size={15} /> Log First Transaction
+                  </button>
+                }
+              />
             </div>
           ) : (
             <div style={{ overflowX: 'auto', flex: 1 }}>

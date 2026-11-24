@@ -1,17 +1,22 @@
 import React from 'react';
+import { EmptyStateIllustration, type IllustrationType } from './EmptyStateIllustration';
 
 export interface EmptyStateProps {
   icon?: React.ReactNode;
+  illustration?: IllustrationType;
   title: string;
   description?: string;
   action?: React.ReactNode;
+  style?: React.CSSProperties;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
   icon,
+  illustration,
   title,
   description,
   action,
+  style,
 }) => {
   return (
     <div
@@ -21,14 +26,17 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         alignItems: 'center',
         justifyContent: 'center',
         textAlign: 'center',
-        padding: '48px 24px',
+        padding: '40px 24px',
         border: '1px dashed var(--border-default)',
         borderRadius: 'var(--radius-lg)',
         background: 'var(--bg-surface)',
-        gap: '12px',
+        gap: '14px',
+        ...style,
       }}
     >
-      {icon && (
+      {illustration ? (
+        <EmptyStateIllustration type={illustration} size={68} />
+      ) : icon ? (
         <div
           style={{
             width: '44px',
@@ -43,7 +51,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         >
           {icon}
         </div>
-      )}
+      ) : null}
       <div style={{ maxWidth: '380px' }}>
         <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
           {title}
@@ -54,7 +62,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           </p>
         )}
       </div>
-      {action && <div style={{ marginTop: '4px' }}>{action}</div>}
+      {action && <div style={{ marginTop: '2px' }}>{action}</div>}
     </div>
   );
 };
