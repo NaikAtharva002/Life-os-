@@ -23,12 +23,29 @@ export default function FocusModePage() {
   const setActiveView = useStore((s) => s.setActiveView);
   const tasks = useStore((s) => s.tasks);
   const completeTask = useStore((s) => s.completeTask);
+  const activeFocusTaskId = useStore((s) => s.activeFocusTaskId);
+  const recordTaskFocusDuration = useStore((s) => s.recordTaskFocusDuration);
+  const addToast = useStore((s) => s.addToast);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const pendingTasks = useMemo(() => tasks.filter((t) => !t.isCompleted), [tasks]);
 
   // Selected Task
-  const [selectedTaskId, setSelectedTaskId] = useState<string>(pendingTasks[0]?.id || '');
+  const [selectedTaskId, setSelectedTaskId] = useState<string>(
+    activeFocusTaskId || pendingTasks[0]?.id || ''
+  );
+
+  // Sync if activeFocusTaskId changes
+  useEffect(() => {
+    if (activeFocusTaskId) {
+      setSelectedTaskId(activeFocusTaskId);
+      const target = tasks.find((t) => t.id === activeFocusTaskId);
+      if (target?.estimatedDuration) {
+        setSessionMinutes(target.estimatedDuration);
+        setSecondsRemaining(target.estimatedDuration * 60);
+      }
+    }
+  }, [activeFocusTaskId, tasks]);
 
   // Nature Background Choices
   const backgroundOptions = [
@@ -52,6 +69,14 @@ export default function FocusModePage() {
       }, 1000);
     } else if (secondsRemaining === 0) {
       setIsRunning(false);
+      if (selectedTaskId) {
+        recordTaskFocusDuration(selectedTaskId, sessionMinutes);
+        addToast({
+          type: 'success',
+          title: 'Focus Sprint Completed!',
+          message: `Logged ${sessionMinutes}m focused work time on task.`,
+        });
+      }
     }
     return () => clearInterval(interval);
   }, [isRunning, secondsRemaining]);

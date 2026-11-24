@@ -1,7 +1,32 @@
 export type Priority = 'critical' | 'high' | 'medium' | 'low';
 export type GoalType = 'short-term' | 'medium-term' | 'long-term';
-export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
-export type TaskRecurrence = 'none' | 'daily' | 'weekly' | 'monthly';
+export type TaskStatus =
+  | 'backlog'
+  | 'todo'
+  | 'in-progress'
+  | 'in_progress'
+  | 'completed'
+  | 'done'
+  | 'archived'
+  | 'blocked';
+
+export type TaskRecurrence =
+  | 'none'
+  | 'daily'
+  | 'weekdays'
+  | 'weekly'
+  | 'monthly'
+  | 'yearly'
+  | 'custom';
+
+export interface TaskRecurrenceConfig {
+  type: TaskRecurrence;
+  interval?: number; // e.g. every 2 weeks
+  weekdays?: number[]; // [1, 2, 3, 4, 5] (0=Sun..6=Sat)
+  endDate?: string; // YYYY-MM-DD
+  maxOccurrences?: number;
+  currentOccurrence?: number;
+}
 
 // ==========================================
 // 1. GOALS MANAGEMENT
@@ -44,6 +69,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
+  notes?: string;
   priority: Priority;
   category: string;
   status: TaskStatus;
@@ -53,7 +79,15 @@ export interface Task {
   completedAt?: string;
   isOverdue: boolean;
   recurrence?: TaskRecurrence;
+  recurrenceConfig?: TaskRecurrenceConfig;
+  parentRecurringTaskId?: string;
   subtasks: SubTask[];
+  tags?: string[];
+  estimatedDuration?: number; // duration in minutes
+  actualDuration?: number; // logged minutes
+  dependsOnTaskIds?: string[]; // IDs of blocker tasks
+  isArchived?: boolean;
+  order?: number;
   goalId?: string;
   academicSubjectId?: string;
   careerProjectId?: string;

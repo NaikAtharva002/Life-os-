@@ -1,26 +1,27 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   CheckSquare,
-  Calendar as CalendarIcon,
   Search,
   ArrowUpDown,
-  CheckCircle,
   LayoutList,
   Kanban,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  AlertCircle,
-  Check,
-  MoreVertical,
-  Layers,
   Sparkles,
+  Filter,
+  RotateCcw,
+  Clock,
+  AlertTriangle,
+  Repeat,
+  Tag,
+  Target,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import TaskItem from '../components/TaskItem';
 import TaskModal from '../components/TaskModal';
+import QuickTaskBar from '../components/QuickTaskBar';
+import TaskKanbanBoard from '../components/TaskKanbanBoard';
+import TaskCalendarView from '../components/TaskCalendarView';
 import { aiEngine } from '../services/aiEngineClient';
 import { EmptyState } from '../components/ui';
 import ContextualTipBanner from '../components/ContextualTipBanner';
@@ -33,38 +34,60 @@ const PRIORITY_ORDER: Record<Priority, number> = {
   low: 3,
 };
 
-const KANBAN_COLUMNS: { id: TaskStatus; title: string; color: string }[] = [
-  { id: 'todo', title: 'To Do', color: 'var(--text-secondary)' },
-  { id: 'in-progress', title: 'In Progress', color: 'var(--accent)' },
-  { id: 'blocked', title: 'Blocked', color: 'var(--danger)' },
-  { id: 'done', title: 'Completed', color: 'var(--success)' },
-];
-
 export default function TasksPage() {
   const tasks = useStore((s) => s.tasks);
   const addTask = useStore((s) => s.addTask);
   const deleteTask = useStore((s) => s.deleteTask);
-  const updateTask = useStore((s) => s.updateTask);
-  const completeTask = useStore((s) => s.completeTask);
+  const goals = useStore((s) => s.goals);
 
-  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar'>('list');
-  const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'overdue' | 'all' | 'completed'>('today');
+  // View mode: List vs Kanban vs Calendar (persisted to localStorage)
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'calendar'>(() => {
+    try {
+      return (localStorage.getItem('lifeos_tasks_view_mode') as any) || 'list';
+    } catch {
+      return 'list';
+    }
+  });
+
+  const handleSetViewMode = (mode: 'list' | 'kanban' | 'calendar') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('lifeos_tasks_view_mode', mode);
+    } catch {}
+  };
+
+  // Active view tab: My Day, Upcoming, Inbox, Overdue, Completed, All Tasks
+  const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'inbox' | 'overdue' | 'completed' | 'all'>('today');
+
+  // Filters state
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [goalFilter, setGoalFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [durationFilter, setDurationFilter] = useState<string>('all');
+  const [recurringFilter, setRecurringFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<'priority' | 'date' | 'created'>('priority');
+  const [sortBy, setSortBy] = useState<'priority' | 'date' | 'created' | 'duration' | 'title'>('priority');
 
+  // AI NLP Input
   const [nlpInput, setNlpInput] = useState('');
   const [nlpLoading, setNlpLoading] = useState(false);
 
+  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>(undefined);
-
-  // Calendar State
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [modalInitialValues, setModalInitialValues] = useState<{
+    title?: string;
+    priority?: Priority;
+    dueDate?: string;
+    category?: string;
+    estimatedDuration?: number;
+  } | undefined>(undefined);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
+  // Dynamic filter lists
   const categories = useMemo(() => {
     const set = new Set<string>();
     tasks.forEach((t) => {
@@ -73,26 +96,75 @@ export default function TasksPage() {
     return Array.from(set);
   }, [tasks]);
 
-  // Stats calculation
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    tasks.forEach((t) => {
+      if (t.tags) t.tags.forEach((tag) => set.add(tag));
+    });
+    return Array.from(set);
+  }, [tasks]);
+
+  // Overall counts and stats
   const stats = useMemo(() => {
+    const active = tasks.filter((t) => !t.isArchived);
     return {
-      today: tasks.filter((t) => !t.isCompleted && t.dueDate === todayStr).length,
-      overdue: tasks.filter((t) => !t.isCompleted && t.isOverdue).length,
-      critical: tasks.filter((t) => !t.isCompleted && t.priority === 'critical').length,
-      high: tasks.filter((t) => !t.isCompleted && t.priority === 'high').length,
-      completedToday: tasks.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length,
+      today: active.filter((t) => !t.isCompleted && (t.dueDate === todayStr || (!t.dueDate && !t.isOverdue))).length,
+      upcoming: active.filter((t) => !t.isCompleted && t.dueDate && t.dueDate > todayStr).length,
+      inbox: active.filter((t) => !t.isCompleted && (!t.dueDate || t.status === 'backlog')).length,
+      overdue: active.filter((t) => !t.isCompleted && t.isOverdue).length,
+      completed: active.filter((t) => t.isCompleted).length,
+      completedToday: active.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length,
+      allActive: active.filter((t) => !t.isCompleted).length,
     };
   }, [tasks, todayStr]);
+
+  // Check if any filter is active
+  const isFiltered = useMemo(() => {
+    return (
+      searchQuery.trim() !== '' ||
+      priorityFilter !== 'all' ||
+      statusFilter !== 'all' ||
+      categoryFilter !== 'all' ||
+      goalFilter !== 'all' ||
+      tagFilter !== 'all' ||
+      durationFilter !== 'all' ||
+      recurringFilter !== 'all'
+    );
+  }, [
+    searchQuery,
+    priorityFilter,
+    statusFilter,
+    categoryFilter,
+    goalFilter,
+    tagFilter,
+    durationFilter,
+    recurringFilter,
+  ]);
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setPriorityFilter('all');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setGoalFilter('all');
+    setTagFilter('all');
+    setDurationFilter('all');
+    setRecurringFilter('all');
+  };
 
   // Filter tasks for List view
   const filteredTasks = useMemo(() => {
     return tasks
       .filter((t) => {
+        // Tab routing
         if (activeTab === 'today') {
           return !t.isCompleted && (t.dueDate === todayStr || (!t.dueDate && !t.isOverdue));
         }
         if (activeTab === 'upcoming') {
           return !t.isCompleted && t.dueDate && t.dueDate > todayStr;
+        }
+        if (activeTab === 'inbox') {
+          return !t.isCompleted && (!t.dueDate || t.status === 'backlog');
         }
         if (activeTab === 'overdue') {
           return !t.isCompleted && t.isOverdue;
@@ -106,15 +178,56 @@ export default function TasksPage() {
         return true;
       })
       .filter((t) => {
+        // Exclude archived unless explicitly filtering status='archived'
+        if (statusFilter !== 'archived' && t.isArchived) return false;
+
+        // Priority filter
         if (priorityFilter !== 'all' && t.priority !== priorityFilter) return false;
-        if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
-        if (
-          searchQuery &&
-          !t.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !t.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        ) {
-          return false;
+
+        // Status filter
+        if (statusFilter !== 'all') {
+          if (statusFilter === 'in_progress') {
+            if (t.status !== 'in_progress' && t.status !== 'in-progress') return false;
+          } else if (statusFilter === 'completed') {
+            if (!t.isCompleted && t.status !== 'completed' && t.status !== 'done') return false;
+          } else if (t.status !== statusFilter) {
+            return false;
+          }
         }
+
+        // Category filter
+        if (categoryFilter !== 'all' && t.category !== categoryFilter) return false;
+
+        // Goal filter
+        if (goalFilter !== 'all' && t.goalId !== goalFilter) return false;
+
+        // Tag filter
+        if (tagFilter !== 'all' && (!t.tags || !t.tags.includes(tagFilter))) return false;
+
+        // Duration filter
+        if (durationFilter === 'quick_wins') {
+          if (!t.estimatedDuration || t.estimatedDuration > 25) return false;
+        } else if (durationFilter === 'deep_work') {
+          if (!t.estimatedDuration || t.estimatedDuration < 45) return false;
+        }
+
+        // Recurring filter
+        if (recurringFilter === 'recurring') {
+          if (!t.recurrence || t.recurrence === 'none') return false;
+        } else if (recurringFilter === 'one_time') {
+          if (t.recurrence && t.recurrence !== 'none') return false;
+        }
+
+        // Search Query
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          const matchTitle = t.title.toLowerCase().includes(q);
+          const matchDesc = t.description?.toLowerCase().includes(q);
+          const matchNotes = t.notes?.toLowerCase().includes(q);
+          const matchTag = t.tags?.some((tg) => tg.toLowerCase().includes(q));
+          if (!matchTitle && !matchDesc && !matchNotes && !matchTag) return false;
+        }
+
         return true;
       })
       .sort((a, b) => {
@@ -126,12 +239,44 @@ export default function TasksPage() {
           if (!b.dueDate) return -1;
           return a.dueDate.localeCompare(b.dueDate);
         }
+        if (sortBy === 'duration') {
+          return (b.estimatedDuration || 0) - (a.estimatedDuration || 0);
+        }
+        if (sortBy === 'title') {
+          return a.title.localeCompare(b.title);
+        }
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
-  }, [tasks, activeTab, priorityFilter, searchQuery, sortBy, todayStr]);
+  }, [
+    tasks,
+    activeTab,
+    priorityFilter,
+    statusFilter,
+    categoryFilter,
+    goalFilter,
+    tagFilter,
+    durationFilter,
+    recurringFilter,
+    searchQuery,
+    sortBy,
+    todayStr,
+  ]);
 
   const handleEdit = (t: Task) => {
     setEditingTask(t);
+    setModalInitialValues(undefined);
+    setIsModalOpen(true);
+  };
+
+  const handleExpandQuickTask = (initial?: {
+    title: string;
+    priority: Priority;
+    dueDate?: string;
+    category?: string;
+    estimatedDuration?: number;
+  }) => {
+    setEditingTask(undefined);
+    setModalInitialValues(initial);
     setIsModalOpen(true);
   };
 
@@ -168,49 +313,20 @@ export default function TasksPage() {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('Delete this task?')) {
-      deleteTask(id);
-    }
+    deleteTask(id);
   };
-
-  // Calendar calculations
-  const calendarDays = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const days = [];
-    // Padding previous month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(null);
-    }
-    // Days of month
-    for (let i = 1; i <= daysInMonth; i++) {
-      const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      days.push({
-        dayNum: i,
-        dateStr: dStr,
-        tasks: tasks.filter((t) => t.dueDate === dStr),
-      });
-    }
-    return days;
-  }, [currentDate, tasks]);
-
-  const monthYearLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
   return (
     <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Header */}
+      {/* Page Header */}
       <div className="page-header" style={{ margin: 0 }}>
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CheckSquare size={26} color="var(--accent)" />
-            Task Management & Priorities
+            <CheckSquare size={26} color="var(--palette-brick, #B80C09)" />
+            Task Management & Priorities 2.0
           </h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
-            Focus on what matters most with priority-driven daily task execution and multi-view planning.
+            Multi-view priority execution, subtask checklists, recurring intervals, and focus session orchestration.
           </p>
         </div>
 
@@ -226,7 +342,7 @@ export default function TasksPage() {
             }}
           >
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => handleSetViewMode('list')}
               className="btn btn-sm"
               style={{
                 background: viewMode === 'list' ? 'var(--bg-card)' : 'transparent',
@@ -236,14 +352,16 @@ export default function TasksPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '5px 10px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: viewMode === 'list' ? 700 : 500,
               }}
             >
               <LayoutList size={14} />
               List
             </button>
             <button
-              onClick={() => setViewMode('kanban')}
+              onClick={() => handleSetViewMode('kanban')}
               className="btn btn-sm"
               style={{
                 background: viewMode === 'kanban' ? 'var(--bg-card)' : 'transparent',
@@ -253,14 +371,16 @@ export default function TasksPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '5px 10px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: viewMode === 'kanban' ? 700 : 500,
               }}
             >
               <Kanban size={14} />
               Kanban
             </button>
             <button
-              onClick={() => setViewMode('calendar')}
+              onClick={() => handleSetViewMode('calendar')}
               className="btn btn-sm"
               style={{
                 background: viewMode === 'calendar' ? 'var(--bg-card)' : 'transparent',
@@ -270,7 +390,9 @@ export default function TasksPage() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '5px 10px',
+                padding: '5px 12px',
+                fontSize: '12px',
+                fontWeight: viewMode === 'calendar' ? 700 : 500,
               }}
             >
               <CalendarDays size={14} />
@@ -282,6 +404,7 @@ export default function TasksPage() {
             className="btn btn-primary"
             onClick={() => {
               setEditingTask(undefined);
+              setModalInitialValues(undefined);
               setIsModalOpen(true);
             }}
           >
@@ -294,25 +417,27 @@ export default function TasksPage() {
       <ContextualTipBanner
         tipId="tasks_intro"
         title="Rule of 3 Focus Triage"
-        description="Anchor your morning by pinning your 3 most critical daily objectives. Press 'N' on your keyboard anytime for instant task capture."
+        description="Anchor your morning by pinning your 3 most critical daily objectives. Use Quick Add bar below for 2-second capture or launch a focus timer on any task."
         actionText="Create Priority Task"
         onAction={() => {
           setEditingTask(undefined);
+          setModalInitialValues(undefined);
           setIsModalOpen(true);
         }}
         style={{ marginBottom: '14px' }}
       />
 
-      {/* Compact Summary Strip */}
+      {/* Stats Summary Strip */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '16px',
-          padding: '8px 14px',
-          background: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-sm)',
+          padding: '10px 16px',
+          background: 'var(--bg-card)',
+          borderRadius: '10px',
           border: '1px solid var(--border)',
+          boxShadow: 'var(--panel-shadow)',
           fontSize: '12px',
           color: 'var(--text-secondary)',
           flexWrap: 'wrap',
@@ -320,12 +445,12 @@ export default function TasksPage() {
       >
         <span
           onClick={() => {
-            setViewMode('list');
+            handleSetViewMode('list');
             setActiveTab('today');
           }}
           style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Due Today:</span>
+          <span style={{ color: 'var(--palette-brick, #B80C09)', fontWeight: 600 }}>Due Today:</span>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
             {stats.today}
           </span>
@@ -335,13 +460,13 @@ export default function TasksPage() {
 
         <span
           onClick={() => {
-            setViewMode('list');
+            handleSetViewMode('list');
             setActiveTab('overdue');
           }}
           style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <span style={{ color: 'var(--danger)', fontWeight: 600 }}>Overdue:</span>
-          <span style={{ fontWeight: 700, color: 'var(--danger)', fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ color: 'var(--danger, #EF4444)', fontWeight: 600 }}>Overdue:</span>
+          <span style={{ fontWeight: 700, color: 'var(--danger, #EF4444)', fontVariantNumeric: 'tabular-nums' }}>
             {stats.overdue}
           </span>
         </span>
@@ -350,14 +475,14 @@ export default function TasksPage() {
 
         <span
           onClick={() => {
-            setViewMode('list');
+            handleSetViewMode('list');
             setActiveTab('upcoming');
           }}
           style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
           <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Upcoming:</span>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-            {tasks.filter((t) => !t.isCompleted && t.dueDate && t.dueDate > todayStr).length}
+            {stats.upcoming}
           </span>
         </span>
 
@@ -365,26 +490,35 @@ export default function TasksPage() {
 
         <span
           onClick={() => {
-            setViewMode('list');
-            setActiveTab('completed');
+            handleSetViewMode('list');
+            setActiveTab('inbox');
           }}
           style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <span style={{ color: 'var(--success)', fontWeight: 600 }}>Completed Today:</span>
-          <span style={{ fontWeight: 700, color: 'var(--success)', fontVariantNumeric: 'tabular-nums' }}>
-            {stats.completedToday}
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Inbox:</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
+            {stats.inbox}
           </span>
         </span>
 
         <span style={{ color: 'var(--border)' }}>·</span>
 
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Total Active:</span>
-          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
-            {tasks.filter((t) => !t.isCompleted).length}
+        <span
+          onClick={() => {
+            handleSetViewMode('list');
+            setActiveTab('completed');
+          }}
+          style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+        >
+          <span style={{ color: 'var(--status-success, #22C55E)', fontWeight: 600 }}>Completed Today:</span>
+          <span style={{ fontWeight: 700, color: 'var(--status-success, #22C55E)', fontVariantNumeric: 'tabular-nums' }}>
+            {stats.completedToday}
           </span>
         </span>
       </div>
+
+      {/* Quick Task Capture Bar */}
+      <QuickTaskBar onExpandDetails={handleExpandQuickTask} />
 
       {/* Natural Language Task Input (Python NLP Engine Bridge) */}
       <form
@@ -394,16 +528,16 @@ export default function TasksPage() {
           alignItems: 'center',
           gap: '8px',
           background: 'var(--bg-surface)',
-          padding: '6px 10px',
-          borderRadius: '8px',
+          padding: '6px 12px',
+          borderRadius: '10px',
           border: '1px solid var(--border-default)',
           boxShadow: 'var(--panel-shadow)',
         }}
       >
-        <Sparkles size={14} color="var(--accent)" style={{ flexShrink: 0 }} />
+        <Sparkles size={14} color="var(--palette-brick, #B80C09)" style={{ flexShrink: 0 }} />
         <input
           type="text"
-          placeholder="Natural Language Quick Add: e.g. 'Submit DevOps lab on Friday at 5pm #academics !critical'"
+          placeholder="AI Smart Capture: e.g. 'Submit academic report on Friday at 5pm #academics !critical'"
           value={nlpInput}
           onChange={(e) => setNlpInput(e.target.value)}
           style={{
@@ -429,8 +563,8 @@ export default function TasksPage() {
           VIEW MODE 1: LIST VIEW
       ========================================================================= */}
       {viewMode === 'list' && (
-        <>
-          {/* Single Compact Navigation Row */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Views Navigation Tabs & Search */}
           <div
             style={{
               display: 'flex',
@@ -444,11 +578,12 @@ export default function TasksPage() {
           >
             <div style={{ display: 'flex', gap: '4px', overflowX: 'auto' }}>
               {[
-                { id: 'today', label: 'Today', count: stats.today },
-                { id: 'upcoming', label: 'Upcoming', count: tasks.filter((t) => !t.isCompleted && t.dueDate && t.dueDate > todayStr).length },
+                { id: 'today', label: 'My Day', count: stats.today },
+                { id: 'upcoming', label: 'Upcoming', count: stats.upcoming },
+                { id: 'inbox', label: 'Inbox', count: stats.inbox },
                 { id: 'overdue', label: 'Overdue', count: stats.overdue, danger: stats.overdue > 0 },
-                { id: 'all', label: 'All Active', count: tasks.filter((t) => !t.isCompleted).length },
-                { id: 'completed', label: 'Completed', count: tasks.filter((t) => t.isCompleted).length },
+                { id: 'all', label: 'All Tasks', count: stats.allActive },
+                { id: 'completed', label: 'Completed', count: stats.completed },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -467,7 +602,7 @@ export default function TasksPage() {
                       borderRadius: 'var(--radius-sm)',
                       padding: '4px 10px',
                       fontSize: '12px',
-                      fontWeight: isActive ? 600 : 500,
+                      fontWeight: isActive ? 700 : 500,
                       display: 'flex',
                       alignItems: 'center',
                       gap: '6px',
@@ -500,7 +635,7 @@ export default function TasksPage() {
                 style={{
                   padding: '4px 8px 4px 26px',
                   fontSize: '12px',
-                  width: '180px',
+                  width: '200px',
                   height: '28px',
                   borderRadius: 'var(--radius-sm)',
                 }}
@@ -518,113 +653,189 @@ export default function TasksPage() {
             </div>
           </div>
 
-          {/* Inline Filter Controls Row */}
+          {/* Granular Filters & Sorting Bar */}
           <div
             style={{
               display: 'flex',
               flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'space-between',
-              gap: '12px',
-              padding: '6px 10px',
+              gap: '10px',
+              padding: '8px 12px',
               background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-sm)',
+              borderRadius: '8px',
               border: '1px solid var(--border)',
+              fontSize: '11.5px',
             }}
           >
-            {/* Priority Filter (semantic text pills, no emojis) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>
-                Priority:
-              </span>
-              {(['all', 'critical', 'high', 'medium', 'low'] as const).map((p) => {
-                const isSelected = priorityFilter === p;
-                const dotColor =
-                  p === 'critical'
-                    ? 'var(--priority-critical)'
-                    : p === 'high'
-                    ? 'var(--priority-high)'
-                    : p === 'medium'
-                    ? 'var(--priority-medium)'
-                    : p === 'low'
-                    ? 'var(--priority-low)'
-                    : 'transparent';
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {/* Priority Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Priority:</span>
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <option value="all">All Priorities</option>
+                  <option value="critical">Critical</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
 
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setPriorityFilter(p)}
-                    className="btn btn-sm"
-                    style={{
-                      borderRadius: 'var(--radius-sm)',
-                      fontSize: '11px',
-                      padding: '2px 8px',
-                      fontWeight: isSelected ? 600 : 500,
-                      textTransform: 'capitalize',
-                      background: isSelected ? 'var(--bg-card)' : 'transparent',
-                      color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      border: isSelected ? '1px solid var(--border)' : '1px solid transparent',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                    }}
-                  >
-                    {p !== 'all' && (
-                      <span
-                        style={{
-                          width: '6px',
-                          height: '6px',
-                          borderRadius: '50%',
-                          background: dotColor,
-                        }}
-                      />
-                    )}
-                    {p === 'all' ? 'All' : p}
-                  </button>
-                );
-              })}
-            </div>
+              {/* Status Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Status:</span>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="backlog">Backlog</option>
+                  <option value="todo">To Do</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
 
-            {/* Category & Sort controls */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {/* Category Filter */}
               {categories.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Category:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Category:</span>
                   <select
-                    className="select"
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
-                    style={{ width: 'auto', padding: '3px 8px', fontSize: '11px', height: '26px' }}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      fontSize: '11px',
+                      color: 'var(--text-primary)',
+                    }}
                   >
                     <option value="all">All Categories</option>
                     {categories.map((c) => (
-                      <option key={c} value={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                 </div>
               )}
 
-              {/* Sort By */}
+              {/* Goal Filter */}
+              {goals.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Goal:</span>
+                  <select
+                    value={goalFilter}
+                    onChange={(e) => setGoalFilter(e.target.value)}
+                    style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-default)',
+                      borderRadius: '4px',
+                      padding: '2px 6px',
+                      fontSize: '11px',
+                      color: 'var(--text-primary)',
+                    }}
+                  >
+                    <option value="all">All Goals</option>
+                    {goals.map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.title.substring(0, 20)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Duration Filter */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <ArrowUpDown size={12} color="var(--text-muted)" />
+                <Clock size={11} color="var(--text-muted)" />
                 <select
-                  className="select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  style={{ width: 'auto', padding: '3px 8px', fontSize: '11px', height: '26px' }}
+                  value={durationFilter}
+                  onChange={(e) => setDurationFilter(e.target.value)}
+                  style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-default)',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    color: 'var(--text-primary)',
+                  }}
                 >
-                  <option value="priority">Priority</option>
-                  <option value="date">Due Date</option>
-                  <option value="created">Created</option>
+                  <option value="all">Any Duration</option>
+                  <option value="quick_wins">Quick Wins (≤25m)</option>
+                  <option value="deep_work">Deep Work (≥45m)</option>
                 </select>
               </div>
+
+              {/* Clear All Filters button */}
+              {isFiltered && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="btn btn-secondary btn-sm"
+                  style={{
+                    fontSize: '11px',
+                    padding: '2px 8px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    color: 'var(--palette-brick, #B80C09)',
+                  }}
+                >
+                  <RotateCcw size={11} /> Clear filters
+                </button>
+              )}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <ArrowUpDown size={12} color="var(--text-muted)" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                style={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-default)',
+                  borderRadius: '4px',
+                  padding: '2px 6px',
+                  fontSize: '11px',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <option value="priority">Priority</option>
+                <option value="date">Due Date</option>
+                <option value="duration">Estimated Time</option>
+                <option value="title">Title (A-Z)</option>
+                <option value="created">Created</option>
+              </select>
             </div>
           </div>
 
-          {/* Task List */}
+          {/* Task Items List */}
           {filteredTasks.length === 0 ? (
-            <div className="card" style={{ padding: '32px 20px' }}>
+            <div className="card" style={{ padding: '36px 20px' }}>
               {tasks.length === 0 ? (
                 <EmptyState
                   illustration="tasks"
@@ -635,9 +846,9 @@ export default function TasksPage() {
                     <button
                       className="btn btn-primary"
                       onClick={() => {
-                        setPriorityFilter('all');
-                        setCategoryFilter('all');
-                        setSearchQuery('');
+                        clearAllFilters();
+                        setEditingTask(undefined);
+                        setModalInitialValues(undefined);
                         setIsModalOpen(true);
                       }}
                     >
@@ -645,7 +856,7 @@ export default function TasksPage() {
                     </button>
                   }
                 />
-              ) : searchQuery || priorityFilter !== 'all' || categoryFilter !== 'all' ? (
+              ) : isFiltered ? (
                 <EmptyState
                   illustration="tasks"
                   badge="Filtered Results"
@@ -654,11 +865,7 @@ export default function TasksPage() {
                   action={
                     <button
                       className="btn btn-primary"
-                      onClick={() => {
-                        setPriorityFilter('all');
-                        setCategoryFilter('all');
-                        setSearchQuery('');
-                      }}
+                      onClick={clearAllFilters}
                     >
                       Clear all filters
                     </button>
@@ -666,7 +873,11 @@ export default function TasksPage() {
                   secondaryAction={
                     <button
                       className="btn btn-secondary"
-                      onClick={() => setIsModalOpen(true)}
+                      onClick={() => {
+                        setEditingTask(undefined);
+                        setModalInitialValues(undefined);
+                        setIsModalOpen(true);
+                      }}
                     >
                       <Plus size={15} /> New Task
                     </button>
@@ -681,7 +892,11 @@ export default function TasksPage() {
                   action={
                     <button
                       className="btn btn-primary"
-                      onClick={() => setIsModalOpen(true)}
+                      onClick={() => {
+                        setEditingTask(undefined);
+                        setModalInitialValues(undefined);
+                        setIsModalOpen(true);
+                      }}
                     >
                       <Plus size={15} /> Schedule a task
                     </button>
@@ -690,12 +905,16 @@ export default function TasksPage() {
               ) : (
                 <EmptyState
                   illustration="tasks"
-                  title="No tasks in this category"
+                  title="No tasks in this view"
                   description="All tasks in this section are complete or archived."
                   action={
                     <button
                       className="btn btn-primary"
-                      onClick={() => setIsModalOpen(true)}
+                      onClick={() => {
+                        setEditingTask(undefined);
+                        setModalInitialValues(undefined);
+                        setIsModalOpen(true);
+                      }}
                     >
                       <Plus size={15} /> Add Task
                     </button>
@@ -704,7 +923,7 @@ export default function TasksPage() {
               )}
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {filteredTasks.map((t) => (
                 <TaskItem
                   key={t.id}
@@ -715,481 +934,50 @@ export default function TasksPage() {
               ))}
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* =========================================================================
           VIEW MODE 2: KANBAN BOARD
       ========================================================================= */}
       {viewMode === 'kanban' && (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '16px',
-            alignItems: 'flex-start',
+        <TaskKanbanBoard
+          tasks={tasks}
+          onEditTask={handleEdit}
+          onAddTaskToStatus={(colStatus) => {
+            setEditingTask(undefined);
+            setModalInitialValues(undefined);
+            setIsModalOpen(true);
           }}
-        >
-          {KANBAN_COLUMNS.map((col) => {
-            const colTasks = tasks.filter((t) => {
-              if (col.id === 'done') return t.isCompleted || t.status === 'done';
-              return !t.isCompleted && t.status === col.id;
-            });
-
-            return (
-              <div
-                key={col.id}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  maxHeight: '80vh',
-                }}
-              >
-                {/* Column Header */}
-                <div
-                  style={{
-                    padding: '12px 14px',
-                    borderBottom: '1px solid var(--border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div
-                      style={{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: col.color,
-                      }}
-                    />
-                    <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 700 }}>{col.title}</h3>
-                    <span
-                      style={{
-                        fontSize: '11px',
-                        background: 'var(--bg-card)',
-                        padding: '2px 7px',
-                        borderRadius: '12px',
-                        color: 'var(--text-secondary)',
-                        fontWeight: 600,
-                      }}
-                    >
-                      {colTasks.length}
-                    </span>
-                  </div>
-
-                  <button
-                    className="btn btn-ghost btn-sm"
-                    style={{ padding: '3px 6px' }}
-                    onClick={() => {
-                      setEditingTask(undefined);
-                      setIsModalOpen(true);
-                    }}
-                    title="Add task to this column"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
-
-                {/* Column Cards */}
-                <div
-                  style={{
-                    padding: '12px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                    overflowY: 'auto',
-                  }}
-                >
-                  {colTasks.length === 0 ? (
-                    <div
-                      style={{
-                        padding: '30px 10px',
-                        textAlign: 'center',
-                        color: 'var(--text-muted)',
-                        fontSize: '12px',
-                      }}
-                    >
-                      No tasks in {col.title}
-                    </div>
-                  ) : (
-                    colTasks.map((t) => {
-                      const completedSubs = t.subtasks?.filter((s) => s.isCompleted).length || 0;
-                      const totalSubs = t.subtasks?.length || 0;
-
-                      return (
-                        <div
-                          key={t.id}
-                          className="card"
-                          style={{
-                            padding: '12px',
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border)',
-                            borderRadius: 'var(--radius-sm)',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '8px',
-                            position: 'relative',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => handleEdit(t)}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
-                            <span
-                              style={{
-                                fontSize: '10px',
-                                textTransform: 'uppercase',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                fontWeight: 700,
-                                background:
-                                  t.priority === 'critical'
-                                    ? 'var(--priority-critical-bg)'
-                                    : t.priority === 'high'
-                                    ? 'var(--priority-high-bg)'
-                                    : t.priority === 'medium'
-                                    ? 'var(--priority-medium-bg)'
-                                    : 'var(--priority-low-bg)',
-                                color:
-                                  t.priority === 'critical'
-                                    ? 'var(--priority-critical)'
-                                    : t.priority === 'high'
-                                    ? 'var(--priority-high)'
-                                    : t.priority === 'medium'
-                                    ? 'var(--priority-medium)'
-                                    : 'var(--priority-low)',
-                              }}
-                            >
-                              {t.priority}
-                            </span>
-
-                            {t.category && (
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                {t.category}
-                              </span>
-                            )}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: '13px',
-                              fontWeight: 600,
-                              color: t.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
-                              textDecoration: t.isCompleted ? 'line-through' : 'none',
-                              lineHeight: '1.4',
-                            }}
-                          >
-                            {t.title}
-                          </div>
-
-                          {t.description && (
-                            <p
-                              style={{
-                                margin: 0,
-                                fontSize: '11px',
-                                color: 'var(--text-secondary)',
-                                display: '-webkit-box',
-                                WebkitLineClamp: 2,
-                                WebkitBoxOrient: 'vertical',
-                                overflow: 'hidden',
-                              }}
-                            >
-                              {t.description}
-                            </p>
-                          )}
-
-                          {/* Footer with subtasks & due date */}
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              fontSize: '11px',
-                              color: 'var(--text-muted)',
-                              marginTop: '4px',
-                              paddingTop: '6px',
-                              borderTop: '1px solid var(--border)',
-                            }}
-                          >
-                            {t.dueDate ? (
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  color: t.isOverdue ? 'var(--danger)' : 'var(--text-secondary)',
-                                  fontWeight: t.isOverdue ? 700 : 500,
-                                }}
-                              >
-                                {t.isOverdue ? <AlertCircle size={11} /> : <Clock size={11} />}
-                                {t.dueDate === todayStr ? 'Today' : t.dueDate}
-                              </div>
-                            ) : (
-                              <span />
-                            )}
-
-                            {totalSubs > 0 && (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                <Check size={11} />
-                                {completedSubs}/{totalSubs}
-                              </div>
-                            )}
-
-                            {/* Move Column dropdown */}
-                            <select
-                              className="select"
-                              value={t.isCompleted ? 'done' : t.status}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={async (e) => {
-                                const newStatus = e.target.value as TaskStatus;
-                                if (newStatus === 'done') {
-                                  await completeTask(t.id);
-                                } else {
-                                  await updateTask(t.id, {
-                                    status: newStatus,
-                                    isCompleted: false,
-                                    completedAt: undefined,
-                                  });
-                                }
-                              }}
-                              style={{
-                                fontSize: '10px',
-                                padding: '2px 4px',
-                                height: 'auto',
-                                width: 'auto',
-                                borderRadius: '4px',
-                              }}
-                            >
-                              <option value="todo">To Do</option>
-                              <option value="in-progress">In Progress</option>
-                              <option value="blocked">Blocked</option>
-                              <option value="done">Done</option>
-                            </select>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        />
       )}
 
       {/* =========================================================================
           VIEW MODE 3: CALENDAR VIEW
       ========================================================================= */}
       {viewMode === 'calendar' && (
-        <div className="card" style={{ padding: '20px' }}>
-          {/* Calendar Navigation */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '16px',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <CalendarIcon size={20} color="var(--accent)" />
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700 }}>{monthYearLabel}</h2>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() =>
-                  setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-                }
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setCurrentDate(new Date())}
-              >
-                Today
-              </button>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() =>
-                  setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-                }
-              >
-                <ChevronRight size={14} />
-              </button>
-            </div>
-          </div>
-
-          {/* Days of week header */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              gap: '6px',
-              textAlign: 'center',
-              marginBottom: '8px',
-              fontSize: '12px',
-              fontWeight: 700,
-              color: 'var(--text-muted)',
-            }}
-          >
-            <div>SUN</div>
-            <div>MON</div>
-            <div>TUE</div>
-            <div>WED</div>
-            <div>THU</div>
-            <div>FRI</div>
-            <div>SAT</div>
-          </div>
-
-          {/* Calendar Grid */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(7, 1fr)',
-              gap: '6px',
-            }}
-          >
-            {calendarDays.map((item, idx) => {
-              if (!item) {
-                return (
-                  <div
-                    key={`pad-${idx}`}
-                    style={{
-                      minHeight: '90px',
-                      background: 'var(--bg-secondary)',
-                      opacity: 0.25,
-                      borderRadius: '8px',
-                    }}
-                  />
-                );
-              }
-
-              const isToday = item.dateStr === todayStr;
-
-              return (
-                <div
-                  key={item.dateStr}
-                  style={{
-                    minHeight: '100px',
-                    background: isToday ? 'var(--bg-hover)' : 'var(--bg-secondary)',
-                    borderRadius: '8px',
-                    border: isToday ? '1px solid var(--accent)' : '1px solid var(--border)',
-                    padding: '8px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px',
-                    transition: 'border-color 0.15s ease',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: '4px',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: isToday ? 800 : 600,
-                        color: isToday ? 'var(--accent-primary)' : 'var(--text-primary)',
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: isToday ? 'var(--palette-brick-subtle)' : 'transparent',
-                      }}
-                    >
-                      {item.dayNum}
-                    </span>
-
-                    {item.tasks.length > 0 && (
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          color: 'var(--text-muted)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {item.tasks.length}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Tasks on this day */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflowY: 'auto' }}>
-                    {item.tasks.slice(0, 3).map((t) => (
-                      <div
-                        key={t.id}
-                        onClick={() => handleEdit(t)}
-                        style={{
-                          fontSize: '11px',
-                          padding: '2px 5px',
-                          borderRadius: '4px',
-                          background: t.isCompleted ? 'var(--bg-card)' : 'var(--bg-card)',
-                          borderLeft: `3px solid ${
-                            t.priority === 'critical'
-                              ? 'var(--priority-critical)'
-                              : t.priority === 'high'
-                              ? 'var(--priority-high)'
-                              : t.priority === 'medium'
-                              ? 'var(--priority-medium)'
-                              : 'var(--priority-low)'
-                          }`,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          cursor: 'pointer',
-                          color: t.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
-                          textDecoration: t.isCompleted ? 'line-through' : 'none',
-                        }}
-                        title={t.title}
-                      >
-                        {t.title}
-                      </div>
-                    ))}
-
-                    {item.tasks.length > 3 && (
-                      <div
-                        style={{
-                          fontSize: '10px',
-                          color: 'var(--accent)',
-                          fontWeight: 600,
-                          paddingLeft: '4px',
-                        }}
-                      >
-                        +{item.tasks.length - 3} more
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Task Modal */}
-      {isModalOpen && (
-        <TaskModal
-          task={editingTask}
-          defaultPriority="high"
-          onClose={() => {
-            setIsModalOpen(false);
+        <TaskCalendarView
+          tasks={tasks}
+          onEditTask={handleEdit}
+          onAddTaskForDate={(dateStr) => {
             setEditingTask(undefined);
+            setModalInitialValues({ dueDate: dateStr });
+            setIsModalOpen(true);
           }}
         />
       )}
+
+      {/* Task Creation & Editing Modal */}
+      <TaskModal
+        isOpen={isModalOpen}
+        task={editingTask}
+        initialValues={modalInitialValues}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingTask(undefined);
+          setModalInitialValues(undefined);
+        }}
+      />
     </div>
   );
 }

@@ -15,9 +15,11 @@ import {
   Check,
   Flag,
   ArrowRight,
+  CheckSquare,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import GoalModal from '../components/GoalModal';
+import TaskModal from '../components/TaskModal';
 import type { Goal, Priority } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 import { EmptyState, ImageWithFallback } from '../components/ui';
@@ -32,11 +34,15 @@ const PRIORITY_ORDER: Record<Priority, number> = {
 
 export default function GoalsPage() {
   const goals = useStore((s) => s.goals);
+  const tasks = useStore((s) => s.tasks);
   const deleteGoal = useStore((s) => s.deleteGoal);
   const updateGoal = useStore((s) => s.updateGoal);
+  const setActiveView = useStore((s) => s.setActiveView);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | undefined>(undefined);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [taskModalGoalId, setTaskModalGoalId] = useState<string | undefined>(undefined);
 
   // Filters & State
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -571,6 +577,61 @@ export default function GoalsPage() {
                       <Calendar size={12} /> Target deadline: <span className="tabular">{g.targetDate}</span>
                     </div>
                   )}
+
+                  {/* Connected Tasks Integration */}
+                  {(() => {
+                    const goalTasks = tasks.filter((t) => t.goalId === g.id && !t.isArchived);
+                    const completedTasks = goalTasks.filter((t) => t.isCompleted).length;
+                    const taskPct = goalTasks.length > 0 ? Math.round((completedTasks / goalTasks.length) * 100) : 0;
+
+                    return (
+                      <div
+                        style={{
+                          marginTop: 'auto',
+                          paddingTop: '8px',
+                          borderTop: '1px solid var(--border-default)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
+                          <span style={{ color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckSquare size={11} color="var(--palette-brick)" />
+                            Tasks: {completedTasks}/{goalTasks.length} {goalTasks.length > 0 && `(${taskPct}%)`}
+                          </span>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {goalTasks.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveView('tasks');
+                                }}
+                                className="btn btn-ghost"
+                                style={{ padding: '2px 5px', fontSize: '10.5px', color: 'var(--palette-brick)' }}
+                              >
+                                View
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setTaskModalGoalId(g.id);
+                                setIsTaskModalOpen(true);
+                              }}
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '2px 6px', fontSize: '10.5px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                            >
+                              <Plus size={10} /> Add Task
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -670,6 +731,16 @@ export default function GoalsPage() {
           }}
         />
       )}
+
+      {/* Task Creation Modal linked to Goal */}
+      <TaskModal
+        isOpen={isTaskModalOpen}
+        defaultGoalId={taskModalGoalId}
+        onClose={() => {
+          setIsTaskModalOpen(false);
+          setTaskModalGoalId(undefined);
+        }}
+      />
     </div>
   );
 }

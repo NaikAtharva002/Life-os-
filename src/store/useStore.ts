@@ -31,6 +31,10 @@ import type {
   ReminderSettings,
   ToastItem,
   Priority,
+  SubTask,
+  TaskStatus,
+  TaskRecurrence,
+  TaskRecurrenceConfig,
 } from '../types';
 
 interface StoreState {
@@ -46,12 +50,24 @@ interface StoreState {
 
   // 2. Tasks
   tasks: Task[];
+  activeFocusTaskId?: string;
   addTask: (task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'isCompleted' | 'isOverdue'> & Partial<Pick<Task, 'category' | 'status' | 'isCompleted' | 'isOverdue' | 'subtasks'>>) => Promise<void>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   completeTask: (id: string) => Promise<void>;
+  reopenTask: (id: string) => Promise<void>;
+  duplicateTask: (id: string) => Promise<Task>;
+  archiveTask: (id: string) => Promise<void>;
+  unarchiveTask: (id: string) => Promise<void>;
+  setTaskStatus: (id: string, status: TaskStatus) => Promise<void>;
   rescheduleTask: (id: string, newDate: string) => Promise<void>;
   toggleSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  addSubtask: (taskId: string, title: string) => Promise<void>;
+  updateSubtask: (taskId: string, subtaskId: string, updates: Partial<SubTask>) => Promise<void>;
+  deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
+  quickAddTask: (title: string, priority?: Priority, dueDate?: string, category?: string, estimatedDuration?: number, tags?: string[]) => Promise<Task>;
+  startTaskFocusSession: (taskId: string) => void;
+  recordTaskFocusDuration: (taskId: string, minutes: number) => Promise<void>;
   markOverdueTasks: () => Promise<void>;
 
   // 3. Habits
@@ -174,6 +190,46 @@ interface StoreState {
     initialHabits?: Array<{ name: string; category: string; frequency: string }>;
   }) => Promise<void>;
   resetToFreshSlate: () => Promise<void>;
+}
+
+export function computeNextDueDate(
+  currentDueDate: string | undefined,
+  recurrence: TaskRecurrence,
+  config?: TaskRecurrenceConfig
+): string {
+  const baseDate = currentDueDate ? new Date(currentDueDate + 'T12:00:00') : new Date();
+  const next = new Date(baseDate.getTime());
+
+  const recType = config?.type || recurrence;
+  const interval = config?.interval && config.interval > 0 ? config.interval : 1;
+
+  if (recType === 'daily') {
+    next.setDate(next.getDate() + interval);
+  } else if (recType === 'weekdays') {
+    do {
+      next.setDate(next.getDate() + 1);
+    } while (next.getDay() === 0 || next.getDay() === 6);
+  } else if (recType === 'weekly') {
+    next.setDate(next.getDate() + 7 * interval);
+  } else if (recType === 'monthly') {
+    next.setMonth(next.getMonth() + interval);
+  } else if (recType === 'yearly') {
+    next.setFullYear(next.getFullYear() + interval);
+  } else if (recType === 'custom') {
+    if (config?.weekdays && config.weekdays.length > 0) {
+      let daysChecked = 0;
+      do {
+        next.setDate(next.getDate() + 1);
+        daysChecked++;
+      } while (!config.weekdays.includes(next.getDay()) && daysChecked < 14);
+    } else {
+      next.setDate(next.getDate() + interval);
+    }
+  } else {
+    next.setDate(next.getDate() + 1);
+  }
+
+  return next.toISOString().split('T')[0];
 }
 
 export const useStore = create<StoreState>((set, get) => ({
@@ -366,11 +422,14 @@ export const useStore = create<StoreState>((set, get) => ({
   // ----------------------------------------------------
   // TASKS
   // ----------------------------------------------------
+  activeFocusTaskId: undefined,
+
   addTask: async (taskData) => {
     const now = new Date().toISOString();
     const newTask: Task = {
       title: taskData.title,
       description: taskData.description,
+      notes: taskData.notes,
       priority: taskData.priority,
       category: taskData.category || 'General',
       status: taskData.status || 'todo',
@@ -380,6 +439,13 @@ export const useStore = create<StoreState>((set, get) => ({
       academicSubjectId: taskData.academicSubjectId,
       careerProjectId: taskData.careerProjectId,
       recurrence: taskData.recurrence || 'none',
+      recurrenceConfig: taskData.recurrenceConfig,
+      parentRecurringTaskId: taskData.parentRecurringTaskId,
+      tags: taskData.tags || [],
+      estimatedDuration: taskData.estimatedDuration,
+      actualDuration: taskData.actualDuration || 0,
+      dependsOnTaskIds: taskData.dependsOnTaskIds || [],
+      isArchived: taskData.isArchived ?? false,
       id: uuidv4(),
       isCompleted: taskData.isCompleted ?? false,
       isOverdue: false,
@@ -416,16 +482,104 @@ export const useStore = create<StoreState>((set, get) => ({
   completeTask: async (id) => {
     const now = new Date().toISOString();
     let updatedTask: Task | undefined;
+    let nextRecurringTask: Task | undefined;
+
+    set((s) => {
+      const task = s.tasks.find((t) => t.id === id);
+      if (!task) return s;
+
+      const nextCompleted = !task.isCompleted;
+      updatedTask = {
+        ...task,
+        isCompleted: nextCompleted,
+        status: nextCompleted ? 'completed' : 'todo',
+        completedAt: nextCompleted ? now : undefined,
+        isOverdue: false,
+        updatedAt: now,
+      };
+
+      // Handle recurrence generation when completing a task
+      const isRecurring = task.recurrence && task.recurrence !== 'none';
+      if (nextCompleted && isRecurring) {
+        const nextDate = computeNextDueDate(task.dueDate, task.recurrence!, task.recurrenceConfig);
+        const maxOcc = task.recurrenceConfig?.maxOccurrences;
+        const currentOcc = task.recurrenceConfig?.currentOccurrence || 1;
+        const endDate = task.recurrenceConfig?.endDate;
+
+        const canRecur = (!maxOcc || currentOcc < maxOcc) && (!endDate || nextDate <= endDate);
+
+        if (canRecur) {
+          nextRecurringTask = {
+            id: uuidv4(),
+            title: task.title,
+            description: task.description,
+            notes: task.notes,
+            priority: task.priority,
+            category: task.category,
+            status: 'todo',
+            dueDate: nextDate,
+            dueTime: task.dueTime,
+            isCompleted: false,
+            isOverdue: false,
+            recurrence: task.recurrence,
+            recurrenceConfig: task.recurrenceConfig
+              ? { ...task.recurrenceConfig, currentOccurrence: currentOcc + 1 }
+              : undefined,
+            parentRecurringTaskId: task.parentRecurringTaskId || task.id,
+            subtasks: task.subtasks.map((st) => ({
+              id: uuidv4(),
+              title: st.title,
+              isCompleted: false,
+            })),
+            tags: task.tags ? [...task.tags] : [],
+            estimatedDuration: task.estimatedDuration,
+            actualDuration: 0,
+            dependsOnTaskIds: task.dependsOnTaskIds ? [...task.dependsOnTaskIds] : [],
+            goalId: task.goalId,
+            academicSubjectId: task.academicSubjectId,
+            careerProjectId: task.careerProjectId,
+            createdAt: now,
+            updatedAt: now,
+          };
+        }
+      }
+
+      const nextTasks = s.tasks.map((t) => (t.id === id ? updatedTask! : t));
+      if (nextRecurringTask) {
+        nextTasks.unshift(nextRecurringTask);
+      }
+
+      return { tasks: nextTasks };
+    });
+
+    if (updatedTask) {
+      await LifeOSRepository.saveTask(updatedTask);
+      if (nextRecurringTask) {
+        await LifeOSRepository.saveTask(nextRecurringTask);
+      }
+      if (updatedTask.isCompleted) {
+        get().addToast({
+          type: 'success',
+          title: 'Task Completed',
+          message: nextRecurringTask
+            ? `"${updatedTask.title}" completed. Next recurrence set for ${nextRecurringTask.dueDate}.`
+            : `"${updatedTask.title}" marked done.`,
+        });
+      }
+    }
+  },
+
+  reopenTask: async (id) => {
+    const now = new Date().toISOString();
+    let updatedTask: Task | undefined;
     set((s) => ({
       tasks: s.tasks.map((t) => {
         if (t.id === id) {
-          const nextCompleted = !t.isCompleted;
           updatedTask = {
             ...t,
-            isCompleted: nextCompleted,
-            status: nextCompleted ? 'done' : 'todo',
-            completedAt: nextCompleted ? now : undefined,
-            isOverdue: false,
+            isCompleted: false,
+            status: 'todo',
+            completedAt: undefined,
             updatedAt: now,
           };
           return updatedTask;
@@ -435,13 +589,60 @@ export const useStore = create<StoreState>((set, get) => ({
     }));
     if (updatedTask) {
       await LifeOSRepository.saveTask(updatedTask);
-      if (updatedTask.isCompleted) {
-        get().addToast({
-          type: 'success',
-          title: 'Task Completed',
-          message: `"${updatedTask.title}" marked done.`
-        });
-      }
+      get().addToast({
+        type: 'info',
+        title: 'Task Reopened',
+        message: `"${updatedTask.title}" moved back to active to-do.`,
+      });
+    }
+  },
+
+  duplicateTask: async (id) => {
+    const task = get().tasks.find((t) => t.id === id);
+    if (!task) throw new Error('Task not found');
+    const now = new Date().toISOString();
+    const cloned: Task = {
+      ...task,
+      id: uuidv4(),
+      title: `${task.title} (Copy)`,
+      isCompleted: false,
+      completedAt: undefined,
+      isOverdue: false,
+      status: task.status === 'completed' || task.status === 'done' ? 'todo' : task.status,
+      subtasks: task.subtasks.map((st) => ({ ...st, id: uuidv4(), isCompleted: false })),
+      createdAt: now,
+      updatedAt: now,
+    };
+    set((s) => ({ tasks: [cloned, ...s.tasks] }));
+    await LifeOSRepository.saveTask(cloned);
+    get().addToast({
+      type: 'info',
+      title: 'Task Duplicated',
+      message: `Created copy of "${task.title}".`,
+    });
+    return cloned;
+  },
+
+  archiveTask: async (id) => {
+    await get().updateTask(id, { isArchived: true, status: 'archived' });
+    get().addToast({ type: 'info', title: 'Task Archived' });
+  },
+
+  unarchiveTask: async (id) => {
+    await get().updateTask(id, { isArchived: false, status: 'todo' });
+    get().addToast({ type: 'info', title: 'Task Restored from Archive' });
+  },
+
+  setTaskStatus: async (id, status) => {
+    if (status === 'completed' || status === 'done') {
+      await get().completeTask(id);
+    } else {
+      await get().updateTask(id, {
+        status,
+        isCompleted: false,
+        completedAt: undefined,
+        isArchived: status === 'archived',
+      });
     }
   },
 
@@ -466,6 +667,11 @@ export const useStore = create<StoreState>((set, get) => ({
     }));
     if (updatedTask) {
       await LifeOSRepository.saveTask(updatedTask);
+      get().addToast({
+        type: 'info',
+        title: 'Task Rescheduled',
+        message: `Moved to ${newDate}.`,
+      });
     }
   },
 
@@ -487,6 +693,67 @@ export const useStore = create<StoreState>((set, get) => ({
     if (updatedTask) {
       await LifeOSRepository.saveTask(updatedTask);
     }
+  },
+
+  addSubtask: async (taskId, title) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const newSubtask: SubTask = { id: uuidv4(), title: title.trim(), isCompleted: false };
+    await get().updateTask(taskId, { subtasks: [...task.subtasks, newSubtask] });
+  },
+
+  updateSubtask: async (taskId, subtaskId, updates) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const subtasks = task.subtasks.map((st) =>
+      st.id === subtaskId ? { ...st, ...updates } : st
+    );
+    await get().updateTask(taskId, { subtasks });
+  },
+
+  deleteSubtask: async (taskId, subtaskId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const subtasks = task.subtasks.filter((st) => st.id !== subtaskId);
+    await get().updateTask(taskId, { subtasks });
+  },
+
+  quickAddTask: async (title, priority = 'medium', dueDate, category = 'General', estimatedDuration, tags = []) => {
+    const now = new Date().toISOString();
+    const newTask: Task = {
+      id: uuidv4(),
+      title: title.trim(),
+      priority,
+      category,
+      status: 'todo',
+      dueDate,
+      estimatedDuration,
+      tags,
+      isCompleted: false,
+      isOverdue: false,
+      subtasks: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    set((s) => ({ tasks: [newTask, ...s.tasks] }));
+    await LifeOSRepository.saveTask(newTask);
+    get().addToast({
+      type: 'success',
+      title: 'Task Created',
+      message: `"${newTask.title}" added to your tasks.`,
+    });
+    return newTask;
+  },
+
+  startTaskFocusSession: (taskId: string) => {
+    set({ activeFocusTaskId: taskId, activeView: 'focus' });
+  },
+
+  recordTaskFocusDuration: async (taskId: string, minutes: number) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const currentActual = task.actualDuration || 0;
+    await get().updateTask(taskId, { actualDuration: currentActual + minutes });
   },
 
   markOverdueTasks: async () => {

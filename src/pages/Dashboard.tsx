@@ -45,6 +45,7 @@ export default function Dashboard() {
   const completeTask = useStore((s) => s.completeTask);
   const updateTask = useStore((s) => s.updateTask);
   const rescheduleTask = useStore((s) => s.rescheduleTask);
+  const startTaskFocusSession = useStore((s) => s.startTaskFocusSession);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -660,15 +661,42 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <span
-                    className="badge"
-                    style={{
-                      background: t.priority === 'critical' ? 'var(--priority-critical-bg)' : t.priority === 'high' ? 'var(--priority-high-bg)' : 'var(--bg-subtle)',
-                      color: t.priority === 'critical' ? 'var(--priority-critical)' : t.priority === 'high' ? 'var(--priority-high)' : 'var(--text-secondary)',
-                    }}
-                  >
-                    {t.priority}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {t.estimatedDuration && (
+                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                        <Clock size={10} /> {t.estimatedDuration}m
+                      </span>
+                    )}
+
+                    {!t.isCompleted && (
+                      <button
+                        onClick={() => startTaskFocusSession(t.id)}
+                        className="btn btn-ghost"
+                        style={{
+                          padding: '3px 6px',
+                          fontSize: '11px',
+                          color: 'var(--palette-brick, #B80C09)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                        title="Start focus on this task"
+                      >
+                        <Play size={10} fill="currentColor" />
+                        <span className="hidden sm:inline">Focus</span>
+                      </button>
+                    )}
+
+                    <span
+                      className="badge"
+                      style={{
+                        background: t.priority === 'critical' ? 'var(--priority-critical-bg)' : t.priority === 'high' ? 'var(--priority-high-bg)' : 'var(--bg-subtle)',
+                        color: t.priority === 'critical' ? 'var(--priority-critical)' : t.priority === 'high' ? 'var(--priority-high)' : 'var(--text-secondary)',
+                      }}
+                    >
+                      {t.priority}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
