@@ -1,0 +1,2380 @@
+{
+  "version": 1,
+  "exportedAt": "2026-11-24T12:27:05.650Z",
+  "goals": [
+    {
+      "id": "g-1",
+      "title": "Launch SaaS Platform v1.0",
+      "description": "Ship MVP with Stripe billing, authentication, and onboarding for early beta customers.",
+      "priority": "critical",
+      "type": "short-term",
+      "category": "Career & Work",
+      "targetDate": "2026-12-08",
+      "progress": 65,
+      "milestones": [
+        {
+          "id": "m-1",
+          "title": "Core database schema & secure auth pipeline",
+          "isCompleted": true
+        },
+        {
+          "id": "m-2",
+          "title": "Interactive user dashboard with telemetry",
+          "isCompleted": true
+        },
+        {
+          "id": "m-3",
+          "title": "Stripe webhook verification & checkout flow",
+          "isCompleted": false,
+          "dueDate": "2026-11-27"
+        },
+        {
+          "id": "m-4",
+          "title": "Production deployment & end-to-end smoke testing",
+          "isCompleted": false,
+          "dueDate": "2026-12-06"
+        }
+      ],
+      "createdAt": "2026-11-04",
+      "updatedAt": "2026-11-23",
+      "isArchived": false
+    },
+    {
+      "id": "g-2",
+      "title": "Score 9.5+ SGPA in Semester 5",
+      "description": "Master core subjects (Distributed Systems, ML, Compilers) and submit all assignments with distinction.",
+      "priority": "high",
+      "type": "short-term",
+      "category": "Academics",
+      "targetDate": "2027-01-08",
+      "progress": 55,
+      "milestones": [
+        {
+          "id": "m-5",
+          "title": "Complete Distributed Systems Raft assignment",
+          "isCompleted": true
+        },
+        {
+          "id": "m-6",
+          "title": "Machine Learning lab portfolio & mini-project",
+          "isCompleted": true
+        },
+        {
+          "id": "m-7",
+          "title": "Revise 100% syllabus for Mid-Semester Exams",
+          "isCompleted": false,
+          "dueDate": "2026-12-09"
+        }
+      ],
+      "createdAt": "2026-10-25",
+      "updatedAt": "2026-11-22",
+      "isArchived": false
+    },
+    {
+      "id": "g-3",
+      "title": "Achieve 12% Body Fat & 80kg Lean Mass",
+      "description": "Progressive overload on 4-day Upper/Lower split combined with 160g daily protein nutrition.",
+      "priority": "high",
+      "type": "medium-term",
+      "category": "Health & Fitness",
+      "targetDate": "2027-02-22",
+      "progress": 45,
+      "milestones": [
+        {
+          "id": "m-8",
+          "title": "Hit consistent 4x weekly gym sessions for 6 weeks",
+          "isCompleted": true
+        },
+        {
+          "id": "m-9",
+          "title": "Reach 100kg Bench Press 1RM",
+          "isCompleted": false,
+          "dueDate": "2026-12-24"
+        },
+        {
+          "id": "m-10",
+          "title": "Cut weight from 78kg to 74kg with maintained strength",
+          "isCompleted": false,
+          "dueDate": "2027-02-07"
+        }
+      ],
+      "createdAt": "2026-10-15",
+      "updatedAt": "2026-11-23",
+      "isArchived": false
+    },
+    {
+      "id": "g-4",
+      "title": "Build $10,000 Emergency Liquidity Reserve",
+      "description": "Maintain 6 months of living expenses in high-yield liquid treasury fund.",
+      "priority": "medium",
+      "type": "long-term",
+      "category": "Wealth & Finance",
+      "targetDate": "2027-05-23",
+      "progress": 68,
+      "milestones": [
+        {
+          "id": "m-11",
+          "title": "Reach $5,000 baseline reserve",
+          "isCompleted": true
+        },
+        {
+          "id": "m-12",
+          "title": "Automate $600 monthly transfer to high-yield reserve",
+          "isCompleted": true
+        },
+        {
+          "id": "m-13",
+          "title": "Reach $10,000 full safety cushion",
+          "isCompleted": false,
+          "dueDate": "2027-05-23"
+        }
+      ],
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-11-19",
+      "isArchived": false
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t-1",
+      "title": "Stripe Webhook Signature Verification & Idempotency",
+      "description": "Implement HMAC SHA-256 signature verification to prevent duplicate event execution.",
+      "priority": "critical",
+      "category": "Career & Work",
+      "status": "in-progress",
+      "dueDate": "2026-11-24",
+      "dueTime": "17:00",
+      "isCompleted": false,
+      "isOverdue": false,
+      "recurrence": "none",
+      "goalId": "g-1",
+      "subtasks": [
+        {
+          "id": "st-1",
+          "title": "Verify Stripe-Signature header",
+          "isCompleted": true
+        },
+        {
+          "id": "st-2",
+          "title": "Persist event IDs in database table",
+          "isCompleted": true
+        },
+        {
+          "id": "st-3",
+          "title": "Handle customer.subscription.deleted event",
+          "isCompleted": false
+        }
+      ],
+      "createdAt": "2026-11-22",
+      "updatedAt": "2026-11-24"
+    },
+    {
+      "id": "t-2",
+      "title": "Distributed Systems Raft Consensus Paper Analysis",
+      "description": "Review leader election and log replication sections for tomorrow class seminar.",
+      "priority": "high",
+      "category": "Academics",
+      "status": "todo",
+      "dueDate": "2026-11-24",
+      "dueTime": "20:00",
+      "isCompleted": false,
+      "isOverdue": false,
+      "goalId": "g-2",
+      "academicSubjectId": "sub-1",
+      "subtasks": [
+        {
+          "id": "st-4",
+          "title": "Diagram RPC term escalation state machine",
+          "isCompleted": false
+        },
+        {
+          "id": "st-5",
+          "title": "Draft 1-page executive summary",
+          "isCompleted": false
+        }
+      ],
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-24"
+    },
+    {
+      "id": "t-3",
+      "title": "Upper Body Hypertrophy Session (Bench & Rows)",
+      "description": "Focus on 4x8 heavy bench press followed by chest-supported rows and lateral raises.",
+      "priority": "high",
+      "category": "Health & Fitness",
+      "status": "todo",
+      "dueDate": "2026-11-24",
+      "dueTime": "18:30",
+      "isCompleted": false,
+      "isOverdue": false,
+      "goalId": "g-3",
+      "subtasks": [],
+      "createdAt": "2026-11-24",
+      "updatedAt": "2026-11-24"
+    },
+    {
+      "id": "t-4",
+      "title": "Audit Monthly Recurring SaaS Subscriptions",
+      "description": "Cancel unused cloud instances and tools to keep tech spending under $100 budget.",
+      "priority": "medium",
+      "category": "Wealth & Finance",
+      "status": "done",
+      "dueDate": "2026-11-24",
+      "isCompleted": true,
+      "completedAt": "2026-11-24T11:20:00Z",
+      "isOverdue": false,
+      "goalId": "g-4",
+      "subtasks": [],
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-24"
+    },
+    {
+      "id": "t-5",
+      "title": "Submit Machine Learning Lab Experiment 3",
+      "description": "Convolutional neural network fine-tuning on CIFAR-10 with confusion matrix analysis.",
+      "priority": "high",
+      "category": "Academics",
+      "status": "todo",
+      "dueDate": "2026-11-23",
+      "isCompleted": false,
+      "isOverdue": true,
+      "academicSubjectId": "sub-3",
+      "subtasks": [],
+      "createdAt": "2026-11-19",
+      "updatedAt": "2026-11-23"
+    },
+    {
+      "id": "t-6",
+      "title": "Review System Design Mock Interview Feedback",
+      "description": "Revisit cache invalidation strategies and database sharding techniques.",
+      "priority": "medium",
+      "category": "Career & Work",
+      "status": "todo",
+      "dueDate": "2026-11-26",
+      "isCompleted": false,
+      "isOverdue": false,
+      "careerProjectId": "cp-1",
+      "subtasks": [],
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-24"
+    }
+  ],
+  "habits": [
+    {
+      "id": "h-1",
+      "name": "Deep Work (90m Focused Sprint)",
+      "description": "High-cognitive output with zero notifications and ambient focus audio.",
+      "category": "Productivity",
+      "frequency": "daily",
+      "targetDays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "color": "#7c5cfc",
+      "icon": "Zap",
+      "streak": 16,
+      "longestStreak": 24,
+      "createdAt": "2026-10-10"
+    },
+    {
+      "id": "h-2",
+      "name": "Gym / Resistance Training",
+      "description": "45-60 min strength and progressive overload session.",
+      "category": "Fitness",
+      "frequency": "daily",
+      "targetDays": [
+        1,
+        2,
+        4,
+        5,
+        6
+      ],
+      "color": "#B80C09",
+      "icon": "Dumbbell",
+      "streak": 9,
+      "longestStreak": 18,
+      "createdAt": "2026-09-25"
+    },
+    {
+      "id": "h-3",
+      "name": "Read 20 Pages Non-Fiction",
+      "description": "Deep reading in systems engineering, finance, or cognitive psychology.",
+      "category": "Learning",
+      "frequency": "daily",
+      "targetDays": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "color": "#f59e0b",
+      "icon": "BookOpen",
+      "streak": 22,
+      "longestStreak": 35,
+      "createdAt": "2026-10-05"
+    },
+    {
+      "id": "h-4",
+      "name": "Log Daily Expenses",
+      "description": "Record every purchase and keep finances organized in real-time.",
+      "category": "Finance",
+      "frequency": "daily",
+      "targetDays": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "color": "#06b6d4",
+      "icon": "DollarSign",
+      "streak": 12,
+      "longestStreak": 19,
+      "createdAt": "2026-10-15"
+    },
+    {
+      "id": "h-5",
+      "name": "8 Hours Quality Sleep",
+      "description": "Consistent sleep window: in bed by 23:00, awake at 07:00.",
+      "category": "Health",
+      "frequency": "daily",
+      "targetDays": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "color": "#ec4899",
+      "icon": "Moon",
+      "streak": 6,
+      "longestStreak": 14,
+      "createdAt": "2026-10-25"
+    }
+  ],
+  "habitEntries": [
+    {
+      "id": "he-2-2026-11-24",
+      "habitId": "h-2",
+      "date": "2026-11-24",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-24",
+      "habitId": "h-3",
+      "date": "2026-11-24",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-24",
+      "habitId": "h-4",
+      "date": "2026-11-24",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-24",
+      "habitId": "h-5",
+      "date": "2026-11-24",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-23",
+      "habitId": "h-1",
+      "date": "2026-11-23",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-23",
+      "habitId": "h-2",
+      "date": "2026-11-23",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-23",
+      "habitId": "h-3",
+      "date": "2026-11-23",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-23",
+      "habitId": "h-4",
+      "date": "2026-11-23",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-23",
+      "habitId": "h-5",
+      "date": "2026-11-23",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-22",
+      "habitId": "h-1",
+      "date": "2026-11-22",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-22",
+      "habitId": "h-3",
+      "date": "2026-11-22",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-22",
+      "habitId": "h-4",
+      "date": "2026-11-22",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-22",
+      "habitId": "h-5",
+      "date": "2026-11-22",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-21",
+      "habitId": "h-1",
+      "date": "2026-11-21",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-21",
+      "habitId": "h-2",
+      "date": "2026-11-21",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-21",
+      "habitId": "h-3",
+      "date": "2026-11-21",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-21",
+      "habitId": "h-4",
+      "date": "2026-11-21",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-21",
+      "habitId": "h-5",
+      "date": "2026-11-21",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-20",
+      "habitId": "h-1",
+      "date": "2026-11-20",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-20",
+      "habitId": "h-2",
+      "date": "2026-11-20",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-20",
+      "habitId": "h-3",
+      "date": "2026-11-20",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-20",
+      "habitId": "h-4",
+      "date": "2026-11-20",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-20",
+      "habitId": "h-5",
+      "date": "2026-11-20",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-19",
+      "habitId": "h-1",
+      "date": "2026-11-19",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-19",
+      "habitId": "h-2",
+      "date": "2026-11-19",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-19",
+      "habitId": "h-3",
+      "date": "2026-11-19",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-19",
+      "habitId": "h-4",
+      "date": "2026-11-19",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-19",
+      "habitId": "h-5",
+      "date": "2026-11-19",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-18",
+      "habitId": "h-3",
+      "date": "2026-11-18",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-18",
+      "habitId": "h-4",
+      "date": "2026-11-18",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-18",
+      "habitId": "h-5",
+      "date": "2026-11-18",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-17",
+      "habitId": "h-2",
+      "date": "2026-11-17",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-17",
+      "habitId": "h-3",
+      "date": "2026-11-17",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-17",
+      "habitId": "h-4",
+      "date": "2026-11-17",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-17",
+      "habitId": "h-5",
+      "date": "2026-11-17",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-16",
+      "habitId": "h-1",
+      "date": "2026-11-16",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-16",
+      "habitId": "h-2",
+      "date": "2026-11-16",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-16",
+      "habitId": "h-3",
+      "date": "2026-11-16",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-16",
+      "habitId": "h-4",
+      "date": "2026-11-16",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-16",
+      "habitId": "h-5",
+      "date": "2026-11-16",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-15",
+      "habitId": "h-1",
+      "date": "2026-11-15",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-15",
+      "habitId": "h-3",
+      "date": "2026-11-15",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-15",
+      "habitId": "h-4",
+      "date": "2026-11-15",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-15",
+      "habitId": "h-5",
+      "date": "2026-11-15",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-14",
+      "habitId": "h-1",
+      "date": "2026-11-14",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-14",
+      "habitId": "h-2",
+      "date": "2026-11-14",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-14",
+      "habitId": "h-3",
+      "date": "2026-11-14",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-14",
+      "habitId": "h-4",
+      "date": "2026-11-14",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-14",
+      "habitId": "h-5",
+      "date": "2026-11-14",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-13",
+      "habitId": "h-1",
+      "date": "2026-11-13",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-13",
+      "habitId": "h-2",
+      "date": "2026-11-13",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-13",
+      "habitId": "h-3",
+      "date": "2026-11-13",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-13",
+      "habitId": "h-4",
+      "date": "2026-11-13",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-13",
+      "habitId": "h-5",
+      "date": "2026-11-13",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-12",
+      "habitId": "h-1",
+      "date": "2026-11-12",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-12",
+      "habitId": "h-2",
+      "date": "2026-11-12",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-12",
+      "habitId": "h-3",
+      "date": "2026-11-12",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-12",
+      "habitId": "h-4",
+      "date": "2026-11-12",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-12",
+      "habitId": "h-5",
+      "date": "2026-11-12",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-11",
+      "habitId": "h-3",
+      "date": "2026-11-11",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-11",
+      "habitId": "h-4",
+      "date": "2026-11-11",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-11-11",
+      "habitId": "h-5",
+      "date": "2026-11-11",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-11-10",
+      "habitId": "h-2",
+      "date": "2026-11-10",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-10",
+      "habitId": "h-3",
+      "date": "2026-11-10",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-10",
+      "habitId": "h-4",
+      "date": "2026-11-10",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-10",
+      "habitId": "h-5",
+      "date": "2026-11-10",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-09",
+      "habitId": "h-1",
+      "date": "2026-11-09",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-11-09",
+      "habitId": "h-2",
+      "date": "2026-11-09",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-09",
+      "habitId": "h-3",
+      "date": "2026-11-09",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-09",
+      "habitId": "h-4",
+      "date": "2026-11-09",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-11-09",
+      "habitId": "h-5",
+      "date": "2026-11-09",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-08",
+      "habitId": "h-1",
+      "date": "2026-11-08",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-08",
+      "habitId": "h-3",
+      "date": "2026-11-08",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-08",
+      "habitId": "h-4",
+      "date": "2026-11-08",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-08",
+      "habitId": "h-5",
+      "date": "2026-11-08",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-07",
+      "habitId": "h-1",
+      "date": "2026-11-07",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-11-07",
+      "habitId": "h-2",
+      "date": "2026-11-07",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-07",
+      "habitId": "h-3",
+      "date": "2026-11-07",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-07",
+      "habitId": "h-4",
+      "date": "2026-11-07",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-11-07",
+      "habitId": "h-5",
+      "date": "2026-11-07",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-06",
+      "habitId": "h-1",
+      "date": "2026-11-06",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-11-06",
+      "habitId": "h-2",
+      "date": "2026-11-06",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-06",
+      "habitId": "h-3",
+      "date": "2026-11-06",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-06",
+      "habitId": "h-4",
+      "date": "2026-11-06",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-06",
+      "habitId": "h-5",
+      "date": "2026-11-06",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-05",
+      "habitId": "h-1",
+      "date": "2026-11-05",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-11-05",
+      "habitId": "h-2",
+      "date": "2026-11-05",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-05",
+      "habitId": "h-3",
+      "date": "2026-11-05",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-05",
+      "habitId": "h-4",
+      "date": "2026-11-05",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-11-05",
+      "habitId": "h-5",
+      "date": "2026-11-05",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-04",
+      "habitId": "h-3",
+      "date": "2026-11-04",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-04",
+      "habitId": "h-4",
+      "date": "2026-11-04",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-04",
+      "habitId": "h-5",
+      "date": "2026-11-04",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-11-03",
+      "habitId": "h-2",
+      "date": "2026-11-03",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-03",
+      "habitId": "h-3",
+      "date": "2026-11-03",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-03",
+      "habitId": "h-4",
+      "date": "2026-11-03",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-11-03",
+      "habitId": "h-5",
+      "date": "2026-11-03",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-11-02",
+      "habitId": "h-1",
+      "date": "2026-11-02",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-11-02",
+      "habitId": "h-2",
+      "date": "2026-11-02",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-11-02",
+      "habitId": "h-3",
+      "date": "2026-11-02",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-02",
+      "habitId": "h-4",
+      "date": "2026-11-02",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-11-02",
+      "habitId": "h-5",
+      "date": "2026-11-02",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-11-01",
+      "habitId": "h-1",
+      "date": "2026-11-01",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-11-01",
+      "habitId": "h-3",
+      "date": "2026-11-01",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-11-01",
+      "habitId": "h-4",
+      "date": "2026-11-01",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-11-01",
+      "habitId": "h-5",
+      "date": "2026-11-01",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-31",
+      "habitId": "h-1",
+      "date": "2026-10-31",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-31",
+      "habitId": "h-2",
+      "date": "2026-10-31",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-31",
+      "habitId": "h-3",
+      "date": "2026-10-31",
+      "completed": false
+    },
+    {
+      "id": "he-4-2026-10-31",
+      "habitId": "h-4",
+      "date": "2026-10-31",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-31",
+      "habitId": "h-5",
+      "date": "2026-10-31",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-10-30",
+      "habitId": "h-1",
+      "date": "2026-10-30",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-30",
+      "habitId": "h-2",
+      "date": "2026-10-30",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-30",
+      "habitId": "h-3",
+      "date": "2026-10-30",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-30",
+      "habitId": "h-4",
+      "date": "2026-10-30",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-30",
+      "habitId": "h-5",
+      "date": "2026-10-30",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-29",
+      "habitId": "h-1",
+      "date": "2026-10-29",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-29",
+      "habitId": "h-2",
+      "date": "2026-10-29",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-29",
+      "habitId": "h-3",
+      "date": "2026-10-29",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-29",
+      "habitId": "h-4",
+      "date": "2026-10-29",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-29",
+      "habitId": "h-5",
+      "date": "2026-10-29",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-28",
+      "habitId": "h-3",
+      "date": "2026-10-28",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-28",
+      "habitId": "h-4",
+      "date": "2026-10-28",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-28",
+      "habitId": "h-5",
+      "date": "2026-10-28",
+      "completed": true
+    },
+    {
+      "id": "he-2-2026-10-27",
+      "habitId": "h-2",
+      "date": "2026-10-27",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-27",
+      "habitId": "h-3",
+      "date": "2026-10-27",
+      "completed": false
+    },
+    {
+      "id": "he-4-2026-10-27",
+      "habitId": "h-4",
+      "date": "2026-10-27",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-27",
+      "habitId": "h-5",
+      "date": "2026-10-27",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-26",
+      "habitId": "h-1",
+      "date": "2026-10-26",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-26",
+      "habitId": "h-2",
+      "date": "2026-10-26",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-26",
+      "habitId": "h-3",
+      "date": "2026-10-26",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-26",
+      "habitId": "h-4",
+      "date": "2026-10-26",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-26",
+      "habitId": "h-5",
+      "date": "2026-10-26",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-25",
+      "habitId": "h-1",
+      "date": "2026-10-25",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-25",
+      "habitId": "h-3",
+      "date": "2026-10-25",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-25",
+      "habitId": "h-4",
+      "date": "2026-10-25",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-25",
+      "habitId": "h-5",
+      "date": "2026-10-25",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-10-24",
+      "habitId": "h-1",
+      "date": "2026-10-24",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-24",
+      "habitId": "h-2",
+      "date": "2026-10-24",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-24",
+      "habitId": "h-3",
+      "date": "2026-10-24",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-24",
+      "habitId": "h-4",
+      "date": "2026-10-24",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-24",
+      "habitId": "h-5",
+      "date": "2026-10-24",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-23",
+      "habitId": "h-1",
+      "date": "2026-10-23",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-23",
+      "habitId": "h-2",
+      "date": "2026-10-23",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-23",
+      "habitId": "h-3",
+      "date": "2026-10-23",
+      "completed": false
+    },
+    {
+      "id": "he-4-2026-10-23",
+      "habitId": "h-4",
+      "date": "2026-10-23",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-23",
+      "habitId": "h-5",
+      "date": "2026-10-23",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-22",
+      "habitId": "h-1",
+      "date": "2026-10-22",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-22",
+      "habitId": "h-2",
+      "date": "2026-10-22",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-22",
+      "habitId": "h-3",
+      "date": "2026-10-22",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-22",
+      "habitId": "h-4",
+      "date": "2026-10-22",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-22",
+      "habitId": "h-5",
+      "date": "2026-10-22",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-21",
+      "habitId": "h-3",
+      "date": "2026-10-21",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-21",
+      "habitId": "h-4",
+      "date": "2026-10-21",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-21",
+      "habitId": "h-5",
+      "date": "2026-10-21",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-20",
+      "habitId": "h-2",
+      "date": "2026-10-20",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-20",
+      "habitId": "h-3",
+      "date": "2026-10-20",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-20",
+      "habitId": "h-4",
+      "date": "2026-10-20",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-20",
+      "habitId": "h-5",
+      "date": "2026-10-20",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-19",
+      "habitId": "h-1",
+      "date": "2026-10-19",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-19",
+      "habitId": "h-2",
+      "date": "2026-10-19",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-19",
+      "habitId": "h-3",
+      "date": "2026-10-19",
+      "completed": false
+    },
+    {
+      "id": "he-4-2026-10-19",
+      "habitId": "h-4",
+      "date": "2026-10-19",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-19",
+      "habitId": "h-5",
+      "date": "2026-10-19",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-10-18",
+      "habitId": "h-1",
+      "date": "2026-10-18",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-18",
+      "habitId": "h-3",
+      "date": "2026-10-18",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-18",
+      "habitId": "h-4",
+      "date": "2026-10-18",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-18",
+      "habitId": "h-5",
+      "date": "2026-10-18",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-17",
+      "habitId": "h-1",
+      "date": "2026-10-17",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-17",
+      "habitId": "h-2",
+      "date": "2026-10-17",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-17",
+      "habitId": "h-3",
+      "date": "2026-10-17",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-17",
+      "habitId": "h-4",
+      "date": "2026-10-17",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-17",
+      "habitId": "h-5",
+      "date": "2026-10-17",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-16",
+      "habitId": "h-1",
+      "date": "2026-10-16",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-16",
+      "habitId": "h-2",
+      "date": "2026-10-16",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-16",
+      "habitId": "h-3",
+      "date": "2026-10-16",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-16",
+      "habitId": "h-4",
+      "date": "2026-10-16",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-16",
+      "habitId": "h-5",
+      "date": "2026-10-16",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-10-15",
+      "habitId": "h-1",
+      "date": "2026-10-15",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-15",
+      "habitId": "h-2",
+      "date": "2026-10-15",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-15",
+      "habitId": "h-3",
+      "date": "2026-10-15",
+      "completed": false
+    },
+    {
+      "id": "he-4-2026-10-15",
+      "habitId": "h-4",
+      "date": "2026-10-15",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-15",
+      "habitId": "h-5",
+      "date": "2026-10-15",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-14",
+      "habitId": "h-3",
+      "date": "2026-10-14",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-14",
+      "habitId": "h-4",
+      "date": "2026-10-14",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-14",
+      "habitId": "h-5",
+      "date": "2026-10-14",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-13",
+      "habitId": "h-2",
+      "date": "2026-10-13",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-13",
+      "habitId": "h-3",
+      "date": "2026-10-13",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-13",
+      "habitId": "h-4",
+      "date": "2026-10-13",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-13",
+      "habitId": "h-5",
+      "date": "2026-10-13",
+      "completed": true
+    },
+    {
+      "id": "he-1-2026-10-12",
+      "habitId": "h-1",
+      "date": "2026-10-12",
+      "completed": false
+    },
+    {
+      "id": "he-2-2026-10-12",
+      "habitId": "h-2",
+      "date": "2026-10-12",
+      "completed": true
+    },
+    {
+      "id": "he-3-2026-10-12",
+      "habitId": "h-3",
+      "date": "2026-10-12",
+      "completed": true
+    },
+    {
+      "id": "he-4-2026-10-12",
+      "habitId": "h-4",
+      "date": "2026-10-12",
+      "completed": false
+    },
+    {
+      "id": "he-5-2026-10-12",
+      "habitId": "h-5",
+      "date": "2026-10-12",
+      "completed": false
+    },
+    {
+      "id": "he-1-2026-10-11",
+      "habitId": "h-1",
+      "date": "2026-10-11",
+      "completed": false
+    },
+    {
+      "id": "he-3-2026-10-11",
+      "habitId": "h-3",
+      "date": "2026-10-11",
+      "completed": false
+    },
+    {
+      "id": "he-4-2026-10-11",
+      "habitId": "h-4",
+      "date": "2026-10-11",
+      "completed": true
+    },
+    {
+      "id": "he-5-2026-10-11",
+      "habitId": "h-5",
+      "date": "2026-10-11",
+      "completed": false
+    }
+  ],
+  "financeTransactions": [
+    {
+      "id": "ft-1",
+      "type": "income",
+      "amount": 2400,
+      "category": "Salary & Freelance",
+      "date": "2026-11-20",
+      "description": "Software Engineering Consulting & Milestone Payout",
+      "paymentMethod": "Bank Transfer",
+      "tags": [
+        "consulting",
+        "tech"
+      ],
+      "createdAt": "2026-11-20"
+    },
+    {
+      "id": "ft-2",
+      "type": "expense",
+      "amount": 650,
+      "category": "Housing",
+      "date": "2026-11-14",
+      "description": "Apartment Monthly Rent & Utilities",
+      "paymentMethod": "Bank Transfer",
+      "tags": [
+        "rent",
+        "fixed"
+      ],
+      "createdAt": "2026-11-14"
+    },
+    {
+      "id": "ft-3",
+      "type": "expense",
+      "amount": 142.5,
+      "category": "Groceries",
+      "date": "2026-11-21",
+      "description": "Weekly High-Protein Groceries & Whole Foods",
+      "paymentMethod": "Credit Card",
+      "tags": [
+        "groceries",
+        "nutrition"
+      ],
+      "createdAt": "2026-11-21"
+    },
+    {
+      "id": "ft-4",
+      "type": "expense",
+      "amount": 48,
+      "category": "Tech & Tools",
+      "date": "2026-11-22",
+      "description": "Claude Pro & GitHub Copilot Subscriptions",
+      "paymentMethod": "Credit Card",
+      "tags": [
+        "software",
+        "productivity"
+      ],
+      "createdAt": "2026-11-22"
+    },
+    {
+      "id": "ft-5",
+      "type": "expense",
+      "amount": 32,
+      "category": "Dining",
+      "date": "2026-11-24",
+      "description": "Healthy Lunch with Colleagues",
+      "paymentMethod": "UPI",
+      "tags": [
+        "social"
+      ],
+      "createdAt": "2026-11-24"
+    },
+    {
+      "id": "ft-6",
+      "type": "expense",
+      "amount": 55,
+      "category": "Fitness",
+      "date": "2026-11-12",
+      "description": "Gym Membership & Whey Protein Isolate",
+      "paymentMethod": "Debit Card",
+      "tags": [
+        "gym"
+      ],
+      "createdAt": "2026-11-12"
+    }
+  ],
+  "financeBudgets": [
+    {
+      "id": "b-1",
+      "category": "Housing",
+      "monthlyLimit": 700,
+      "month": "2026-11"
+    },
+    {
+      "id": "b-2",
+      "category": "Groceries",
+      "monthlyLimit": 300,
+      "month": "2026-11"
+    },
+    {
+      "id": "b-3",
+      "category": "Tech & Tools",
+      "monthlyLimit": 100,
+      "month": "2026-11"
+    },
+    {
+      "id": "b-4",
+      "category": "Dining",
+      "monthlyLimit": 150,
+      "month": "2026-11"
+    },
+    {
+      "id": "b-5",
+      "category": "Fitness",
+      "monthlyLimit": 80,
+      "month": "2026-11"
+    }
+  ],
+  "savingsGoals": [
+    {
+      "id": "sg-1",
+      "title": "Emergency Liquidity Cushion",
+      "targetAmount": 10000,
+      "currentAmount": 6800,
+      "targetDate": "2027-05-23",
+      "category": "Safety",
+      "isReached": false,
+      "createdAt": "2026-09-25"
+    },
+    {
+      "id": "sg-2",
+      "title": "MacBook Pro M4 Max Upgrade",
+      "targetAmount": 2500,
+      "currentAmount": 1950,
+      "targetDate": "2027-01-23",
+      "category": "Hardware",
+      "isReached": false,
+      "createdAt": "2026-10-10"
+    }
+  ],
+  "exercises": [
+    {
+      "id": "ex-1",
+      "name": "Barbell Flat Bench Press",
+      "category": "Chest",
+      "targetMuscle": "Pectoralis Major",
+      "equipment": "Barbell & Bench"
+    },
+    {
+      "id": "ex-2",
+      "name": "Incline Dumbbell Press",
+      "category": "Chest",
+      "targetMuscle": "Clavicular Head",
+      "equipment": "Dumbbells & Incline Bench"
+    },
+    {
+      "id": "ex-3",
+      "name": "Barbell Back Squat",
+      "category": "Legs",
+      "targetMuscle": "Quadriceps & Glutes",
+      "equipment": "Squat Rack"
+    },
+    {
+      "id": "ex-4",
+      "name": "Romanian Deadlift",
+      "category": "Legs",
+      "targetMuscle": "Hamstrings & Posterior Chain",
+      "equipment": "Barbell"
+    },
+    {
+      "id": "ex-5",
+      "name": "Weighted Pull-ups",
+      "category": "Back",
+      "targetMuscle": "Latissimus Dorsi",
+      "equipment": "Pull-up Bar"
+    },
+    {
+      "id": "ex-6",
+      "name": "Chest-Supported Row",
+      "category": "Back",
+      "targetMuscle": "Rhomboids & Mid Traps",
+      "equipment": "Dumbbells / Incline Bench"
+    },
+    {
+      "id": "ex-7",
+      "name": "Standing Overhead Barbell Press",
+      "category": "Shoulders",
+      "targetMuscle": "Anterior Deltoid",
+      "equipment": "Barbell"
+    },
+    {
+      "id": "ex-8",
+      "name": "Cable Lateral Raises",
+      "category": "Shoulders",
+      "targetMuscle": "Lateral Deltoid",
+      "equipment": "Cable Tower"
+    }
+  ],
+  "workoutSessions": [
+    {
+      "id": "ws-1",
+      "date": "2026-11-23",
+      "splitType": "Upper",
+      "title": "Upper Body Hypertrophy & Power",
+      "durationMinutes": 62,
+      "exercises": [
+        {
+          "exerciseId": "ex-1",
+          "exerciseName": "Barbell Flat Bench Press",
+          "sets": [
+            {
+              "setNumber": 1,
+              "reps": 8,
+              "weightKg": 85,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 2,
+              "reps": 8,
+              "weightKg": 87.5,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 3,
+              "reps": 6,
+              "weightKg": 90,
+              "isCompleted": true
+            }
+          ]
+        },
+        {
+          "exerciseId": "ex-5",
+          "exerciseName": "Weighted Pull-ups",
+          "sets": [
+            {
+              "setNumber": 1,
+              "reps": 6,
+              "weightKg": 15,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 2,
+              "reps": 6,
+              "weightKg": 15,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 3,
+              "reps": 5,
+              "weightKg": 15,
+              "isCompleted": true
+            }
+          ]
+        },
+        {
+          "exerciseId": "ex-7",
+          "exerciseName": "Standing Overhead Barbell Press",
+          "sets": [
+            {
+              "setNumber": 1,
+              "reps": 8,
+              "weightKg": 52.5,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 2,
+              "reps": 8,
+              "weightKg": 55,
+              "isCompleted": true
+            }
+          ]
+        }
+      ],
+      "totalVolumeKg": 3415,
+      "notes": "Felt strong on bench press. Good bar speed on 90kg set.",
+      "createdAt": "2026-11-23"
+    },
+    {
+      "id": "ws-2",
+      "date": "2026-11-21",
+      "splitType": "Lower",
+      "title": "Lower Body Strength & Quads",
+      "durationMinutes": 58,
+      "exercises": [
+        {
+          "exerciseId": "ex-3",
+          "exerciseName": "Barbell Back Squat",
+          "sets": [
+            {
+              "setNumber": 1,
+              "reps": 6,
+              "weightKg": 110,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 2,
+              "reps": 6,
+              "weightKg": 115,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 3,
+              "reps": 5,
+              "weightKg": 120,
+              "isCompleted": true
+            }
+          ]
+        },
+        {
+          "exerciseId": "ex-4",
+          "exerciseName": "Romanian Deadlift",
+          "sets": [
+            {
+              "setNumber": 1,
+              "reps": 8,
+              "weightKg": 100,
+              "isCompleted": true
+            },
+            {
+              "setNumber": 2,
+              "reps": 8,
+              "weightKg": 105,
+              "isCompleted": true
+            }
+          ]
+        }
+      ],
+      "totalVolumeKg": 3590,
+      "notes": "Deep squat depth maintained. Controlled eccentric on RDLs.",
+      "createdAt": "2026-11-21"
+    }
+  ],
+  "bodyMetrics": [
+    {
+      "id": "bm-1",
+      "date": "2026-10-27",
+      "weightKg": 77.8,
+      "bodyFatPercentage": 15.2,
+      "waistCm": 83,
+      "chestCm": 104,
+      "armsCm": 37.5
+    },
+    {
+      "id": "bm-2",
+      "date": "2026-11-03",
+      "weightKg": 77.1,
+      "bodyFatPercentage": 14.8,
+      "waistCm": 82.2,
+      "chestCm": 104.2,
+      "armsCm": 37.5
+    },
+    {
+      "id": "bm-3",
+      "date": "2026-11-10",
+      "weightKg": 76.4,
+      "bodyFatPercentage": 14.3,
+      "waistCm": 81.5,
+      "chestCm": 104.5,
+      "armsCm": 37.8
+    },
+    {
+      "id": "bm-4",
+      "date": "2026-11-17",
+      "weightKg": 75.8,
+      "bodyFatPercentage": 13.9,
+      "waistCm": 80.8,
+      "chestCm": 104.5,
+      "armsCm": 38
+    },
+    {
+      "id": "bm-5",
+      "date": "2026-11-24",
+      "weightKg": 75.3,
+      "bodyFatPercentage": 13.5,
+      "waistCm": 80.2,
+      "chestCm": 105,
+      "armsCm": 38.2
+    }
+  ],
+  "fitnessGoals": [
+    {
+      "id": "fg-1",
+      "title": "100kg Bench Press 1RM",
+      "metric": "Bench Press",
+      "targetValue": 100,
+      "currentValue": 92.5,
+      "unit": "kg",
+      "targetDate": "2026-12-24",
+      "isAchieved": false
+    },
+    {
+      "id": "fg-2",
+      "title": "140kg Barbell Squat",
+      "metric": "Squat",
+      "targetValue": 140,
+      "currentValue": 125,
+      "unit": "kg",
+      "targetDate": "2027-01-23",
+      "isAchieved": false
+    },
+    {
+      "id": "fg-3",
+      "title": "74kg Lean Weight @ 12% BF",
+      "metric": "Weight",
+      "targetValue": 74,
+      "currentValue": 75.3,
+      "unit": "kg",
+      "targetDate": "2027-01-08",
+      "isAchieved": false
+    }
+  ],
+  "academicSemesters": [
+    {
+      "id": "sem-5",
+      "name": "Semester 5 (Fall 2026)",
+      "year": "2026-2027",
+      "isCurrent": true,
+      "targetGpa": 9.5,
+      "achievedGpa": 9.2
+    },
+    {
+      "id": "sem-4",
+      "name": "Semester 4 (Spring 2026)",
+      "year": "2025-2026",
+      "isCurrent": false,
+      "targetGpa": 9,
+      "achievedGpa": 9.15
+    }
+  ],
+  "academicSubjects": [
+    {
+      "id": "sub-1",
+      "semesterId": "sem-5",
+      "name": "Distributed Systems",
+      "code": "CS401",
+      "credits": 4,
+      "professor": "Dr. Alan Vance",
+      "roomOrLink": "Hall 302",
+      "color": "#B80C09",
+      "targetAttendancePercentage": 75,
+      "totalClasses": 26,
+      "attendedClasses": 23
+    },
+    {
+      "id": "sub-2",
+      "semesterId": "sem-5",
+      "name": "Compiler Architecture",
+      "code": "CS402",
+      "credits": 4,
+      "professor": "Dr. Sarah Jenkins",
+      "roomOrLink": "Lab B",
+      "color": "#6B2B06",
+      "targetAttendancePercentage": 75,
+      "totalClasses": 24,
+      "attendedClasses": 19
+    },
+    {
+      "id": "sub-3",
+      "semesterId": "sem-5",
+      "name": "Deep Learning & Neural Networks",
+      "code": "CS403",
+      "credits": 4,
+      "professor": "Dr. Rajesh Kumar",
+      "roomOrLink": "Auditorium 1",
+      "color": "#4E632D",
+      "targetAttendancePercentage": 75,
+      "totalClasses": 22,
+      "attendedClasses": 21
+    },
+    {
+      "id": "sub-4",
+      "semesterId": "sem-5",
+      "name": "Cloud Computing & DevOps",
+      "code": "CS404",
+      "credits": 3,
+      "professor": "Prof. Miller",
+      "roomOrLink": "Online Stream",
+      "color": "#f59e0b",
+      "targetAttendancePercentage": 75,
+      "totalClasses": 20,
+      "attendedClasses": 14
+    }
+  ],
+  "academicAssignments": [
+    {
+      "id": "aa-1",
+      "subjectId": "sub-1",
+      "title": "Raft Consensus Protocol with Leader Election",
+      "dueDate": "2026-11-28",
+      "weightagePercentage": 15,
+      "isSubmitted": false
+    },
+    {
+      "id": "aa-2",
+      "subjectId": "sub-2",
+      "title": "LL(1) Top-Down Parser Construction in TypeScript",
+      "dueDate": "2026-11-19",
+      "weightagePercentage": 10,
+      "isSubmitted": true,
+      "submittedAt": "2026-11-18",
+      "marksScored": 19,
+      "maxMarks": 20
+    },
+    {
+      "id": "aa-3",
+      "subjectId": "sub-3",
+      "title": "ResNet-50 Fine-tuning for Multi-Class Image Classification",
+      "dueDate": "2026-12-03",
+      "weightagePercentage": 20,
+      "isSubmitted": false
+    }
+  ],
+  "academicExams": [
+    {
+      "id": "ae-1",
+      "subjectId": "sub-1",
+      "title": "Distributed Systems Midterm",
+      "examDate": "2026-12-12",
+      "syllabusCoveragePercentage": 75,
+      "weightagePercentage": 30
+    },
+    {
+      "id": "ae-2",
+      "subjectId": "sub-2",
+      "title": "Compiler Construction Midterm",
+      "examDate": "2026-12-14",
+      "syllabusCoveragePercentage": 60,
+      "weightagePercentage": 30
+    },
+    {
+      "id": "ae-3",
+      "subjectId": "sub-3",
+      "title": "Deep Learning Midterm Exam",
+      "examDate": "2026-12-17",
+      "syllabusCoveragePercentage": 85,
+      "weightagePercentage": 30
+    }
+  ],
+  "timetableSlots": [
+    {
+      "id": "tt-1",
+      "subjectId": "sub-1",
+      "dayOfWeek": 1,
+      "startTime": "09:00",
+      "endTime": "10:30",
+      "room": "Hall 302"
+    },
+    {
+      "id": "tt-2",
+      "subjectId": "sub-2",
+      "dayOfWeek": 1,
+      "startTime": "11:00",
+      "endTime": "12:30",
+      "room": "Lab B"
+    },
+    {
+      "id": "tt-3",
+      "subjectId": "sub-3",
+      "dayOfWeek": 2,
+      "startTime": "10:00",
+      "endTime": "11:30",
+      "room": "Auditorium 1"
+    },
+    {
+      "id": "tt-4",
+      "subjectId": "sub-4",
+      "dayOfWeek": 3,
+      "startTime": "14:00",
+      "endTime": "15:30",
+      "room": "Online"
+    },
+    {
+      "id": "tt-5",
+      "subjectId": "sub-1",
+      "dayOfWeek": 4,
+      "startTime": "09:00",
+      "endTime": "10:30",
+      "room": "Hall 302"
+    },
+    {
+      "id": "tt-6",
+      "subjectId": "sub-3",
+      "dayOfWeek": 5,
+      "startTime": "10:00",
+      "endTime": "11:30",
+      "room": "Auditorium 1"
+    }
+  ],
+  "careerGoals": [
+    {
+      "id": "cg-1",
+      "title": "Founding Engineer / High-Scale Systems Architect",
+      "targetDate": "2027-11-24",
+      "status": "active",
+      "milestones": [
+        {
+          "id": "cgm-1",
+          "title": "Ship 3 high-impact open-source production projects",
+          "completed": true
+        },
+        {
+          "id": "cgm-2",
+          "title": "Lead end-to-end distributed system with >10k QPS",
+          "completed": false
+        },
+        {
+          "id": "cgm-3",
+          "title": "Publish technical research articles on engineering blogs",
+          "completed": false
+        }
+      ]
+    }
+  ],
+  "careerSkills": [
+    {
+      "id": "cs-1",
+      "name": "TypeScript & React Architecture",
+      "category": "Frontend",
+      "proficiency": 5,
+      "targetProficiency": 5,
+      "resources": "Advanced design systems, AST transformation, high-perf DOM"
+    },
+    {
+      "id": "cs-2",
+      "name": "Distributed Systems & Go / Node",
+      "category": "Backend",
+      "proficiency": 4,
+      "targetProficiency": 5,
+      "resources": "MIT 6.824, Raft, Paxos, Event-driven architecture"
+    },
+    {
+      "id": "cs-3",
+      "name": "PostgreSQL & Database Internals",
+      "category": "Backend",
+      "proficiency": 4,
+      "targetProficiency": 5,
+      "resources": "Indexing, MVCC, Query planner, WAL, partitioning"
+    },
+    {
+      "id": "cs-4",
+      "name": "Kubernetes & Cloud Infrastructure",
+      "category": "DevOps & Cloud",
+      "proficiency": 3,
+      "targetProficiency": 4,
+      "resources": "Terraform, Docker multi-stage, Helm charts"
+    },
+    {
+      "id": "cs-5",
+      "name": "LLM Agents & Multi-Agent Systems",
+      "category": "AI & ML",
+      "proficiency": 5,
+      "targetProficiency": 5,
+      "resources": "MCP protocols, tool use, memory architectures"
+    }
+  ],
+  "careerProjects": [
+    {
+      "id": "cp-1",
+      "title": "LIFE OS — Personal Operating System",
+      "description": "Comprehensive personal command center with local-first IndexedDB, habit heatmaps, fintech dashboard, and AI Copilot.",
+      "techStack": [
+        "TypeScript",
+        "React 19",
+        "Dexie.js",
+        "Vite",
+        "Lucide"
+      ],
+      "githubUrl": "https://github.com/atharva/life-os",
+      "status": "in-progress",
+      "featured": true
+    },
+    {
+      "id": "cp-2",
+      "title": "HyperMesh — Distributed Event Broker",
+      "description": "High-throughput append-only log in Go with consensus replication and zero-copy disk streaming.",
+      "techStack": [
+        "Go",
+        "gRPC",
+        "Raft",
+        "Protobuf"
+      ],
+      "githubUrl": "https://github.com/atharva/hypermesh",
+      "status": "completed",
+      "featured": true
+    }
+  ],
+  "careerApplications": [
+    {
+      "id": "ja-1",
+      "company": "Linear",
+      "role": "Product Engineer (Frontend / Full-Stack)",
+      "stage": "interview",
+      "appliedDate": "2026-11-10",
+      "nextFollowUpDate": "2026-11-26",
+      "location": "Remote / SF",
+      "salaryExpectation": "$165,000 + Equity",
+      "notes": "Completed technical interview on state synchronization. Next stage: Architecture discussion with CTO."
+    },
+    {
+      "id": "ja-2",
+      "company": "Stripe",
+      "role": "Infrastructure & Core Systems Intern",
+      "stage": "oa",
+      "appliedDate": "2026-11-17",
+      "nextFollowUpDate": "2026-11-27",
+      "location": "Seattle / Remote",
+      "salaryExpectation": "$68/hr",
+      "notes": "Online assessment received. Focus on algorithms and concurrency."
+    },
+    {
+      "id": "ja-3",
+      "company": "Vercel",
+      "role": "Developer Experience Engineer",
+      "stage": "applied",
+      "appliedDate": "2026-11-21",
+      "location": "Remote",
+      "salaryExpectation": "$140,000 + Equity",
+      "notes": "Submitted portfolio featuring open-source tools."
+    }
+  ],
+  "careerDocuments": [
+    {
+      "id": "cd-1",
+      "title": "Atharva_Resume_2026_v4.pdf",
+      "issuer": "Personal",
+      "issueDate": "2026-11-14",
+      "type": "resume"
+    },
+    {
+      "id": "cd-2",
+      "title": "AWS Certified Solutions Architect Associate",
+      "issuer": "Amazon Web Services",
+      "issueDate": "2026-07-27",
+      "type": "certification"
+    }
+  ],
+  "eveningReviews": [
+    {
+      "id": "er-1",
+      "date": "2026-11-23",
+      "tasksCompleted": [
+        "t-4"
+      ],
+      "tasksPending": [
+        "t-1",
+        "t-2"
+      ],
+      "habitsCompleted": [
+        "h-1",
+        "h-2",
+        "h-3",
+        "h-4"
+      ],
+      "habitsMissed": [
+        "h-5"
+      ],
+      "goalProgress": [
+        {
+          "goalId": "g-1",
+          "progress": 65
+        },
+        {
+          "goalId": "g-2",
+          "progress": 55
+        }
+      ],
+      "reflection": "Had an intense coding sprint on the SaaS backend. Bench press felt explosive. Slept late due to debugging, need to wind down by 22:30 today.",
+      "whatWentWrong": "Allowed late-night screen time to compromise sleep schedule.",
+      "whatToImproveTomorrow": "Start deep work block at 09:00 sharp without checking email first.",
+      "rating": 4,
+      "tomorrowPriorities": [
+        "Complete Stripe Webhook signature verification",
+        "Analyze Raft Consensus paper for Distributed Systems",
+        "Hit Upper Body Hypertrophy session"
+      ],
+      "createdAt": "2026-11-23T21:45:00Z",
+      "updatedAt": "2026-11-23T21:45:00Z"
+    }
+  ],
+  "obsidianNotes": [
+    {
+      "id": "on-1",
+      "title": "Distributed Systems & Raft Consensus Architecture",
+      "folder": "Academics/CS401",
+      "content": "# Distributed Systems & Raft Consensus Architecture\n\nTags: #distributed-systems #raft #consensus #systems\n\nRelated: [[Semester 5 Overview]] | [[LIFE OS Architecture]]\n\n## Core State Machine\nThe Raft consensus algorithm decomposes state machine replication into three distinct sub-problems:\n1. **Leader Election**: When an existing leader fails, a randomized timer initiates an election.\n2. **Log Replication**: The leader accepts log entries from clients and broadcasts them via AppendEntries RPCs.\n3. **Safety**: State Machine Safety Property ensures if a server applies an entry at index *i*, no other server will ever apply a different entry at *i*.\n\n### Key Observations\n- Random election timeouts (150ms-300ms) prevent split votes.\n- Heartbeats maintain leadership authority without client traffic.\n",
+      "tags": [
+        "distributed-systems",
+        "raft",
+        "systems",
+        "academics"
+      ],
+      "linkedSubjectId": "sub-1",
+      "createdAt": "2026-11-19",
+      "updatedAt": "2026-11-23"
+    },
+    {
+      "id": "on-2",
+      "title": "Personal Operating Principles & High Performance",
+      "folder": "Life",
+      "content": "# Personal Operating Principles & High Performance\n\nTags: #mindset #habits #productivity #life\n\nRelated: [[Launch SaaS Platform v1.0]]\n\n## Rule of 3 Priorities\nNever carry more than 3 critical priorities into a single day. Multitasking is the illusion of speed.\n\n## Physical Priming\n- 160g protein daily minimum.\n- 3L hydration before 18:00.\n- Daily sunshine exposure within 30 minutes of waking.\n- Evening reflection ritual every night at 21:30.\n",
+      "tags": [
+        "mindset",
+        "habits",
+        "productivity",
+        "life"
+      ],
+      "linkedGoalId": "g-1",
+      "createdAt": "2026-11-09",
+      "updatedAt": "2026-11-22"
+    }
+  ],
+  "settings": {
+    "theme": "dark",
+    "userName": "Atharva",
+    "currencySymbol": "$",
+    "reminder": {
+      "enabled": true,
+      "time": "21:30",
+      "timezone": "Asia/Calcutta"
+    }
+  }
+}
