@@ -1,5 +1,6 @@
 import { db } from './index';
 import { getInitialSeedData } from './seedData';
+import { parseAndValidateBackup } from '../lib/backupSchema';
 import type {
   Goal,
   Task,
@@ -30,7 +31,7 @@ import type {
 
 export class LifeOSRepository {
   /**
-   * Initializes database and seeds sample data if fresh.
+   * Initializes database and returns active user data. Fresh installs have zero dummy records.
    */
   static async initialize(): Promise<{
     goals: Goal[];
@@ -60,35 +61,36 @@ export class LifeOSRepository {
   }> {
     const isInitialized = await db.appMeta.get('initialized');
 
+    const defaultSettings: AppSettings = {
+      theme: 'dark',
+      userName: '',
+      currencySymbol: '₹',
+      dayStartHour: 4,
+      reminder: {
+        enabled: false,
+        time: '21:30',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+      },
+      onboardingCompleted: false,
+      selectedLifeAreas: ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career'],
+      weekStartDay: 'monday',
+      defaultFocusDuration: 25,
+      dismissedTips: [],
+      isDemoMode: false,
+      activeWorkspaceId: 'workspace-default',
+      workspaces: [
+        {
+          id: 'workspace-default',
+          name: 'Personal Space',
+          isDefault: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
+    };
+
     if (!isInitialized) {
       console.log('[LifeOS IndexedDB] Fresh installation detected. Initializing clean personal workspace...');
-      const defaultSettings: AppSettings = {
-        theme: 'dark',
-        userName: '',
-        currencySymbol: '$',
-        reminder: {
-          enabled: false,
-          time: '21:30',
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-        },
-        onboardingCompleted: false,
-        selectedLifeAreas: ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career'],
-        weekStartDay: 'monday',
-        defaultFocusDuration: 25,
-        dismissedTips: [],
-        isDemoMode: false,
-        activeWorkspaceId: 'workspace-default',
-        workspaces: [
-          {
-            id: 'workspace-default',
-            name: 'Personal Space',
-            isDefault: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        ],
-      };
-
       await db.appMeta.put({ key: 'initialized', value: true });
       await db.appMeta.put({ key: 'settings', value: defaultSettings });
 
@@ -173,83 +175,82 @@ export class LifeOSRepository {
       db.appMeta.get('settings'),
     ]);
 
-    const defaultSettings: AppSettings = {
-      theme: 'dark',
-      userName: '',
-      currencySymbol: '$',
-      reminder: {
-        enabled: false,
-        time: '21:30',
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      },
-      onboardingCompleted: false,
-      weekStartDay: 'monday',
-      isDemoMode: false,
-      activeWorkspaceId: 'workspace-default',
-      workspaces: [
-        {
-          id: 'workspace-default',
-          name: 'Personal Space',
-          isDefault: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-    };
+    const active = <T extends { deletedAt?: string | null }>(items: T[]): T[] =>
+      items.filter((item) => !item.deletedAt);
+
+    const mergedSettings: AppSettings = savedSettings?.value
+      ? { ...defaultSettings, ...savedSettings.value }
+      : defaultSettings;
 
     return {
-      goals,
-      tasks,
-      habits,
-      habitEntries,
-      financeTransactions,
-      financeBudgets,
-      savingsGoals,
-      exercises,
-      workoutSessions,
-      bodyMetrics,
-      fitnessGoals,
-      academicSemesters,
-      academicSubjects,
-      academicAssignments,
-      academicExams,
-      timetableSlots,
-      careerGoals,
-      careerSkills,
-      careerProjects,
-      careerApplications,
-      careerDocuments,
-      eveningReviews,
-      obsidianNotes,
-      settings: savedSettings?.value || defaultSettings,
+      goals: active(goals),
+      tasks: active(tasks),
+      habits: active(habits),
+      habitEntries: active(habitEntries),
+      financeTransactions: active(financeTransactions),
+      financeBudgets: active(financeBudgets),
+      savingsGoals: active(savingsGoals),
+      exercises: active(exercises),
+      workoutSessions: active(workoutSessions),
+      bodyMetrics: active(bodyMetrics),
+      fitnessGoals: active(fitnessGoals),
+      academicSemesters: active(academicSemesters),
+      academicSubjects: active(academicSubjects),
+      academicAssignments: active(academicAssignments),
+      academicExams: active(academicExams),
+      timetableSlots: active(timetableSlots),
+      careerGoals: active(careerGoals),
+      careerSkills: active(careerSkills),
+      careerProjects: active(careerProjects),
+      careerApplications: active(careerApplications),
+      careerDocuments: active(careerDocuments),
+      eveningReviews: active(eveningReviews),
+      obsidianNotes: active(obsidianNotes),
+      settings: mergedSettings,
     };
   }
 
   // --- GOAL ACTIONS ---
   static async saveGoal(goal: Goal) {
+    goal.updatedAt = goal.updatedAt || new Date().toISOString();
     await db.goals.put(goal);
   }
   static async deleteGoal(id: string) {
     await db.goals.delete(id);
   }
+  static async softDeleteGoal(id: string) {
+    const now = new Date().toISOString();
+    await db.goals.update(id, { deletedAt: now, updatedAt: now });
+  }
 
   // --- TASK ACTIONS ---
   static async saveTask(task: Task) {
+    task.updatedAt = task.updatedAt || new Date().toISOString();
     await db.tasks.put(task);
   }
   static async deleteTask(id: string) {
     await db.tasks.delete(id);
   }
+  static async softDeleteTask(id: string) {
+    const now = new Date().toISOString();
+    await db.tasks.update(id, { deletedAt: now, updatedAt: now });
+  }
 
   // --- HABIT ACTIONS ---
   static async saveHabit(habit: Habit) {
+    habit.updatedAt = habit.updatedAt || new Date().toISOString();
     await db.habits.put(habit);
   }
   static async deleteHabit(id: string) {
     await db.habits.delete(id);
     await db.habitEntries.where('habitId').equals(id).delete();
   }
+  static async softDeleteHabit(id: string) {
+    const now = new Date().toISOString();
+    await db.habits.update(id, { deletedAt: now, updatedAt: now });
+  }
   static async saveHabitEntry(entry: HabitEntry) {
+    entry.updatedAt = entry.updatedAt || new Date().toISOString();
     await db.habitEntries.put(entry);
   }
   static async deleteHabitEntry(id: string) {
@@ -258,15 +259,22 @@ export class LifeOSRepository {
 
   // --- FINANCE ACTIONS ---
   static async saveTransaction(tx: FinanceTransaction) {
+    tx.updatedAt = tx.updatedAt || new Date().toISOString();
     await db.financeTransactions.put(tx);
   }
   static async deleteTransaction(id: string) {
     await db.financeTransactions.delete(id);
   }
+  static async softDeleteTransaction(id: string) {
+    const now = new Date().toISOString();
+    await db.financeTransactions.update(id, { deletedAt: now, updatedAt: now });
+  }
   static async saveBudget(b: FinanceBudget) {
+    b.updatedAt = b.updatedAt || new Date().toISOString();
     await db.financeBudgets.put(b);
   }
   static async saveSavingsGoal(sg: SavingsGoal) {
+    sg.updatedAt = sg.updatedAt || new Date().toISOString();
     await db.savingsGoals.put(sg);
   }
   static async deleteSavingsGoal(id: string) {
@@ -275,47 +283,56 @@ export class LifeOSRepository {
 
   // --- FITNESS ACTIONS ---
   static async saveWorkoutSession(ws: WorkoutSession) {
+    ws.updatedAt = ws.updatedAt || new Date().toISOString();
     await db.workoutSessions.put(ws);
   }
   static async deleteWorkoutSession(id: string) {
     await db.workoutSessions.delete(id);
   }
   static async saveExercise(ex: ExerciseItem) {
+    ex.updatedAt = ex.updatedAt || new Date().toISOString();
     await db.exercises.put(ex);
   }
   static async saveBodyMetric(bm: BodyMetric) {
+    bm.updatedAt = bm.updatedAt || new Date().toISOString();
     await db.bodyMetrics.put(bm);
   }
   static async deleteBodyMetric(id: string) {
     await db.bodyMetrics.delete(id);
   }
   static async saveFitnessGoal(fg: FitnessGoal) {
+    fg.updatedAt = fg.updatedAt || new Date().toISOString();
     await db.fitnessGoals.put(fg);
   }
 
   // --- ACADEMIC ACTIONS ---
   static async saveSemester(sem: AcademicSemester) {
+    sem.updatedAt = sem.updatedAt || new Date().toISOString();
     await db.academicSemesters.put(sem);
   }
   static async saveSubject(sub: AcademicSubject) {
+    sub.updatedAt = sub.updatedAt || new Date().toISOString();
     await db.academicSubjects.put(sub);
   }
   static async deleteSubject(id: string) {
     await db.academicSubjects.delete(id);
   }
   static async saveAssignment(asg: AcademicAssignment) {
+    asg.updatedAt = asg.updatedAt || new Date().toISOString();
     await db.academicAssignments.put(asg);
   }
   static async deleteAssignment(id: string) {
     await db.academicAssignments.delete(id);
   }
   static async saveExam(exam: AcademicExam) {
+    exam.updatedAt = exam.updatedAt || new Date().toISOString();
     await db.academicExams.put(exam);
   }
   static async deleteExam(id: string) {
     await db.academicExams.delete(id);
   }
   static async saveTimetableSlot(slot: TimetableSlot) {
+    slot.updatedAt = slot.updatedAt || new Date().toISOString();
     await db.timetableSlots.put(slot);
   }
   static async deleteTimetableSlot(id: string) {
@@ -324,18 +341,22 @@ export class LifeOSRepository {
 
   // --- CAREER ACTIONS ---
   static async saveCareerGoal(cg: CareerGoal) {
+    cg.updatedAt = cg.updatedAt || new Date().toISOString();
     await db.careerGoals.put(cg);
   }
   static async saveCareerSkill(skill: SkillItem) {
+    skill.updatedAt = skill.updatedAt || new Date().toISOString();
     await db.careerSkills.put(skill);
   }
   static async saveCareerProject(proj: CareerProject) {
+    proj.updatedAt = proj.updatedAt || new Date().toISOString();
     await db.careerProjects.put(proj);
   }
   static async deleteCareerProject(id: string) {
     await db.careerProjects.delete(id);
   }
   static async saveJobApplication(app: JobApplication) {
+    app.updatedAt = app.updatedAt || new Date().toISOString();
     await db.careerApplications.put(app);
   }
   static async deleteJobApplication(id: string) {
@@ -344,11 +365,13 @@ export class LifeOSRepository {
 
   // --- EVENING REVIEW ---
   static async saveEveningReview(review: EveningReview) {
+    review.updatedAt = review.updatedAt || new Date().toISOString();
     await db.eveningReviews.put(review);
   }
 
   // --- OBSIDIAN NOTES ---
   static async saveNote(note: ObsidianNote) {
+    note.updatedAt = note.updatedAt || new Date().toISOString();
     await db.obsidianNotes.put(note);
   }
   static async deleteNote(id: string) {
@@ -362,9 +385,11 @@ export class LifeOSRepository {
 
   // --- BACKUP & RESTORE ---
   static async exportEntireDatabaseJSON(): Promise<string> {
+    const settingsRecord = await db.appMeta.get('settings');
     const data = {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
+      appVersion: '3.0.0',
       goals: await db.goals.toArray(),
       tasks: await db.tasks.toArray(),
       habits: await db.habits.toArray(),
@@ -388,17 +413,304 @@ export class LifeOSRepository {
       careerDocuments: await db.careerDocuments.toArray(),
       eveningReviews: await db.eveningReviews.toArray(),
       obsidianNotes: await db.obsidianNotes.toArray(),
-      settings: (await db.appMeta.get('settings'))?.value,
+      settings: settingsRecord?.value ?? settingsRecord,
     };
     return JSON.stringify(data, null, 2);
   }
 
   static async importEntireDatabaseJSON(jsonStr: string): Promise<boolean> {
-    try {
-      const data = JSON.parse(jsonStr);
-      if (!data || typeof data !== 'object') return false;
+    const validation = parseAndValidateBackup(jsonStr);
+    if (!validation.success || !validation.data) {
+      console.error('[LifeOS Repository] Backup validation failed:', validation.error);
+      return false;
+    }
 
-      await db.transaction('rw', [
+    const data = validation.data;
+    const now = new Date().toISOString();
+
+    const sanitizeRecords = (arr: any[]) =>
+      arr.map((item) => ({
+        ...item,
+        isDemo: item.isDemo ?? false,
+        deletedAt: item.deletedAt ?? null,
+        updatedAt: item.updatedAt || item.createdAt || now,
+      }));
+
+    try {
+      await db.transaction(
+        'rw',
+        [
+          db.goals,
+          db.tasks,
+          db.habits,
+          db.habitEntries,
+          db.financeTransactions,
+          db.financeBudgets,
+          db.savingsGoals,
+          db.exercises,
+          db.workoutSessions,
+          db.bodyMetrics,
+          db.fitnessGoals,
+          db.academicSemesters,
+          db.academicSubjects,
+          db.academicAssignments,
+          db.academicExams,
+          db.timetableSlots,
+          db.careerGoals,
+          db.careerSkills,
+          db.careerProjects,
+          db.careerApplications,
+          db.careerDocuments,
+          db.eveningReviews,
+          db.obsidianNotes,
+          db.appMeta,
+        ],
+        async () => {
+          await db.goals.clear();
+          await db.tasks.clear();
+          await db.habits.clear();
+          await db.habitEntries.clear();
+          await db.financeTransactions.clear();
+          await db.financeBudgets.clear();
+          await db.savingsGoals.clear();
+          await db.exercises.clear();
+          await db.workoutSessions.clear();
+          await db.bodyMetrics.clear();
+          await db.fitnessGoals.clear();
+          await db.academicSemesters.clear();
+          await db.academicSubjects.clear();
+          await db.academicAssignments.clear();
+          await db.academicExams.clear();
+          await db.timetableSlots.clear();
+          await db.careerGoals.clear();
+          await db.careerSkills.clear();
+          await db.careerProjects.clear();
+          await db.careerApplications.clear();
+          await db.careerDocuments.clear();
+          await db.eveningReviews.clear();
+          await db.obsidianNotes.clear();
+
+          if (data.goals.length) await db.goals.bulkAdd(sanitizeRecords(data.goals));
+          if (data.tasks.length) await db.tasks.bulkAdd(sanitizeRecords(data.tasks));
+          if (data.habits.length) await db.habits.bulkAdd(sanitizeRecords(data.habits));
+          if (data.habitEntries.length) await db.habitEntries.bulkAdd(sanitizeRecords(data.habitEntries));
+          if (data.financeTransactions.length)
+            await db.financeTransactions.bulkAdd(sanitizeRecords(data.financeTransactions));
+          if (data.financeBudgets.length) await db.financeBudgets.bulkAdd(sanitizeRecords(data.financeBudgets));
+          if (data.savingsGoals.length) await db.savingsGoals.bulkAdd(sanitizeRecords(data.savingsGoals));
+          if (data.exercises.length) await db.exercises.bulkAdd(sanitizeRecords(data.exercises));
+          if (data.workoutSessions.length) await db.workoutSessions.bulkAdd(sanitizeRecords(data.workoutSessions));
+          if (data.bodyMetrics.length) await db.bodyMetrics.bulkAdd(sanitizeRecords(data.bodyMetrics));
+          if (data.fitnessGoals.length) await db.fitnessGoals.bulkAdd(sanitizeRecords(data.fitnessGoals));
+          if (data.academicSemesters.length)
+            await db.academicSemesters.bulkAdd(sanitizeRecords(data.academicSemesters));
+          if (data.academicSubjects.length)
+            await db.academicSubjects.bulkAdd(sanitizeRecords(data.academicSubjects));
+          if (data.academicAssignments.length)
+            await db.academicAssignments.bulkAdd(sanitizeRecords(data.academicAssignments));
+          if (data.academicExams.length) await db.academicExams.bulkAdd(sanitizeRecords(data.academicExams));
+          if (data.timetableSlots.length) await db.timetableSlots.bulkAdd(sanitizeRecords(data.timetableSlots));
+          if (data.careerGoals.length) await db.careerGoals.bulkAdd(sanitizeRecords(data.careerGoals));
+          if (data.careerSkills.length) await db.careerSkills.bulkAdd(sanitizeRecords(data.careerSkills));
+          if (data.careerProjects.length) await db.careerProjects.bulkAdd(sanitizeRecords(data.careerProjects));
+          if (data.careerApplications.length)
+            await db.careerApplications.bulkAdd(sanitizeRecords(data.careerApplications));
+          if (data.careerDocuments.length) await db.careerDocuments.bulkAdd(sanitizeRecords(data.careerDocuments));
+          if (data.eveningReviews.length) await db.eveningReviews.bulkAdd(sanitizeRecords(data.eveningReviews));
+          if (data.obsidianNotes.length) await db.obsidianNotes.bulkAdd(sanitizeRecords(data.obsidianNotes));
+
+          if (data.settings) {
+            await db.appMeta.put({ key: 'settings', value: data.settings });
+          }
+          await db.appMeta.put({ key: 'initialized', value: true });
+        }
+      );
+
+      return true;
+    } catch (err) {
+      console.error('[LifeOS Repository] Import failed:', err);
+      return false;
+    }
+  }
+
+  static async clearAllData(): Promise<void> {
+    await db.transaction(
+      'rw',
+      [
+        db.goals,
+        db.tasks,
+        db.habits,
+        db.habitEntries,
+        db.financeTransactions,
+        db.financeBudgets,
+        db.savingsGoals,
+        db.exercises,
+        db.workoutSessions,
+        db.bodyMetrics,
+        db.fitnessGoals,
+        db.academicSemesters,
+        db.academicSubjects,
+        db.academicAssignments,
+        db.academicExams,
+        db.timetableSlots,
+        db.careerGoals,
+        db.careerSkills,
+        db.careerProjects,
+        db.careerApplications,
+        db.careerDocuments,
+        db.eveningReviews,
+        db.obsidianNotes,
+      ],
+      async () => {
+        await db.goals.clear();
+        await db.tasks.clear();
+        await db.habits.clear();
+        await db.habitEntries.clear();
+        await db.financeTransactions.clear();
+        await db.financeBudgets.clear();
+        await db.savingsGoals.clear();
+        await db.exercises.clear();
+        await db.workoutSessions.clear();
+        await db.bodyMetrics.clear();
+        await db.fitnessGoals.clear();
+        await db.academicSemesters.clear();
+        await db.academicSubjects.clear();
+        await db.academicAssignments.clear();
+        await db.academicExams.clear();
+        await db.timetableSlots.clear();
+        await db.careerGoals.clear();
+        await db.careerSkills.clear();
+        await db.careerProjects.clear();
+        await db.careerApplications.clear();
+        await db.careerDocuments.clear();
+        await db.eveningReviews.clear();
+        await db.obsidianNotes.clear();
+      }
+    );
+  }
+
+  /**
+   * Purges demo records tagged with isDemo or matching seed fixtures. Preserves genuine user data.
+   */
+  static async purgeDemoData(): Promise<void> {
+    const seed = getInitialSeedData();
+    const seedGoalIds = new Set(seed.goals.map((g) => g.id));
+    const seedTaskIds = new Set(seed.tasks.map((t) => t.id));
+    const seedHabitIds = new Set(seed.habits.map((h) => h.id));
+    const seedTxIds = new Set(seed.financeTransactions.map((tx) => tx.id));
+    const seedSubIds = new Set(seed.academicSubjects.map((s) => s.id));
+    const seedSlotIds = new Set(seed.timetableSlots.map((ts) => ts.id));
+    const seedAsgIds = new Set(seed.academicAssignments.map((a) => a.id));
+    const seedExamIds = new Set(seed.academicExams.map((e) => e.id));
+    const seedProjIds = new Set(seed.careerProjects.map((p) => p.id));
+    const seedAppIds = new Set(seed.careerApplications.map((a) => a.id));
+    const seedWsIds = new Set(seed.workoutSessions.map((w) => w.id));
+
+    await db.transaction(
+      'rw',
+      [
+        db.goals,
+        db.tasks,
+        db.habits,
+        db.habitEntries,
+        db.financeTransactions,
+        db.financeBudgets,
+        db.savingsGoals,
+        db.exercises,
+        db.workoutSessions,
+        db.bodyMetrics,
+        db.fitnessGoals,
+        db.academicSemesters,
+        db.academicSubjects,
+        db.attendanceRecords,
+        db.academicAssignments,
+        db.academicExams,
+        db.timetableSlots,
+        db.careerGoals,
+        db.careerSkills,
+        db.careerProjects,
+        db.careerApplications,
+        db.careerDocuments,
+        db.eveningReviews,
+        db.obsidianNotes,
+        db.appMeta,
+      ],
+      async () => {
+        const purgeTable = async (table: any, seedIdSet?: Set<string>) => {
+          const items = await table.toArray();
+          for (const item of items) {
+            if (item.isDemo === true || (seedIdSet && seedIdSet.has(item.id))) {
+              await table.delete(item.id);
+            }
+          }
+        };
+
+        await purgeTable(db.goals, seedGoalIds);
+        await purgeTable(db.tasks, seedTaskIds);
+        await purgeTable(db.habits, seedHabitIds);
+
+        const allEntries = await db.habitEntries.toArray();
+        for (const e of allEntries) {
+          if (e.isDemo === true || seedHabitIds.has(e.habitId)) {
+            await db.habitEntries.delete(e.id);
+          }
+        }
+
+        await purgeTable(db.financeTransactions, seedTxIds);
+        await purgeTable(db.financeBudgets);
+        await purgeTable(db.savingsGoals);
+        await purgeTable(db.exercises);
+        await purgeTable(db.workoutSessions, seedWsIds);
+        await purgeTable(db.bodyMetrics);
+        await purgeTable(db.fitnessGoals);
+        await purgeTable(db.academicSemesters);
+        await purgeTable(db.academicSubjects, seedSubIds);
+        await purgeTable(db.attendanceRecords);
+        await purgeTable(db.academicAssignments, seedAsgIds);
+        await purgeTable(db.academicExams, seedExamIds);
+        await purgeTable(db.timetableSlots, seedSlotIds);
+        await purgeTable(db.careerGoals);
+        await purgeTable(db.careerSkills);
+        await purgeTable(db.careerProjects, seedProjIds);
+        await purgeTable(db.careerApplications, seedAppIds);
+        await purgeTable(db.careerDocuments);
+        await purgeTable(db.eveningReviews);
+        await purgeTable(db.obsidianNotes);
+
+        const currSettings = (await db.appMeta.get('settings'))?.value || {};
+        await db.appMeta.put({
+          key: 'settings',
+          value: { ...currSettings, isDemoMode: false },
+        });
+      }
+    );
+  }
+
+  /**
+   * Alias for backward compatibility with existing views.
+   */
+  static async purgeSeedDemoData(): Promise<void> {
+    await this.purgeDemoData();
+  }
+
+  /**
+   * Loads sample showcase demo records when explicitly requested, tagging them as isDemo: true.
+   */
+  static async loadDemoData(): Promise<void> {
+    const seed = getInitialSeedData();
+    const now = new Date().toISOString();
+
+    const tagDemo = (arr: any[]) =>
+      arr.map((item) => ({
+        ...item,
+        isDemo: true,
+        deletedAt: null,
+        updatedAt: item.updatedAt || now,
+      }));
+
+    await db.transaction(
+      'rw',
+      [
         db.goals,
         db.tasks,
         db.habits,
@@ -423,228 +735,39 @@ export class LifeOSRepository {
         db.eveningReviews,
         db.obsidianNotes,
         db.appMeta,
-      ], async () => {
-        await db.goals.clear();
-        await db.tasks.clear();
-        await db.habits.clear();
-        await db.habitEntries.clear();
-        await db.financeTransactions.clear();
-        await db.financeBudgets.clear();
-        await db.savingsGoals.clear();
-        await db.exercises.clear();
-        await db.workoutSessions.clear();
-        await db.bodyMetrics.clear();
-        await db.fitnessGoals.clear();
-        await db.academicSemesters.clear();
-        await db.academicSubjects.clear();
-        await db.academicAssignments.clear();
-        await db.academicExams.clear();
-        await db.timetableSlots.clear();
-        await db.careerGoals.clear();
-        await db.careerSkills.clear();
-        await db.careerProjects.clear();
-        await db.careerApplications.clear();
-        await db.careerDocuments.clear();
-        await db.eveningReviews.clear();
-        await db.obsidianNotes.clear();
+      ],
+      async () => {
+        await db.goals.bulkPut(tagDemo(seed.goals));
+        await db.tasks.bulkPut(tagDemo(seed.tasks));
+        await db.habits.bulkPut(tagDemo(seed.habits));
+        await db.habitEntries.bulkPut(tagDemo(seed.habitEntries));
+        await db.financeTransactions.bulkPut(tagDemo(seed.financeTransactions));
+        await db.financeBudgets.bulkPut(tagDemo(seed.financeBudgets));
+        await db.savingsGoals.bulkPut(tagDemo(seed.savingsGoals));
+        await db.exercises.bulkPut(tagDemo(seed.exercises));
+        await db.workoutSessions.bulkPut(tagDemo(seed.workoutSessions));
+        await db.bodyMetrics.bulkPut(tagDemo(seed.bodyMetrics));
+        await db.fitnessGoals.bulkPut(tagDemo(seed.fitnessGoals));
+        await db.academicSemesters.bulkPut(tagDemo(seed.academicSemesters));
+        await db.academicSubjects.bulkPut(tagDemo(seed.academicSubjects));
+        await db.academicAssignments.bulkPut(tagDemo(seed.academicAssignments));
+        await db.academicExams.bulkPut(tagDemo(seed.academicExams));
+        await db.timetableSlots.bulkPut(tagDemo(seed.timetableSlots));
+        await db.careerGoals.bulkPut(tagDemo(seed.careerGoals));
+        await db.careerSkills.bulkPut(tagDemo(seed.careerSkills));
+        await db.careerProjects.bulkPut(tagDemo(seed.careerProjects));
+        await db.careerApplications.bulkPut(tagDemo(seed.careerApplications));
+        await db.careerDocuments.bulkPut(tagDemo(seed.careerDocuments));
+        await db.eveningReviews.bulkPut(tagDemo(seed.eveningReviews));
+        await db.obsidianNotes.bulkPut(tagDemo(seed.obsidianNotes));
 
-        if (Array.isArray(data.goals)) await db.goals.bulkAdd(data.goals);
-        if (Array.isArray(data.tasks)) await db.tasks.bulkAdd(data.tasks);
-        if (Array.isArray(data.habits)) await db.habits.bulkAdd(data.habits);
-        if (Array.isArray(data.habitEntries)) await db.habitEntries.bulkAdd(data.habitEntries);
-        if (Array.isArray(data.financeTransactions)) await db.financeTransactions.bulkAdd(data.financeTransactions);
-        if (Array.isArray(data.financeBudgets)) await db.financeBudgets.bulkAdd(data.financeBudgets);
-        if (Array.isArray(data.savingsGoals)) await db.savingsGoals.bulkAdd(data.savingsGoals);
-        if (Array.isArray(data.exercises)) await db.exercises.bulkAdd(data.exercises);
-        if (Array.isArray(data.workoutSessions)) await db.workoutSessions.bulkAdd(data.workoutSessions);
-        if (Array.isArray(data.bodyMetrics)) await db.bodyMetrics.bulkAdd(data.bodyMetrics);
-        if (Array.isArray(data.fitnessGoals)) await db.fitnessGoals.bulkAdd(data.fitnessGoals);
-        if (Array.isArray(data.academicSemesters)) await db.academicSemesters.bulkAdd(data.academicSemesters);
-        if (Array.isArray(data.academicSubjects)) await db.academicSubjects.bulkAdd(data.academicSubjects);
-        if (Array.isArray(data.academicAssignments)) await db.academicAssignments.bulkAdd(data.academicAssignments);
-        if (Array.isArray(data.academicExams)) await db.academicExams.bulkAdd(data.academicExams);
-        if (Array.isArray(data.timetableSlots)) await db.timetableSlots.bulkAdd(data.timetableSlots);
-        if (Array.isArray(data.careerGoals)) await db.careerGoals.bulkAdd(data.careerGoals);
-        if (Array.isArray(data.careerSkills)) await db.careerSkills.bulkAdd(data.careerSkills);
-        if (Array.isArray(data.careerProjects)) await db.careerProjects.bulkAdd(data.careerProjects);
-        if (Array.isArray(data.careerApplications)) await db.careerApplications.bulkAdd(data.careerApplications);
-        if (Array.isArray(data.careerDocuments)) await db.careerDocuments.bulkAdd(data.careerDocuments);
-        if (Array.isArray(data.eveningReviews)) await db.eveningReviews.bulkAdd(data.eveningReviews);
-        if (Array.isArray(data.obsidianNotes)) await db.obsidianNotes.bulkAdd(data.obsidianNotes);
-        if (data.settings) await db.appMeta.put({ key: 'settings', value: data.settings });
-        await db.appMeta.put({ key: 'initialized', value: true });
-      });
-
-      return true;
-    } catch (err) {
-      console.error('[LifeOS Repository] Import failed:', err);
-      return false;
-    }
-  }
-
-  static async clearAllData(): Promise<void> {
-    await db.transaction('rw', [
-      db.goals,
-      db.tasks,
-      db.habits,
-      db.habitEntries,
-      db.financeTransactions,
-      db.financeBudgets,
-      db.savingsGoals,
-      db.exercises,
-      db.workoutSessions,
-      db.bodyMetrics,
-      db.fitnessGoals,
-      db.academicSemesters,
-      db.academicSubjects,
-      db.academicAssignments,
-      db.academicExams,
-      db.timetableSlots,
-      db.careerGoals,
-      db.careerSkills,
-      db.careerProjects,
-      db.careerApplications,
-      db.careerDocuments,
-      db.eveningReviews,
-      db.obsidianNotes,
-    ], async () => {
-      await db.goals.clear();
-      await db.tasks.clear();
-      await db.habits.clear();
-      await db.habitEntries.clear();
-      await db.financeTransactions.clear();
-      await db.financeBudgets.clear();
-      await db.savingsGoals.clear();
-      await db.exercises.clear();
-      await db.workoutSessions.clear();
-      await db.bodyMetrics.clear();
-      await db.fitnessGoals.clear();
-      await db.academicSemesters.clear();
-      await db.academicSubjects.clear();
-      await db.academicAssignments.clear();
-      await db.academicExams.clear();
-      await db.timetableSlots.clear();
-      await db.careerGoals.clear();
-      await db.careerSkills.clear();
-      await db.careerProjects.clear();
-      await db.careerApplications.clear();
-      await db.careerDocuments.clear();
-      await db.eveningReviews.clear();
-      await db.obsidianNotes.clear();
-    });
-  }
-
-  /**
-   * Purges known fake demo records so users have a clean slate while preserving genuinely created records.
-   */
-  static async purgeSeedDemoData(): Promise<void> {
-    const seed = getInitialSeedData();
-    const seedGoalIds = new Set(seed.goals.map((g) => g.id));
-    const seedTaskIds = new Set(seed.tasks.map((t) => t.id));
-    const seedHabitIds = new Set(seed.habits.map((h) => h.id));
-    const seedTxIds = new Set(seed.financeTransactions.map((tx) => tx.id));
-    const seedSubIds = new Set(seed.academicSubjects.map((s) => s.id));
-    const seedSlotIds = new Set(seed.timetableSlots.map((ts) => ts.id));
-    const seedAsgIds = new Set(seed.academicAssignments.map((a) => a.id));
-    const seedExamIds = new Set(seed.academicExams.map((e) => e.id));
-    const seedProjIds = new Set(seed.careerProjects.map((p) => p.id));
-    const seedAppIds = new Set(seed.careerApplications.map((a) => a.id));
-    const seedWsIds = new Set(seed.workoutSessions.map((w) => w.id));
-
-    await db.transaction('rw', [
-      db.goals, db.tasks, db.habits, db.habitEntries,
-      db.financeTransactions, db.academicSubjects,
-      db.timetableSlots, db.academicAssignments, db.academicExams,
-      db.careerProjects, db.careerApplications, db.workoutSessions,
-    ], async () => {
-      const allGoals = await db.goals.toArray();
-      for (const g of allGoals) {
-        if (seedGoalIds.has(g.id)) await db.goals.delete(g.id);
+        const currSettings = (await db.appMeta.get('settings'))?.value || {};
+        await db.appMeta.put({
+          key: 'settings',
+          value: { ...currSettings, isDemoMode: true },
+        });
       }
-      const allTasks = await db.tasks.toArray();
-      for (const t of allTasks) {
-        if (seedTaskIds.has(t.id)) await db.tasks.delete(t.id);
-      }
-      const allHabits = await db.habits.toArray();
-      for (const h of allHabits) {
-        if (seedHabitIds.has(h.id)) {
-          await db.habits.delete(h.id);
-          await db.habitEntries.where('habitId').equals(h.id).delete();
-        }
-      }
-      const allTxs = await db.financeTransactions.toArray();
-      for (const tx of allTxs) {
-        if (seedTxIds.has(tx.id)) await db.financeTransactions.delete(tx.id);
-      }
-      const allSubs = await db.academicSubjects.toArray();
-      for (const s of allSubs) {
-        if (seedSubIds.has(s.id)) await db.academicSubjects.delete(s.id);
-      }
-      const allSlots = await db.timetableSlots.toArray();
-      for (const sl of allSlots) {
-        if (seedSlotIds.has(sl.id)) await db.timetableSlots.delete(sl.id);
-      }
-      const allAsgs = await db.academicAssignments.toArray();
-      for (const a of allAsgs) {
-        if (seedAsgIds.has(a.id)) await db.academicAssignments.delete(a.id);
-      }
-      const allExams = await db.academicExams.toArray();
-      for (const e of allExams) {
-        if (seedExamIds.has(e.id)) await db.academicExams.delete(e.id);
-      }
-      const allProjs = await db.careerProjects.toArray();
-      for (const p of allProjs) {
-        if (seedProjIds.has(p.id)) await db.careerProjects.delete(p.id);
-      }
-      const allApps = await db.careerApplications.toArray();
-      for (const a of allApps) {
-        if (seedAppIds.has(a.id)) await db.careerApplications.delete(a.id);
-      }
-      const allWs = await db.workoutSessions.toArray();
-      for (const w of allWs) {
-        if (seedWsIds.has(w.id)) await db.workoutSessions.delete(w.id);
-      }
-    });
-  }
-
-  /**
-   * Loads sample showcase demo records when explicitly requested.
-   */
-  static async loadDemoData(): Promise<void> {
-    const seed = getInitialSeedData();
-    await db.transaction('rw', [
-      db.goals, db.tasks, db.habits, db.habitEntries,
-      db.financeTransactions, db.financeBudgets, db.savingsGoals,
-      db.exercises, db.workoutSessions, db.bodyMetrics, db.fitnessGoals,
-      db.academicSemesters, db.academicSubjects, db.academicAssignments,
-      db.academicExams, db.timetableSlots, db.careerGoals, db.careerSkills,
-      db.careerProjects, db.careerApplications, db.careerDocuments,
-      db.eveningReviews, db.obsidianNotes,
-    ], async () => {
-      await db.goals.bulkPut(seed.goals);
-      await db.tasks.bulkPut(seed.tasks);
-      await db.habits.bulkPut(seed.habits);
-      await db.habitEntries.bulkPut(seed.habitEntries);
-      await db.financeTransactions.bulkPut(seed.financeTransactions);
-      await db.financeBudgets.bulkPut(seed.financeBudgets);
-      await db.savingsGoals.bulkPut(seed.savingsGoals);
-      await db.exercises.bulkPut(seed.exercises);
-      await db.workoutSessions.bulkPut(seed.workoutSessions);
-      await db.bodyMetrics.bulkPut(seed.bodyMetrics);
-      await db.fitnessGoals.bulkPut(seed.fitnessGoals);
-      await db.academicSemesters.bulkPut(seed.academicSemesters);
-      await db.academicSubjects.bulkPut(seed.academicSubjects);
-      await db.academicAssignments.bulkPut(seed.academicAssignments);
-      await db.academicExams.bulkPut(seed.academicExams);
-      await db.timetableSlots.bulkPut(seed.timetableSlots);
-      await db.careerGoals.bulkPut(seed.careerGoals);
-      await db.careerSkills.bulkPut(seed.careerSkills);
-      await db.careerProjects.bulkPut(seed.careerProjects);
-      await db.careerApplications.bulkPut(seed.careerApplications);
-      await db.careerDocuments.bulkPut(seed.careerDocuments);
-      await db.eveningReviews.bulkPut(seed.eveningReviews);
-      await db.obsidianNotes.bulkPut(seed.obsidianNotes);
-    });
+    );
   }
 
   static async resetDatabaseToFactory() {

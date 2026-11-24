@@ -29,6 +29,17 @@ export interface TaskRecurrenceConfig {
 }
 
 // ==========================================
+// 0. BASE ENTITY
+// ==========================================
+export interface BaseEntity {
+  id: string;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
+}
+
+// ==========================================
 // 1. GOALS MANAGEMENT
 // ==========================================
 export type LifeArea =
@@ -124,6 +135,8 @@ export interface Goal {
   updatedAt: string;
   isArchived: boolean;
   completedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -166,6 +179,8 @@ export interface Task {
   rescheduledTo?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -198,6 +213,9 @@ export interface HabitEntry {
   note?: string;
   notes?: string;
   loggedAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface HabitRoutine {
@@ -241,6 +259,9 @@ export interface Habit {
   notes?: string;
   isArchived?: boolean;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
   entries?: HabitEntry[];
 }
 
@@ -259,6 +280,9 @@ export interface FinanceTransaction {
   paymentMethod: 'Credit Card' | 'Debit Card' | 'Cash' | 'Bank Transfer' | 'UPI' | 'Other';
   tags?: string[];
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface FinanceBudget {
@@ -266,6 +290,10 @@ export interface FinanceBudget {
   category: string;
   monthlyLimit: number;
   month: string; // YYYY-MM
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface SavingsGoal {
@@ -277,6 +305,9 @@ export interface SavingsGoal {
   category: string;
   isReached: boolean;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -307,6 +338,9 @@ export interface WorkoutSession {
   totalVolumeKg: number;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface ExerciseItem {
@@ -315,6 +349,10 @@ export interface ExerciseItem {
   category: 'Chest' | 'Back' | 'Legs' | 'Shoulders' | 'Arms' | 'Core' | 'Cardio';
   targetMuscle: string;
   equipment: string;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface BodyMetric {
@@ -326,6 +364,10 @@ export interface BodyMetric {
   chestCm?: number;
   armsCm?: number;
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface FitnessGoal {
@@ -337,6 +379,10 @@ export interface FitnessGoal {
   unit: string;
   targetDate?: string;
   isAchieved: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -349,6 +395,10 @@ export interface AcademicSemester {
   isCurrent: boolean;
   targetGpa: number;
   achievedGpa?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface AcademicSubject {
@@ -363,6 +413,10 @@ export interface AcademicSubject {
   targetAttendancePercentage: number; // default 75
   totalClasses: number;
   attendedClasses: number;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface AttendanceRecord {
@@ -370,6 +424,10 @@ export interface AttendanceRecord {
   subjectId: string;
   date: string;
   status: 'present' | 'absent' | 'cancelled';
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface AcademicAssignment {
@@ -382,6 +440,10 @@ export interface AcademicAssignment {
   submittedAt?: string;
   marksScored?: number;
   maxMarks?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface AcademicExam {
@@ -393,6 +455,10 @@ export interface AcademicExam {
   weightagePercentage: number;
   marksScored?: number;
   maxMarks?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface TimetableSlot {
@@ -408,6 +474,10 @@ export interface TimetableSlot {
   room: string;
   color?: string;
   recurring?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -419,6 +489,10 @@ export interface CareerGoal {
   targetDate: string;
   status: 'active' | 'achieved' | 'paused';
   milestones: { id: string; title: string; completed: boolean }[];
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface SkillItem {
@@ -428,6 +502,10 @@ export interface SkillItem {
   proficiency: number; // 1-5
   targetProficiency: number;
   resources?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface CareerProject {
@@ -439,6 +517,10 @@ export interface CareerProject {
   githubUrl?: string;
   status: 'idea' | 'in-progress' | 'completed';
   featured: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface JobApplication {
@@ -451,6 +533,10 @@ export interface JobApplication {
   location: string;
   salaryExpectation?: string;
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface CareerDocument {
@@ -460,6 +546,10 @@ export interface CareerDocument {
   issueDate: string;
   credentialUrl?: string;
   type: 'resume' | 'certification' | 'award';
+  createdAt?: string;
+  updatedAt?: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -494,6 +584,8 @@ export interface EveningReview {
   tomorrowPriorities: string[];
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -509,6 +601,8 @@ export interface ObsidianNote {
   linkedSubjectId?: string;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 // ==========================================
@@ -528,6 +622,8 @@ export interface UserWorkspace {
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
 }
 
 export interface AppSettings {

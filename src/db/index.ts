@@ -83,6 +83,76 @@ export class LifeOSDatabase extends Dexie {
       obsidianNotes: 'id, folder, title, updatedAt',
       appMeta: 'key',
     });
+
+    this.version(2)
+      .stores({
+        goals: 'id, priority, type, category, targetDate, isArchived, isDemo, deletedAt, updatedAt',
+        tasks: 'id, priority, category, status, dueDate, isCompleted, isOverdue, goalId, academicSubjectId, careerProjectId, isDemo, deletedAt, updatedAt',
+        habits: 'id, category, frequency, isDemo, deletedAt, updatedAt',
+        habitEntries: 'id, habitId, date, [habitId+date], isDemo, deletedAt, updatedAt',
+        financeTransactions: 'id, type, category, date, paymentMethod, isDemo, deletedAt, updatedAt',
+        financeBudgets: 'id, category, month, isDemo, deletedAt, updatedAt',
+        savingsGoals: 'id, isReached, targetDate, isDemo, deletedAt, updatedAt',
+        workoutSessions: 'id, date, splitType, isDemo, deletedAt, updatedAt',
+        exercises: 'id, category, name, isDemo, deletedAt, updatedAt',
+        bodyMetrics: 'id, date, isDemo, deletedAt, updatedAt',
+        fitnessGoals: 'id, isAchieved, isDemo, deletedAt, updatedAt',
+        academicSemesters: 'id, isCurrent, year, isDemo, deletedAt, updatedAt',
+        academicSubjects: 'id, semesterId, code, isDemo, deletedAt, updatedAt',
+        attendanceRecords: 'id, subjectId, date, [subjectId+date], isDemo, deletedAt, updatedAt',
+        academicAssignments: 'id, subjectId, dueDate, isSubmitted, isDemo, deletedAt, updatedAt',
+        academicExams: 'id, subjectId, examDate, isDemo, deletedAt, updatedAt',
+        timetableSlots: 'id, subjectId, dayOfWeek, isDemo, deletedAt, updatedAt',
+        careerGoals: 'id, status, isDemo, deletedAt, updatedAt',
+        careerSkills: 'id, category, proficiency, isDemo, deletedAt, updatedAt',
+        careerProjects: 'id, status, featured, isDemo, deletedAt, updatedAt',
+        careerApplications: 'id, stage, company, isDemo, deletedAt, updatedAt',
+        careerDocuments: 'id, type, isDemo, deletedAt, updatedAt',
+        eveningReviews: 'id, date, isDemo, deletedAt, updatedAt',
+        obsidianNotes: 'id, folder, title, updatedAt, isDemo, deletedAt',
+        appMeta: 'key',
+      })
+      .upgrade(async (tx) => {
+        const tableNames = [
+          'goals',
+          'tasks',
+          'habits',
+          'habitEntries',
+          'financeTransactions',
+          'financeBudgets',
+          'savingsGoals',
+          'workoutSessions',
+          'exercises',
+          'bodyMetrics',
+          'fitnessGoals',
+          'academicSemesters',
+          'academicSubjects',
+          'attendanceRecords',
+          'academicAssignments',
+          'academicExams',
+          'timetableSlots',
+          'careerGoals',
+          'careerSkills',
+          'careerProjects',
+          'careerApplications',
+          'careerDocuments',
+          'eveningReviews',
+          'obsidianNotes',
+        ];
+
+        await Promise.all(
+          tableNames.map((tableName) =>
+            tx
+              .table(tableName)
+              .toCollection()
+              .modify((record: Record<string, any>) => {
+                if (record.isDemo === undefined) record.isDemo = false;
+                if (record.deletedAt === undefined) record.deletedAt = null;
+                if (!record.updatedAt) record.updatedAt = record.createdAt || new Date().toISOString();
+              })
+          )
+        );
+      });
   }
 }
 
