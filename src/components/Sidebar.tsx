@@ -80,6 +80,7 @@ export default function Sidebar({
       title: 'OVERVIEW',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'showcase', label: 'Product Showcase (3-Way)', icon: Sparkles },
         { id: 'focus', label: 'Focus Mode / My Day', icon: Compass },
         { id: 'history', label: 'Review Archive', icon: History },
       ],

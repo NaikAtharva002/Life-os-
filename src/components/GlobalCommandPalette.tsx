@@ -145,6 +145,18 @@ export default function GlobalCommandPalette({
       },
     },
     {
+      id: 'nav-showcase',
+      category: 'Navigation',
+      title: 'Go to 3-Way Showdown Showcase',
+      subtitle: 'Compare Antigravity vs Taste-Skill vs Impeccable live editions',
+      icon: Sparkles,
+      shortcut: 'G S',
+      onSelect: () => {
+        setActiveView('showcase');
+        onClose();
+      },
+    },
+    {
       id: 'nav-tasks',
       category: 'Navigation',
       title: 'Go to Tasks',

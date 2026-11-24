@@ -9,6 +9,7 @@ export default function BreadcrumbNav() {
 
   const viewMetadata: Record<string, { section: string; label: string }> = {
     dashboard: { section: 'Overview', label: 'Daily Command Center' },
+    showcase: { section: 'Overview', label: 'Product Showcase (3-Way Showdown)' },
     focus: { section: 'Overview', label: 'Focus Mode / My Day' },
     history: { section: 'Overview', label: 'Review Archive' },
     goals: { section: 'Personal Management', label: 'Goals & Milestones' },

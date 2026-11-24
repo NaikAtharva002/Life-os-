@@ -13,6 +13,8 @@ export default function VariantHeaderBanner({ onOpenMatrix }: VariantHeaderBanne
   const setDesignVariant = useStore((s) => s.setDesignVariant);
   const comparisonMode = useStore((s) => s.comparisonMode);
   const setComparisonMode = useStore((s) => s.setComparisonMode);
+  const activeView = useStore((s) => s.activeView);
+  const setActiveView = useStore((s) => s.setActiveView);
 
   const variants: { id: DesignVariant; name: string; tag: string; icon: string }[] = [
     {
@@ -57,9 +59,22 @@ export default function VariantHeaderBanner({ onOpenMatrix }: VariantHeaderBanne
           <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: 'var(--palette-brick)' }} />
           LIFE OS
         </span>
-        <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '11.5px' }}>
-          3-Way Showdown
-        </span>
+        <button
+          onClick={() => setActiveView('showcase')}
+          style={{
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            cursor: 'pointer',
+            fontWeight: 600,
+            color: activeView === 'showcase' ? 'var(--palette-brick)' : 'var(--text-primary)',
+            fontSize: '11.5px',
+            textDecoration: activeView === 'showcase' ? 'underline' : 'none',
+          }}
+          title="Open High-Converting 3-Way Showdown Showcase Page"
+        >
+          3-Way Showdown Showcase
+        </button>
       </div>
 
       {/* 3-Variant Live Switcher Bar */}

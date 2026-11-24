@@ -34,6 +34,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
         { key: 'G N', description: 'Jump to Obsidian Notes' },
         { key: 'G R', description: 'Jump to Evening Review' },
         { key: 'G S', description: 'Jump to Settings' },
+        { key: 'G P', description: 'Jump to 3-Way Showdown Showcase' },
       ],
     },
     {

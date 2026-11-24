@@ -17,6 +17,7 @@ import ReviewHistoryPage from './pages/ReviewHistoryPage';
 import SettingsPage from './pages/SettingsPage';
 import FocusModePage from './pages/FocusModePage';
 import DesignSystemPage from './pages/DesignSystemPage';
+import ProductShowcasePage from './pages/ProductShowcasePage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
@@ -195,6 +196,7 @@ export default function App() {
           n: 'obsidian',
           r: 'review',
           s: 'settings',
+          p: 'showcase',
         };
         const targetView = jumpMap[e.key.toLowerCase()];
         if (targetView) {
@@ -242,6 +244,8 @@ export default function App() {
         return <SettingsPage />;
       case 'design-system':
         return <DesignSystemPage />;
+      case 'showcase':
+        return <ProductShowcasePage onOpenMatrix={() => setComparisonMatrixOpen(true)} />;
       default:
         return <Dashboard />;
     }
