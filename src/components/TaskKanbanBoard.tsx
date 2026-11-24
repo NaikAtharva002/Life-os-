@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { Task, Priority, TaskStatus } from '../types';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 
 interface TaskKanbanBoardProps {
   tasks: Task[];
@@ -42,7 +43,7 @@ export default function TaskKanbanBoard({
   const reopenTask = useStore((s) => s.reopenTask);
   const startTaskFocusSession = useStore((s) => s.startTaskFocusSession);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   const getTasksForColumn = (colId: TaskStatus) => {
     return tasks.filter((t) => {

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 import {
   X,
   Flame,
@@ -49,7 +50,7 @@ export default function HabitDetailModal({
   const goals = useStore((s) => s.goals);
 
   const [activeTab, setActiveTab] = useState<'log' | 'calendar' | 'analytics' | 'protocol'>('log');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(todayLocal());
   const [logValue, setLogValue] = useState<number>(habit?.targetValue || 1);
   const [logNote, setLogNote] = useState<string>('');
   const [skipReason, setSkipReason] = useState<string>('');
@@ -132,7 +133,7 @@ export default function HabitDetailModal({
     const curr = new Date(startDate);
 
     while (curr <= endDate) {
-      const dStr = curr.toISOString().split('T')[0];
+      const dStr = toLocalDateString(curr);
       const dow = curr.getDay();
       currentWeek.push({
         dateStr: dStr,
@@ -165,7 +166,7 @@ export default function HabitDetailModal({
     const startDayOfWeek = firstDay.getDay(); // 0 is Sunday
     for (let i = startDayOfWeek - 1; i >= 0; i--) {
       const prevDate = new Date(year, month, -i);
-      const dStr = prevDate.toISOString().split('T')[0];
+      const dStr = toLocalDateString(prevDate);
       days.push({
         dateStr: dStr,
         dayNum: prevDate.getDate(),
@@ -178,7 +179,7 @@ export default function HabitDetailModal({
     // Current month days
     for (let d = 1; d <= lastDay.getDate(); d++) {
       const curDate = new Date(year, month, d);
-      const dStr = curDate.toISOString().split('T')[0];
+      const dStr = toLocalDateString(curDate);
       days.push({
         dateStr: dStr,
         dayNum: d,
@@ -193,7 +194,7 @@ export default function HabitDetailModal({
     if (remaining < 7) {
       for (let j = 1; j <= remaining; j++) {
         const nextDate = new Date(year, month + 1, j);
-        const dStr = nextDate.toISOString().split('T')[0];
+        const dStr = toLocalDateString(nextDate);
         days.push({
           dateStr: dStr,
           dayNum: j,
@@ -463,7 +464,7 @@ export default function HabitDetailModal({
                     type="button"
                     className="btn btn-ghost"
                     style={{ fontSize: '0.75rem', padding: '4px 10px' }}
-                    onClick={() => setSelectedDate(new Date().toISOString().split('T')[0])}
+                    onClick={() => setSelectedDate(todayLocal())}
                   >
                     Today
                   </button>
@@ -868,7 +869,7 @@ export default function HabitDetailModal({
                       {week.map((day) => {
                         const isCompleted = day.entry?.completed || day.entry?.status === 'completed';
                         const isSkipped = day.entry?.status === 'skipped';
-                        const isToday = day.dateStr === new Date().toISOString().split('T')[0];
+                        const isToday = day.dateStr === todayLocal();
 
                         let cellBg = 'var(--bg-card)';
                         if (isCompleted) cellBg = habit.color || '#B80C09';

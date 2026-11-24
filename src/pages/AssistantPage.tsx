@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import {
   Sparkles,
   Send,
@@ -35,7 +36,7 @@ export default function AssistantPage() {
   const [isThinking, setIsThinking] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const currency = settings.currencySymbol || '$';
 
   useEffect(() => {

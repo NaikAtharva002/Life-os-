@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import useStore from '../store/useStore';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 import {
   Briefcase,
   Code2,
@@ -82,7 +83,7 @@ export default function CareerPage() {
       company: appCompany,
       role: appRole,
       stage: appStage,
-      appliedDate: new Date().toISOString().split('T')[0],
+      appliedDate: todayLocal(),
       location: appLocation,
       salaryExpectation: appSalary,
       notes: appNotes,
@@ -128,7 +129,7 @@ export default function CareerPage() {
     if (!goalTitle) return;
     await addCareerGoal({
       title: goalTitle,
-      targetDate: goalDate || new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+      targetDate: goalDate || toLocalDateString(new Date(Date.now() + 365 * 86400000)),
       status: 'active',
       milestones: [
         { id: 'm-1', title: 'Complete first phase milestone', completed: false },

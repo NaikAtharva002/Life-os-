@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import useStore from '../store/useStore';
-import { aiEngine, type DeepAnalyticsResult } from '../services/aiEngineClient';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 import {
   BarChart3,
   TrendingUp,
@@ -30,24 +30,7 @@ export default function AnalyticsPage() {
   const settings = useStore((s) => s.settings);
 
   const currency = settings.currencySymbol || '$';
-
-  const [deepResult, setDeepResult] = useState<DeepAnalyticsResult | null>(null);
-  const [deepLoading, setDeepLoading] = useState(false);
-  const [deepError, setDeepError] = useState<string | null>(null);
-
-  const handleRunDeepAnalysis = async () => {
-    setDeepLoading(true);
-    setDeepError(null);
-    const res = await aiEngine.getDeepAnalytics();
-    if (res) {
-      setDeepResult(res);
-    } else {
-      setDeepError('Python AI Engine offline. Displaying local heuristic metrics.');
-      setTimeout(() => setDeepError(null), 4000);
-    }
-    setDeepLoading(false);
-  };
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   // 1. Productivity Index Calculation (Composite 0-100)
   // Combines: Task completion (35%), Habit consistency (35%), Active Goals velocity (30%)
@@ -59,7 +42,7 @@ export default function AnalyticsPage() {
     // Habit adherence past 14 days
     const past14Days = Array.from({ length: 14 }).map((_, i) => {
       const d = new Date(Date.now() - i * 86400000);
-      return d.toISOString().split('T')[0];
+      return toLocalDateString(d);
     });
     const expectedEntries = habits.length * 14;
     const actualEntries = habitEntries.filter((e) => past14Days.includes(e.date) && e.completed).length;
@@ -162,23 +145,7 @@ export default function AnalyticsPage() {
             Actionable synthesis across productivity, academics, financial velocity, and physical conditioning.
           </p>
         </div>
-
-        <button
-          onClick={handleRunDeepAnalysis}
-          disabled={deepLoading}
-          className="btn btn-secondary"
-          style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', height: '32px' }}
-        >
-          <Sparkles size={13} color="var(--accent)" />
-          {deepLoading ? 'Synthesizing SQLite Views...' : 'Deep Engine Telemetry (Python)'}
-        </button>
       </div>
-
-      {deepError && (
-        <div style={{ padding: '8px 14px', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '6px', color: 'var(--status-warning)', fontSize: '12px', marginBottom: '14px' }}>
-          {deepError}
-        </div>
-      )}
 
       {/* Executive Summary Strip */}
       <div className="summary-strip">

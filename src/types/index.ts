@@ -538,6 +538,7 @@ export interface AppSettings {
   userAvatar?: string;
   userGreeting?: string;
   currencySymbol: string;
+  dayStartHour?: number;
   geminiApiKey?: string;
   reminder: ReminderSettings;
   onboardingCompleted?: boolean;

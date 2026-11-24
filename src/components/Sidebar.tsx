@@ -25,6 +25,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import ThemeToggle from './ThemeToggle';
 
 interface SidebarProps {
@@ -66,7 +67,7 @@ export default function Sidebar({
   const togglePinView = useStore((s) => s.togglePinView);
 
   // Counts for badges
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const overdueCount = tasks.filter((t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr))).length;
   const criticalGoalsCount = goals.filter((g) => !g.isArchived && g.priority === 'critical').length;
 

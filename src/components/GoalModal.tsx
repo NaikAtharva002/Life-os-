@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { todayLocal } from '../lib/dates';
 import {
   X,
   Plus,
@@ -110,7 +111,7 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
   const [status, setStatus] = useState<GoalStatus>(targetGoal?.status || 'not-started');
   const [statusOverride, setStatusOverride] = useState<boolean>(targetGoal?.statusOverride || false);
 
-  const [startDate, setStartDate] = useState(targetGoal?.startDate || new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(targetGoal?.startDate || todayLocal());
   const [targetDate, setTargetDate] = useState(targetGoal?.targetDate || '');
 
   // Measurement State

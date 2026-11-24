@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import {
   Dumbbell,
   Calendar,
@@ -29,7 +30,7 @@ export default function FitnessPage() {
   const addFitnessGoal = useStore((s) => s.addFitnessGoal);
   const toggleFitnessGoal = useStore((s) => s.toggleFitnessGoal);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'workouts' | 'metrics' | 'exercises' | 'goals'>('workouts');

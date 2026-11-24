@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { Task, Priority } from '../types';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 
 interface TaskCalendarViewProps {
   tasks: Task[];
@@ -39,7 +40,7 @@ export default function TaskCalendarView({
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   // First day of month & total days
   const firstDayIndex = new Date(year, month, 1).getDay(); // 0=Sun..6=Sat

@@ -23,20 +23,19 @@ import GoalModal from './components/GoalModal';
 import HabitModal from './components/HabitModal';
 import ClassModal from './components/ClassModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
-import { Menu, Plus, Search, Sparkles, Terminal, Zap, HelpCircle } from 'lucide-react';
-import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
-import VariantHeaderBanner from './components/VariantHeaderBanner';
-import ComparisonDrawer from './components/ComparisonDrawer';
+import { Menu, Plus, Search, Sparkles, HelpCircle } from 'lucide-react';
 import MobileBottomNav from './components/MobileBottomNav';
 import GlobalCommandPalette from './components/GlobalCommandPalette';
 import QuickActionModal from './components/QuickActionModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import BreadcrumbNav from './components/BreadcrumbNav';
 import OnboardingModal from './components/OnboardingModal';
+import DatabaseRecoveryScreen from './components/DatabaseRecoveryScreen';
 import { ToastContainer } from './components/ui';
 
 export default function App() {
   const isLoaded = useStore((s) => s.isLoaded);
+  const initError = useStore((s) => s.initError);
   const activeView = useStore((s) => s.activeView);
   const setActiveView = useStore((s) => s.setActiveView);
   const settings = useStore((s) => s.settings);
@@ -72,24 +71,10 @@ export default function App() {
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
   const [quickHabitModalOpen, setQuickHabitModalOpen] = useState(false);
   const [quickClassModalOpen, setQuickClassModalOpen] = useState(false);
-  const [comparisonMatrixOpen, setComparisonMatrixOpen] = useState(false);
-  const [engineStatus, setEngineStatus] = useState<AIEngineStatus>({ isAvailable: false });
-
   // 1. Initialize IndexedDB database on startup
   useEffect(() => {
     initializeFromDB();
   }, [initializeFromDB]);
-
-  // Check Python AI Engine status
-  useEffect(() => {
-    const check = async () => {
-      const s = await aiEngine.checkHealth();
-      setEngineStatus(s);
-    };
-    check();
-    const interval = setInterval(check, 10000);
-    return () => clearInterval(interval);
-  }, []);
 
   // 2. Set dark/light theme & design variant
   useEffect(() => {
@@ -153,7 +138,6 @@ export default function App() {
         setQuickGoalModalOpen(false);
         setQuickHabitModalOpen(false);
         setQuickClassModalOpen(false);
-        setComparisonMatrixOpen(false);
         return;
       }
 
@@ -259,11 +243,20 @@ export default function App() {
       case 'design-system':
         return <DesignSystemPage />;
       case 'showcase':
-        return <ProductShowcasePage onOpenMatrix={() => setComparisonMatrixOpen(true)} />;
+        return <ProductShowcasePage onOpenMatrix={() => {}} />;
       default:
         return <Dashboard />;
     }
   };
+
+  if (initError) {
+    return (
+      <>
+        <DatabaseRecoveryScreen />
+        <ToastContainer />
+      </>
+    );
+  }
 
   return (
     <div className="app">
@@ -278,12 +271,6 @@ export default function App() {
 
       {/* Main Workspace Area (Section 2.B & 2.C) */}
       <main className="main-content">
-        {/* Variant Comparison & Direct Port Switcher Strip */}
-        <VariantHeaderBanner
-          currentVariant="agent"
-          onOpenMatrix={() => setComparisonMatrixOpen(true)}
-        />
-
         {/* Optional Demo Mode Status Banner */}
         {settings.isDemoMode && (
           <div
@@ -338,41 +325,8 @@ export default function App() {
             </button>
           </div>
 
-          {/* Right: Architecture Engine Status + Quick Actions + Help + AI Assistant */}
+          {/* Right: Quick Actions + Help + AI Assistant */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            {/* Ambient Multi-Engine Badge */}
-            <div
-              className="desktop-only"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '3px 8px',
-                borderRadius: '4px',
-                background: 'var(--bg-elevated)',
-                border: '1px solid var(--border-default)',
-                fontSize: '11px',
-                color: 'var(--text-secondary)',
-              }}
-              title={
-                engineStatus.isAvailable
-                  ? `Python AI Engine v${engineStatus.version} active on port 8000 (FastAPI + SQLite)`
-                  : 'Running in Local-First IndexedDB Mode (Python Engine Offline)'
-              }
-            >
-              <span
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  background: engineStatus.isAvailable ? 'var(--status-success)' : 'var(--text-muted)',
-                }}
-              />
-              <span style={{ fontWeight: 500 }}>
-                {engineStatus.isAvailable ? 'Python Engine' : 'Local Heuristic'}
-              </span>
-            </div>
-
             {/* Universal Quick Create Launcher Button */}
             <button
               onClick={() => setQuickActionModalOpen(true)}
@@ -575,13 +529,6 @@ export default function App() {
       <KeyboardShortcutsModal
         isOpen={shortcutsHelpOpen}
         onClose={() => setShortcutsHelpOpen(false)}
-      />
-
-      {/* INTERACTIVE COMPARISON MATRIX DRAWER */}
-      <ComparisonDrawer
-        currentVariant={designVariant}
-        isOpen={comparisonMatrixOpen}
-        onClose={() => setComparisonMatrixOpen(false)}
       />
 
       {/* FIRST-TIME GUIDED ONBOARDING WIZARD 2.0 */}

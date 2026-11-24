@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import {
   DollarSign,
   TrendingUp,
@@ -31,7 +32,7 @@ export default function FinancePage() {
   const deleteSavingsGoal = useStore((s) => s.deleteSavingsGoal);
 
   const currency = settings.currencySymbol || '$';
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const currentMonthStr = todayStr.substring(0, 7);
 
   // Filter state

@@ -16,6 +16,7 @@ import {
   Compass,
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import { getPhoto } from '../utils/photoAssets';
 import ContextualTipBanner from '../components/ContextualTipBanner';
 
@@ -27,7 +28,7 @@ export default function FocusModePage() {
   const recordTaskFocusDuration = useStore((s) => s.recordTaskFocusDuration);
   const addToast = useStore((s) => s.addToast);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const pendingTasks = useMemo(() => tasks.filter((t) => !t.isCompleted), [tasks]);
 
   // Selected Task

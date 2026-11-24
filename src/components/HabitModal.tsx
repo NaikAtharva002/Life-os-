@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { todayLocal } from '../lib/dates';
 import {
   X,
   Sparkles,
@@ -95,7 +96,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
   const [weeklyTargetCount, setWeeklyTargetCount] = useState<number>(habit?.weeklyTargetCount || 3);
   const [monthlyDates, setMonthlyDates] = useState<string>(habit?.monthlyDates ? habit.monthlyDates.join(', ') : '1, 15');
   const [customIntervalDays, setCustomIntervalDays] = useState<number>(habit?.customIntervalDays || 2);
-  const [startDate, setStartDate] = useState(habit?.startDate || new Date().toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(habit?.startDate || todayLocal());
   const [endDate, setEndDate] = useState(habit?.endDate || '');
 
   // Integration & Reminders

@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import type { Priority, EveningReview, Task } from '../types';
+import { todayLocal, tomorrowLocal } from '../lib/dates';
 
 export default function EveningReviewPage() {
   const tasks = useStore((s) => s.tasks);
@@ -33,7 +34,7 @@ export default function EveningReviewPage() {
   const eveningReviews = useStore((s) => s.eveningReviews);
   const setActiveView = useStore((s) => s.setActiveView);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const [selectedDate, setSelectedDate] = useState(todayStr);
 
   // Check if review already exists for selected date
@@ -344,7 +345,7 @@ export default function EveningReviewPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {pendingAndOverdueTasks.map((t) => {
-                const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+                const tomorrowStr = tomorrowLocal();
                 return (
                   <div
                     key={t.id}

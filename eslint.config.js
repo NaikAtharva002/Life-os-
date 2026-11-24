@@ -26,7 +26,7 @@ export default [
     },
     rules: {
       'no-restricted-syntax': [
-        'warn',
+        'error',
         {
           selector: "CallExpression[callee.property.name='split'] > MemberExpression[property.name='split'] > CallExpression[callee.property.name='toISOString']",
           message: "Use todayLocal() or toLocalDateString() from src/lib/dates instead of toISOString().split('T')[0] to avoid UTC date boundary bugs."

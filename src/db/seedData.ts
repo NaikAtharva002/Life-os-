@@ -25,19 +25,20 @@ import type {
   ObsidianNote,
   AppSettings,
 } from '../types';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 
 export function getInitialSeedData() {
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   const daysAgo = (d: number) => {
     const dt = new Date(now.getTime() - d * 86400000);
-    return dt.toISOString().split('T')[0];
+    return toLocalDateString(dt);
   };
 
   const daysFromNow = (d: number) => {
     const dt = new Date(now.getTime() + d * 86400000);
-    return dt.toISOString().split('T')[0];
+    return toLocalDateString(dt);
   };
 
   // 1. GOALS

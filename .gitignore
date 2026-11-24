@@ -45,13 +45,18 @@ __pycache__/
 *.py[cod]
 *$py.class
 services/ai_engine/.venv/
+labs/ai_engine/.venv/
 .venv/
 services/ai_engine/data/*.db
 services/ai_engine/data/*.db-wal
 services/ai_engine/data/*.db-shm
+labs/ai_engine/data/*.db
+labs/ai_engine/data/*.db-wal
+labs/ai_engine/data/*.db-shm
 
 # Rust / Tauri build artifacts
 src-tauri/target/
+labs/src-tauri/target/
 
 # OS temporary files
 Thumbs.db

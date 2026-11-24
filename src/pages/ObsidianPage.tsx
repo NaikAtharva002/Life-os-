@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import JSZip from 'jszip';
 import {
   FileText,
@@ -169,7 +170,7 @@ Room: ${sub.roomOrLink || 'Lecture Hall'}
       const url = URL.createObjectURL(content);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `LifeOS-Obsidian-Vault-${new Date().toISOString().split('T')[0]}.zip`;
+      a.download = `LifeOS-Obsidian-Vault-${todayLocal()}.zip`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {

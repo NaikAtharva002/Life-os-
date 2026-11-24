@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import {
   GraduationCap,
   Calendar,
@@ -40,7 +41,7 @@ export default function AcademicsPage() {
   const deleteExam = useStore((s) => s.deleteExam);
   const addSemester = useStore((s) => s.addSemester);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const [activeTab, setActiveTab] = useState<'attendance' | 'assignments' | 'exams' | 'timetable' | 'gpa'>('attendance');
 
   // Modals

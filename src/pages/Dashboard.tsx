@@ -29,6 +29,7 @@ import {
   Activity,
 } from 'lucide-react';
 import useStore, { isHabitScheduledOnDate } from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 import type { Task, Priority, Goal, Habit } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 import { Checkbox, EmptyState } from '../components/ui';
@@ -54,7 +55,7 @@ export default function Dashboard() {
 
   const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   // Greeting & Time of Day
   const currentHour = new Date().getHours();

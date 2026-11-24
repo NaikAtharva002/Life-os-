@@ -29,6 +29,7 @@ import {
   Compass,
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 import GoalModal from '../components/GoalModal';
 import GoalDetailModal from '../components/GoalDetailModal';
 import TaskModal from '../components/TaskModal';
@@ -100,10 +101,10 @@ export default function GoalsPage() {
     });
   };
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
   const nextWeek = new Date();
   nextWeek.setDate(nextWeek.getDate() + 7);
-  const nextWeekStr = nextWeek.toISOString().split('T')[0];
+  const nextWeekStr = toLocalDateString(nextWeek);
 
   // Dashboard Executive Statistics
   const dashboardStats = useMemo(() => {

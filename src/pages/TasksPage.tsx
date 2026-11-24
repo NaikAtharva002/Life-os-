@@ -22,10 +22,10 @@ import TaskModal from '../components/TaskModal';
 import QuickTaskBar from '../components/QuickTaskBar';
 import TaskKanbanBoard from '../components/TaskKanbanBoard';
 import TaskCalendarView from '../components/TaskCalendarView';
-import { aiEngine } from '../services/aiEngineClient';
 import { EmptyState } from '../components/ui';
 import ContextualTipBanner from '../components/ContextualTipBanner';
 import type { Task, Priority, TaskStatus } from '../types';
+import { todayLocal } from '../lib/dates';
 
 const PRIORITY_ORDER: Record<Priority, number> = {
   critical: 0,
@@ -85,7 +85,7 @@ export default function TasksPage() {
     estimatedDuration?: number;
   } | undefined>(undefined);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   // Dynamic filter lists
   const categories = useMemo(() => {
@@ -285,28 +285,14 @@ export default function TasksPage() {
     if (!nlpInput.trim()) return;
 
     setNlpLoading(true);
-    const parsed = await aiEngine.parseTaskNLP(nlpInput);
-
-    if (parsed) {
-      await addTask({
-        title: parsed.title,
-        dueDate: parsed.due_date || (parsed.is_scheduled_today ? todayStr : undefined),
-        dueTime: parsed.due_time || undefined,
-        priority: parsed.priority,
-        category: parsed.category || 'General',
-        status: 'todo',
-        subtasks: [],
-      });
-    } else {
-      await addTask({
-        title: nlpInput.trim(),
-        priority: 'medium',
-        category: 'General',
-        dueDate: todayStr,
-        status: 'todo',
-        subtasks: [],
-      });
-    }
+    await addTask({
+      title: nlpInput.trim(),
+      priority: 'medium',
+      category: 'General',
+      dueDate: todayStr,
+      status: 'todo',
+      subtasks: [],
+    });
 
     setNlpInput('');
     setNlpLoading(false);

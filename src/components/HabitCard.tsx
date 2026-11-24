@@ -2,6 +2,7 @@ import React from 'react';
 import { Award, Check, Edit2, Trash2, Flame, Shield } from 'lucide-react';
 import type { Habit } from '../types';
 import useStore, { isHabitScheduledOnDate } from '../store/useStore';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 
 interface HabitCardProps {
   habit: Habit;
@@ -14,7 +15,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onOpenDetail }: Hab
   const toggleHabitEntry = useStore((s) => s.toggleHabitEntry);
   const habitEntries = useStore((s) => s.habitEntries);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const entries = habit.entries || habitEntries.filter((e) => e.habitId === habit.id);
   const todayEntry = entries.find((e) => e.date === todayStr);
   const isTodayCompleted = todayEntry && (todayEntry.completed || todayEntry.status === 'completed');
@@ -25,7 +26,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onOpenDetail }: Hab
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
-    return d.toISOString().split('T')[0];
+    return toLocalDateString(d);
   });
 
   const getDayLetter = (dateStr: string) => {

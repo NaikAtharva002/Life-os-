@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { LifeOSRepository } from '../db/repository';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 import type {
   Goal,
   Task,
@@ -195,6 +196,8 @@ interface StoreState {
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
   setActiveView: (view: string) => void;
   initializeFromDB: () => Promise<void>;
+  initError: string | null;
+  setInitError: (err: string | null) => void;
 
   // 12. Micro-Interactions & Toasts
   toasts: ToastItem[];
@@ -263,7 +266,7 @@ export function computeNextDueDate(
     next.setDate(next.getDate() + 1);
   }
 
-  return next.toISOString().split('T')[0];
+  return toLocalDateString(next);
 }
 
 // ---------------------------------------------------------------------------
@@ -312,7 +315,7 @@ export function computeGoalProgress(
     if (goal.linkedHabitIds && goal.linkedHabitIds.length > 0) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const startStr = thirtyDaysAgo.toISOString().split('T')[0];
+      const startStr = toLocalDateString(thirtyDaysAgo);
 
       const relevantEntries = habitEntries.filter(
         (e) => goal.linkedHabitIds!.includes(e.habitId) && e.date >= startStr
@@ -342,7 +345,7 @@ export function computeGoalStatus(
     return 'completed';
   }
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
 
   if (goal.targetDate && goal.targetDate < today && progress < 100) {
     return 'at-risk';
@@ -492,7 +495,7 @@ export function computeHabitStreak(
   let checkDate = new Date(today);
 
   for (let i = 0; i < 365; i++) {
-    const dateStr = checkDate.toISOString().split('T')[0];
+    const dateStr = toLocalDateString(checkDate);
     const isScheduled = isHabitScheduledOnDate(habit, dateStr);
 
     if (isScheduled) {
@@ -530,7 +533,7 @@ export function computeHabitStreak(
   scanDate.setDate(scanDate.getDate() - 365);
 
   for (let d = 0; d <= 365; d++) {
-    const dStr = scanDate.toISOString().split('T')[0];
+    const dStr = toLocalDateString(scanDate);
     const isScheduled = isHabitScheduledOnDate(habit, dStr);
 
     if (isScheduled) {
@@ -578,7 +581,7 @@ export function computeHabitConsistency(
   for (let i = 0; i < days; i++) {
     const cur = new Date(today);
     cur.setDate(cur.getDate() - i);
-    const dateStr = cur.toISOString().split('T')[0];
+    const dateStr = toLocalDateString(cur);
 
     if (isHabitScheduledOnDate(habit, dateStr)) {
       scheduledCount++;
@@ -695,6 +698,9 @@ export const useStore = create<StoreState>((set, get) => ({
     ],
   },
 
+  initError: null,
+  setInitError: (err) => set({ initError: err }),
+
   initializeFromDB: async () => {
     try {
       const data = await LifeOSRepository.initialize();
@@ -740,13 +746,38 @@ export const useStore = create<StoreState>((set, get) => ({
         activeWorkspaceId,
         designVariant: loadedVariant,
         isLoaded: true,
+        initError: null,
         isOnboardingOpen: shouldOpenOnboarding,
       });
       document.documentElement.setAttribute('data-variant', loadedVariant);
       get().markOverdueTasks();
+
+      // Request persistent storage on first run with one-time notice
+      if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
+        navigator.storage.persisted().then((isPersisted) => {
+          if (!isPersisted) {
+            navigator.storage.persist().then((granted) => {
+              if (granted && !localStorage.getItem('lifeos_persist_notified')) {
+                get().addToast({
+                  type: 'success',
+                  title: 'Persistent Storage Granted',
+                  message: 'Your browser has granted permanent local storage for LIFE OS records.',
+                });
+                localStorage.setItem('lifeos_persist_notified', 'true');
+              }
+            }).catch(() => {});
+          }
+        }).catch(() => {});
+      }
     } catch (err) {
       console.error('[LifeOS Store] Failed to initialize from IndexedDB:', err);
-      set({ isLoaded: true });
+      const errMsg = err instanceof Error ? err.message : 'Database initialization failed';
+      set({ isLoaded: true, initError: errMsg });
+      get().addToast({
+        type: 'error',
+        title: 'Database Load Error',
+        message: 'Could not load your local records from IndexedDB.',
+      });
     }
   },
 
@@ -815,7 +846,17 @@ export const useStore = create<StoreState>((set, get) => ({
     };
 
     set((s) => ({ goals: [newGoal, ...s.goals] }));
-    await LifeOSRepository.saveGoal(newGoal);
+    try {
+      await LifeOSRepository.saveGoal(newGoal);
+    } catch (err) {
+      set((s) => ({ goals: s.goals.filter((g) => g.id !== newGoal.id) }));
+      get().addToast({
+        type: 'error',
+        title: 'Goal Save Failed',
+        message: 'Could not write goal to local database. Changes rolled back.',
+      });
+      throw err;
+    }
     return newGoal;
   },
 
@@ -868,15 +909,41 @@ export const useStore = create<StoreState>((set, get) => ({
     set((s) => ({
       goals: s.goals.map((g) => (g.id === id ? updatedGoal! : g)),
     }));
-    await LifeOSRepository.saveGoal(updatedGoal);
+    try {
+      await LifeOSRepository.saveGoal(updatedGoal);
+    } catch (err) {
+      set((s) => ({
+        goals: s.goals.map((g) => (g.id === id ? currentGoal : g)),
+      }));
+      get().addToast({
+        type: 'error',
+        title: 'Goal Update Failed',
+        message: 'Could not save goal updates. Changes rolled back.',
+      });
+      throw err;
+    }
   },
 
   deleteGoal: async (id) => {
+    const prevGoal = get().goals.find((g) => g.id === id);
+    if (!prevGoal) return;
+    const prevTasks = get().tasks;
+
     set((s) => ({
       goals: s.goals.filter((g) => g.id !== id),
       tasks: s.tasks.map((t) => (t.goalId === id ? { ...t, goalId: undefined, milestoneId: undefined } : t)),
     }));
-    await LifeOSRepository.deleteGoal(id);
+    try {
+      await LifeOSRepository.deleteGoal(id);
+    } catch (err) {
+      set({ goals: [prevGoal, ...get().goals], tasks: prevTasks });
+      get().addToast({
+        type: 'error',
+        title: 'Goal Deletion Failed',
+        message: 'Could not remove goal from database. Goal restored.',
+      });
+      throw err;
+    }
   },
 
   toggleMilestone: async (goalId, milestoneId) => {
@@ -1251,11 +1318,24 @@ export const useStore = create<StoreState>((set, get) => ({
       updatedAt: now,
     };
     set((s) => ({ tasks: [newTask, ...s.tasks] }));
-    await LifeOSRepository.saveTask(newTask);
+    try {
+      await LifeOSRepository.saveTask(newTask);
+    } catch (err) {
+      set((s) => ({ tasks: s.tasks.filter((t) => t.id !== newTask.id) }));
+      get().addToast({
+        type: 'error',
+        title: 'Task Save Failed',
+        message: 'Could not write task to local database. Changes rolled back.',
+      });
+      throw err;
+    }
   },
 
   updateTask: async (id, updates) => {
     const now = new Date().toISOString();
+    const prevTask = get().tasks.find((t) => t.id === id);
+    if (!prevTask) return;
+
     let updatedTask: Task | undefined;
     set((s) => ({
       tasks: s.tasks.map((t) => {
@@ -1267,13 +1347,38 @@ export const useStore = create<StoreState>((set, get) => ({
       }),
     }));
     if (updatedTask) {
-      await LifeOSRepository.saveTask(updatedTask);
+      try {
+        await LifeOSRepository.saveTask(updatedTask);
+      } catch (err) {
+        set((s) => ({
+          tasks: s.tasks.map((t) => (t.id === id ? prevTask : t)),
+        }));
+        get().addToast({
+          type: 'error',
+          title: 'Task Update Failed',
+          message: 'Could not save updates to local database. Changes rolled back.',
+        });
+        throw err;
+      }
     }
   },
 
   deleteTask: async (id) => {
+    const prevTask = get().tasks.find((t) => t.id === id);
+    if (!prevTask) return;
+
     set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) }));
-    await LifeOSRepository.deleteTask(id);
+    try {
+      await LifeOSRepository.deleteTask(id);
+    } catch (err) {
+      set((s) => ({ tasks: [prevTask, ...s.tasks] }));
+      get().addToast({
+        type: 'error',
+        title: 'Task Deletion Failed',
+        message: 'Could not remove task from database. Task restored.',
+      });
+      throw err;
+    }
   },
 
   completeTask: async (id) => {
@@ -1576,7 +1681,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   markOverdueTasks: async () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayLocal();
     const now = new Date().toISOString();
     const tasksToUpdate: Task[] = [];
 
@@ -2683,7 +2788,7 @@ export const useStore = create<StoreState>((set, get) => ({
           priority: g.priority,
           type: 'short-term',
           description: 'Created during onboarding setup.',
-          targetDate: g.targetDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          targetDate: g.targetDate || toLocalDateString(new Date(Date.now() + 30 * 86400000)),
           progress: 0,
           milestones: [
             { id: uuidv4(), title: 'Initial setup & plan', isCompleted: false },

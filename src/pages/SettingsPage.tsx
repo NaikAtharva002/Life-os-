@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { LifeOSRepository } from '../db/repository';
-import { aiEngine } from '../services/aiEngineClient';
+import { todayLocal } from '../lib/dates';
 import {
   requestNotificationPermission,
   showNotification,
@@ -118,7 +118,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `LifeOS-IndexedDB-Backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `LifeOS-IndexedDB-Backup-${todayLocal()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -148,26 +148,6 @@ export default function SettingsPage() {
     if (window.confirm('⚠️ Reset entire database to factory defaults? All personal goals, tasks, and journals will be cleared and reseeded.')) {
       await LifeOSRepository.resetDatabaseToFactory();
     }
-  };
-
-  const handleSyncToSQLite = async () => {
-    const state = useStore.getState();
-    setStatusMessage('Syncing IndexedDB records to local SQLite database...');
-    const res = await aiEngine.syncToSQLite({
-      tasks: state.tasks,
-      goals: state.goals,
-      habits: state.habits,
-      habit_entries: state.habitEntries,
-      transactions: state.financeTransactions,
-      subjects: state.academicSubjects,
-    });
-
-    if (res.success) {
-      setStatusMessage('✓ Successfully synchronized with Python SQLite database (life_os.db)!');
-    } else {
-      setStatusMessage('⚠️ Python AI Engine not running on http://localhost:8000. Start the engine to sync.');
-    }
-    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   const handleCreateWorkspace = async (e: React.FormEvent) => {
@@ -597,10 +577,6 @@ export default function SettingsPage() {
         </p>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={handleSyncToSQLite} className="btn btn-secondary" style={{ fontSize: '11.5px', height: '30px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-            <RefreshCw size={13} /> Sync to SQLite (Python Engine)
-          </button>
-
           <button onClick={handleExportData} className="btn btn-secondary" style={{ fontSize: '11.5px', height: '30px' }}>
             <Download size={13} /> Export JSON Backup
           </button>

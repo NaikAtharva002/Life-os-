@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import type { Priority } from '../types';
+import { todayLocal, tomorrowLocal } from '../lib/dates';
 
 interface QuickTaskBarProps {
   onExpandDetails: (initialValues?: { title: string; priority: Priority; dueDate?: string; category?: string; estimatedDuration?: number }) => void;
@@ -45,12 +46,8 @@ export default function QuickTaskBar({ onExpandDetails, defaultCategory, default
   const [tags, setTags] = useState<string[]>([]);
   const [showOptions, setShowOptions] = useState(false);
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
-  })();
+  const todayStr = todayLocal();
+  const tomorrowStr = tomorrowLocal();
 
   const handleAddTag = () => {
     if (!tagInput.trim()) return;

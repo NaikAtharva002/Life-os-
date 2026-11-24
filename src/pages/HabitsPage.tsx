@@ -34,6 +34,7 @@ import { EmptyState } from '../components/ui';
 import ContextualTipBanner from '../components/ContextualTipBanner';
 import type { Habit, HabitRoutine } from '../types';
 import { getPhoto } from '../utils/photoAssets';
+import { todayLocal, toLocalDateString } from '../lib/dates';
 
 export default function HabitsPage() {
   const habits = useStore((s) => s.habits);
@@ -57,7 +58,7 @@ export default function HabitsPage() {
   const [newRoutineTitle, setNewRoutineTitle] = useState('');
   const [newRoutineTime, setNewRoutineTime] = useState<'morning' | 'afternoon' | 'evening' | 'anytime'>('morning');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
 
   // Scheduled today habits
   const scheduledTodayHabits = useMemo(() => {
@@ -101,7 +102,7 @@ export default function HabitsPage() {
     const curr = new Date(startDate);
 
     while (curr <= endDate) {
-      const dStr = curr.toISOString().split('T')[0];
+      const dStr = toLocalDateString(curr);
       currentWeek.push({
         dateStr: dStr,
         date: new Date(curr),

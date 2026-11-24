@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import type { EveningReview } from '../types';
+import { toLocalDateString } from '../lib/dates';
 
 export default function ReviewHistoryPage() {
   const eveningReviews = useStore((s) => s.eveningReviews);
@@ -40,7 +41,7 @@ export default function ReviewHistoryPage() {
     checkDate.setHours(0, 0, 0, 0);
 
     for (let i = 0; i < 365; i++) {
-      const dStr = checkDate.toISOString().split('T')[0];
+      const dStr = toLocalDateString(checkDate);
       if (dates.has(dStr)) {
         reviewStreak++;
       } else if (i > 0) {

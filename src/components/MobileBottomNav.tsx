@@ -8,6 +8,7 @@ import {
   Plus
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { todayLocal } from '../lib/dates';
 
 export interface MobileBottomNavProps {
   onOpenMenu: () => void;
@@ -20,7 +21,7 @@ export default function MobileBottomNav({ onOpenMenu, onQuickCreate }: MobileBot
   const tasks = useStore((s) => s.tasks);
   const goals = useStore((s) => s.goals);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = todayLocal();
   const overdueCount = tasks.filter((t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr))).length;
   const criticalGoals = goals.filter((g) => !g.isArchived && g.priority === 'critical').length;
 

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { todayLocal } from '../lib/dates';
 import {
   X,
   Plus,
@@ -112,7 +113,7 @@ export default function GoalDetailModal({
     return tasks.filter((t) => !t.goalId && !t.isArchived);
   }, [tasks]);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
 
   // Milestone metrics
   const completedMilestones = goal.milestones.filter((m) => m.isCompleted).length;

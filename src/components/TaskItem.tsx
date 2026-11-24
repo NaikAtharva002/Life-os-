@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import type { Task, Priority, TaskStatus } from '../types';
 import useStore from '../store/useStore';
+import { todayLocal, tomorrowLocal } from '../lib/dates';
 
 interface TaskItemProps {
   task: Task;
@@ -111,12 +112,8 @@ export default function TaskItem({ task, onEdit, onDelete, showGoal = true }: Ta
     (t) => !t.isCompleted && t.dependsOnTaskIds?.includes(task.id)
   ).length;
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
-  })();
+  const todayStr = todayLocal();
+  const tomorrowStr = tomorrowLocal();
 
   const isDueToday = task.dueDate === todayStr;
   const isDueTomorrow = task.dueDate === tomorrowStr;
