@@ -24,6 +24,7 @@ import { Menu, Plus, Search, Sparkles, Terminal } from 'lucide-react';
 import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
 import VariantHeaderBanner from './components/VariantHeaderBanner';
 import ComparisonDrawer from './components/ComparisonDrawer';
+import { ToastContainer } from './components/ui';
 
 export default function App() {
   const isLoaded = useStore((s) => s.isLoaded);
@@ -457,6 +458,9 @@ export default function App() {
         isOpen={comparisonMatrixOpen}
         onClose={() => setComparisonMatrixOpen(false)}
       />
+
+      {/* GLOBAL TOAST NOTIFICATION PORTAL */}
+      <ToastContainer />
     </div>
   );
 }

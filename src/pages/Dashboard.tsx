@@ -27,6 +27,7 @@ import {
 import useStore from '../store/useStore';
 import type { Task, Priority, Goal, Habit } from '../types';
 import { getPhoto } from '../utils/photoAssets';
+import { Checkbox } from '../components/ui';
 
 export default function Dashboard() {
   const goals = useStore((s) => s.goals);
@@ -417,7 +418,7 @@ export default function Dashboard() {
           {/* Timer Display */}
           <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', margin: '20px 0' }}>
             <div
-              className="tabular font-editorial"
+              className={`tabular font-editorial ${isTimerRunning ? 'timer-running-pulse' : ''}`}
               style={{
                 fontSize: '56px',
                 fontWeight: 600,
@@ -425,6 +426,7 @@ export default function Dashboard() {
                 color: 'var(--text-on-accent)',
                 textShadow: '0 4px 16px rgba(0,0,0,0.6)',
                 lineHeight: 1,
+                transition: 'all 0.2s ease',
               }}
             >
               {formatTimer(timerSeconds)}
@@ -446,14 +448,23 @@ export default function Dashboard() {
             }}
           >
             <button
-              onClick={() => setIsTimerRunning(!isTimerRunning)}
+              onClick={() => {
+                const nextRunning = !isTimerRunning;
+                setIsTimerRunning(nextRunning);
+                useStore.getState().addToast({
+                  type: 'info',
+                  title: nextRunning ? 'Focus Session Started' : 'Focus Session Paused',
+                  message: nextRunning ? '25 minutes deep work in progress.' : 'Timer paused. Take a breath.',
+                });
+              }}
               className="btn btn-primary"
               style={{
                 padding: '8px 20px',
                 borderRadius: '30px',
                 fontSize: '13px',
                 fontWeight: 600,
-                boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)',
+                boxShadow: isTimerRunning ? '0 4px 16px rgba(184, 12, 9, 0.45)' : 'var(--shadow-sm)',
+                transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
               }}
             >
               {isTimerRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
@@ -461,14 +472,22 @@ export default function Dashboard() {
             </button>
 
             <button
-              onClick={() => resetTimer(25)}
-              className="btn btn-secondary"
+              onClick={() => {
+                resetTimer(25);
+                useStore.getState().addToast({
+                  type: 'info',
+                  title: 'Timer Reset',
+                  message: 'Focus session reset to 25:00.',
+                });
+              }}
+              className="btn btn-secondary icon-btn-spin"
               style={{
                 padding: '8px 12px',
                 borderRadius: '30px',
                 backdropFilter: 'blur(8px)',
               }}
               title="Reset Timer"
+              aria-label="Reset Timer"
             >
               <RotateCcw size={14} />
             </button>
@@ -546,6 +565,7 @@ export default function Dashboard() {
               {todayTasks.slice(0, 3).map((t, idx) => (
                 <div
                   key={t.id}
+                  className={`editorial-triage-row ${t.isCompleted ? 'completed' : ''}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -554,7 +574,8 @@ export default function Dashboard() {
                     borderRadius: 'var(--radius-sm)',
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--border-default)',
-                    transition: 'border-color 0.15s ease',
+                    transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    opacity: t.isCompleted ? 0.6 : 1,
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -576,14 +597,21 @@ export default function Dashboard() {
                     >
                       {idx + 1}
                     </div>
-                    <input
-                      type="checkbox"
+                    <Checkbox
+                      size="sm"
                       checked={t.isCompleted}
                       onChange={() => handleToggleTask(t)}
-                      style={{ cursor: 'pointer', accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
                     />
                     <div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <div
+                        style={{
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: t.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
+                          textDecoration: t.isCompleted ? 'line-through' : 'none',
+                          transition: 'all 0.18s ease-out',
+                        }}
+                      >
                         {t.title}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -801,22 +829,32 @@ export default function Dashboard() {
 
                   <button
                     onClick={() => toggleHabitEntry(h.id, todayStr)}
+                    className="btn-habit-check"
                     style={{
                       width: '32px',
                       height: '32px',
                       borderRadius: '50%',
-                      border: isDone ? 'none' : '1px solid var(--border-default)',
-                      background: isDone ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                      border: isDone ? 'none' : '1.5px solid var(--border-default)',
+                      background: isDone ? 'var(--palette-brick)' : 'var(--bg-elevated)',
                       color: isDone ? 'var(--text-on-accent)' : 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
+                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                      boxShadow: isDone ? '0 2px 8px rgba(184, 12, 9, 0.35)' : 'none',
+                      transform: isDone ? 'scale(1.05)' : 'scale(1)',
                     }}
                     title={isDone ? 'Completed today' : 'Mark completed'}
+                    aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
                   >
-                    <Check size={16} strokeWidth={2.5} />
+                    <Check
+                      size={16}
+                      strokeWidth={2.5}
+                      style={{
+                        animation: isDone ? 'checkboxPop 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                      }}
+                    />
                   </button>
                 </div>
               </div>

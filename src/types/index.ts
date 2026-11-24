@@ -368,3 +368,14 @@ export interface AppSettings {
   geminiApiKey?: string;
   reminder: ReminderSettings;
 }
+
+// ==========================================
+// 12. NOTIFICATIONS & MICRO-INTERACTIONS
+// ==========================================
+export interface ToastItem {
+  id: string;
+  type: 'success' | 'info' | 'warning' | 'error';
+  title: string;
+  message?: string;
+  duration?: number;
+}

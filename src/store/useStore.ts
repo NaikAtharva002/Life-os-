@@ -29,6 +29,7 @@ import type {
   DesignVariant,
   AssistantMessage,
   ReminderSettings,
+  ToastItem,
 } from '../types';
 
 interface StoreState {
@@ -143,6 +144,11 @@ interface StoreState {
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
   setActiveView: (view: string) => void;
   initializeFromDB: () => Promise<void>;
+
+  // 12. Micro-Interactions & Toasts
+  toasts: ToastItem[];
+  addToast: (toast: Omit<ToastItem, 'id'>) => void;
+  removeToast: (id: string) => void;
 }
 
 export const useStore = create<StoreState>((set, get) => ({
@@ -285,6 +291,14 @@ export const useStore = create<StoreState>((set, get) => ({
     }));
     if (updatedGoal) {
       await LifeOSRepository.saveGoal(updatedGoal);
+      const isMilestoneCompleted = updatedGoal.milestones.find((m) => m.id === milestoneId)?.isCompleted;
+      if (isMilestoneCompleted) {
+        get().addToast({
+          type: 'success',
+          title: 'Milestone Completed!',
+          message: `${updatedGoal.title} progress updated to ${updatedGoal.progress}%.`
+        });
+      }
     }
   },
 
@@ -360,6 +374,13 @@ export const useStore = create<StoreState>((set, get) => ({
     }));
     if (updatedTask) {
       await LifeOSRepository.saveTask(updatedTask);
+      if (updatedTask.isCompleted) {
+        get().addToast({
+          type: 'success',
+          title: 'Task Completed',
+          message: `"${updatedTask.title}" marked done.`
+        });
+      }
     }
   },
 
@@ -537,6 +558,14 @@ export const useStore = create<StoreState>((set, get) => ({
 
     if (currentHabit) {
       await LifeOSRepository.saveHabit({ ...currentHabit, streak, longestStreak });
+      const isCompletedNow = nextEntries.some((e) => e.habitId === habitId && e.date === date && e.completed);
+      if (isCompletedNow) {
+        get().addToast({
+          type: 'success',
+          title: 'Habit Logged',
+          message: `${currentHabit.name} logged! 🔥 ${streak}d streak maintained.`
+        });
+      }
     }
   },
 
@@ -948,6 +977,17 @@ export const useStore = create<StoreState>((set, get) => ({
 
   setActiveView: (view) => {
     set({ activeView: view });
+  },
+
+  // 12. Micro-Interactions & Toasts
+  toasts: [],
+  addToast: (toast) => {
+    const id = uuidv4();
+    const newToast: ToastItem = { ...toast, id, duration: toast.duration || 3500 };
+    set((s) => ({ toasts: [...s.toasts, newToast] }));
+  },
+  removeToast: (id) => {
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
   },
 }));
 

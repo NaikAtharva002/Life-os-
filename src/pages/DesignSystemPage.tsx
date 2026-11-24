@@ -29,7 +29,9 @@ import {
   Toggle,
   ProgressBar,
   Modal,
-  EmptyState
+  EmptyState,
+  Checkbox,
+  Skeleton,
 } from '../components/ui';
 import useStore from '../store/useStore';
 
@@ -39,10 +41,14 @@ export default function DesignSystemPage() {
   const setActiveView = useStore((s) => s.setActiveView);
   const designVariant = useStore((s) => s.designVariant);
   const setDesignVariant = useStore((s) => s.setDesignVariant);
+  const addToast = useStore((s) => s.addToast);
 
   const [activeTab, setActiveTab] = useState<'tokens' | 'components' | 'patterns'>('tokens');
   const [testModalOpen, setTestModalOpen] = useState(false);
   const [toggleState, setToggleState] = useState(true);
+  const [checkbox1, setCheckbox1] = useState(true);
+  const [checkbox2, setCheckbox2] = useState(false);
+  const [sliderVal, setSliderVal] = useState(65);
   const [textInputValue, setTextInputValue] = useState('Standard input field');
   const [errorInputValue, setErrorInputValue] = useState('Invalid value');
   const [progressVal, setProgressVal] = useState(68);
@@ -531,6 +537,105 @@ export default function DesignSystemPage() {
                 <Button size="sm" onClick={() => setProgressVal(Math.max(0, progressVal - 10))}>-10%</Button>
                 <Button size="sm" onClick={() => setProgressVal(Math.min(100, progressVal + 10))}>+10%</Button>
               </div>
+            </div>
+          </Card>
+
+          {/* Interactive Checkboxes & Range Sliders */}
+          <Card variant="island">
+            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 14px 0' }}>Checkboxes &amp; Sliders</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>ANIMATED CHECKBOXES</div>
+                <Checkbox
+                  label="Completed Task Checkbox"
+                  description="With smooth checkmark draw and strikethrough"
+                  checked={checkbox1}
+                  onChange={setCheckbox1}
+                />
+                <Checkbox
+                  label="Pending Task Checkbox"
+                  description="Click to toggle with tactile spring feedback"
+                  checked={checkbox2}
+                  onChange={setCheckbox2}
+                />
+                <Checkbox
+                  label="Disabled Checkbox Option"
+                  checked={false}
+                  disabled
+                  onChange={() => {}}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>SLIDERS &amp; VALUE SELECTORS</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Focus Intensity</span>
+                  <span style={{ fontWeight: 700, color: 'var(--palette-brick)' }} className="tabular">{sliderVal}%</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={sliderVal}
+                  onChange={(e) => setSliderVal(Number(e.target.value))}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Hardware-accelerated CSS slider thumb with brand focus ring and hover elevation.
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Toast Notification Micro-Interactions */}
+          <Card variant="island">
+            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 14px 0' }}>Toast Notifications &amp; Feedback</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 14px 0' }}>
+              Non-intrusive floating feedback toasts with auto-countdown, pause-on-hover, and smooth spring entry/exit.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <Button
+                variant="primary"
+                onClick={() => addToast({ type: 'success', title: 'Task Completed', message: 'Priority task marked done and synced to database.' })}
+              >
+                Trigger Success Toast
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => addToast({ type: 'info', title: 'Pomodoro Sanctuary', message: '25-minute deep focus block initiated.' })}
+              >
+                Trigger Info Toast
+              </Button>
+              <Button
+                variant="tertiary"
+                onClick={() => addToast({ type: 'warning', title: 'Attendance Alert', message: 'Calculus attendance is below 75% target threshold.' })}
+              >
+                Trigger Warning Toast
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => addToast({ type: 'error', title: 'Sync Error', message: 'Could not connect to external calendar.' })}
+              >
+                Trigger Error Toast
+              </Button>
+            </div>
+          </Card>
+
+          {/* Loading Skeletons */}
+          <Card variant="island">
+            <h3 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 14px 0' }}>Loading Skeletons</h3>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 14px 0' }}>
+              Content place-holders with wave shimmer animation preventing abrupt layout shifts during data fetches.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '420px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Skeleton width="44px" height="44px" borderRadius="50%" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                  <Skeleton width="60%" height="16px" />
+                  <Skeleton width="40%" height="12px" />
+                </div>
+              </div>
+              <Skeleton width="100%" height="18px" />
+              <Skeleton width="85%" height="18px" />
             </div>
           </Card>
 
