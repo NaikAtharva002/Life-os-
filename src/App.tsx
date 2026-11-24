@@ -20,6 +20,8 @@ import DesignSystemPage from './pages/DesignSystemPage';
 import ProductShowcasePage from './pages/ProductShowcasePage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
+import HabitModal from './components/HabitModal';
+import ClassModal from './components/ClassModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
 import { Menu, Plus, Search, Sparkles, Terminal, Zap, HelpCircle } from 'lucide-react';
 import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
@@ -68,6 +70,8 @@ export default function App() {
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
+  const [quickHabitModalOpen, setQuickHabitModalOpen] = useState(false);
+  const [quickClassModalOpen, setQuickClassModalOpen] = useState(false);
   const [comparisonMatrixOpen, setComparisonMatrixOpen] = useState(false);
   const [engineStatus, setEngineStatus] = useState<AIEngineStatus>({ isAvailable: false });
 
@@ -147,7 +151,16 @@ export default function App() {
         setShortcutsHelpOpen(false);
         setQuickTaskModalOpen(false);
         setQuickGoalModalOpen(false);
+        setQuickHabitModalOpen(false);
+        setQuickClassModalOpen(false);
         setComparisonMatrixOpen(false);
+        return;
+      }
+
+      // Universal Quick Create shortcut: Alt+N or Shift+A
+      if ((e.altKey && e.key.toLowerCase() === 'n') || (e.shiftKey && e.key.toLowerCase() === 'a')) {
+        e.preventDefault();
+        setQuickActionModalOpen((prev) => !prev);
         return;
       }
 
@@ -360,14 +373,21 @@ export default function App() {
               </span>
             </div>
 
-            {/* Quick Actions Launcher Button */}
+            {/* Universal Quick Create Launcher Button */}
             <button
               onClick={() => setQuickActionModalOpen(true)}
-              className="btn btn-secondary btn-sm"
-              title="Open Quick Action Launcher"
+              className="btn btn-primary btn-sm"
+              title="Universal Quick Create (Alt+N)"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                fontWeight: 600,
+              }}
             >
-              <Zap size={13} color="var(--palette-brick)" />
-              <span className="desktop-only">Quick Actions</span>
+              <Plus size={14} />
+              <span>Create</span>
             </button>
 
             <button
@@ -534,7 +554,22 @@ export default function App() {
         onClose={() => setQuickActionModalOpen(false)}
         onOpenNewTask={() => setQuickTaskModalOpen(true)}
         onOpenNewGoal={() => setQuickGoalModalOpen(true)}
+        onOpenNewHabit={() => setQuickHabitModalOpen(true)}
+        onOpenNewClass={() => setQuickClassModalOpen(true)}
       />
+
+      {quickHabitModalOpen && (
+        <HabitModal
+          onClose={() => setQuickHabitModalOpen(false)}
+        />
+      )}
+
+      {quickClassModalOpen && (
+        <ClassModal
+          isOpen={quickClassModalOpen}
+          onClose={() => setQuickClassModalOpen(false)}
+        />
+      )}
 
       {/* KEYBOARD SHORTCUTS GUIDE MODAL (?) */}
       <KeyboardShortcutsModal

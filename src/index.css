@@ -212,70 +212,81 @@
 }
 
 /* =============================================================================
-   TIER 2: SEMANTIC TOKENS — DARK MODE
+   TIER 2: SEMANTIC TOKENS — DARK MODE (Espresso Dark + Crimson Red)
    ============================================================================= */
 [data-theme="dark"] {
   color-scheme: dark;
 
-  /* Surface & Canvas Backgrounds */
-  --bg-main: var(--raw-pitch);
-  --bg-canvas: var(--raw-pitch);
-  --bg-surface: var(--raw-pitch-surface);
-  --bg-elevated: var(--raw-pitch-elevated);
-  --bg-subtle: var(--raw-pitch-subtle);
-  --bg-hover: #342418;
-  --bg-active: #402B1D;
+  /* Surface & Canvas Backgrounds (Espresso Dark Foundation) */
+  --bg-main: #100E0A;
+  --bg-canvas: #100E0A;
+  --bg-sidebar: #1C1712;
+  --bg-surface: #241C15;
+  --bg-elevated: #302419;
+  --bg-subtle: #241C15;
+  --bg-hover: #3B2C20;
+  --bg-active: #4A382A;
+  --bg-card: #241C15;
+  --bg-primary: #100E0A;
+  --bg-secondary: #241C15;
 
   /* Text Colors */
-  --text-primary: var(--raw-alabaster);
-  --text-secondary: var(--raw-silver);
-  --text-muted: var(--raw-silver-muted);
+  --text-primary: #F5F1E9;
+  --text-secondary: #A69B8E;
+  --text-muted: #756B61;
   --text-on-accent: #FFFFFF;
 
   /* Borders & Dividers */
-  --border-default: rgba(229, 231, 230, 0.14);
-  --border-subtle: rgba(229, 231, 230, 0.07);
-  --border-light: rgba(229, 231, 230, 0.22);
-  --border-focus: var(--raw-brick-light);
+  --border-default: #49382A;
+  --border-subtle: rgba(73, 56, 42, 0.45);
+  --border-light: rgba(73, 56, 42, 0.75);
+  --border-focus: #E32620;
+  --border: #49382A;
 
-  /* Accents */
-  --accent-primary: var(--raw-brick-light);
-  --accent-hover: #E33835;
-  --accent-light: #EC5956;
-  --accent-subtle: rgba(209, 42, 39, 0.18);
-  --accent-secondary: var(--raw-walnut-light);
-  --accent-secondary-subtle: rgba(140, 62, 14, 0.22);
+  /* Accents (Crimson Red) */
+  --accent-primary: #E32620;
+  --accent-hover: #C51D18;
+  --accent-light: #FF4742;
+  --accent-subtle: rgba(227, 38, 32, 0.14);
+  --accent-secondary: #6B2B06;
+  --accent-secondary-subtle: rgba(107, 43, 6, 0.20);
   --accent-glow: none;
+  --accent: #E32620;
+  --accent-color: #E32620;
 
   /* Status Tokens */
-  --status-success: var(--raw-success-light);
-  --status-success-bg: rgba(139, 168, 93, 0.15);
-  --status-warning: var(--raw-warning-light);
-  --status-warning-bg: rgba(199, 130, 53, 0.16);
-  --status-danger: var(--raw-danger-light);
-  --status-danger-bg: rgba(209, 42, 39, 0.16);
-  --status-info: var(--raw-info-light);
-  --status-info-bg: rgba(181, 104, 50, 0.16);
+  --status-success: #79B879;
+  --status-success-bg: rgba(121, 184, 121, 0.14);
+  --status-warning: #E5AD4B;
+  --status-warning-bg: rgba(229, 173, 75, 0.14);
+  --status-danger: #E45B52;
+  --status-danger-bg: rgba(228, 91, 82, 0.14);
+  --status-info: #B56832;
+  --status-info-bg: rgba(181, 104, 50, 0.14);
+
+  --danger: #E45B52;
+  --warning: #E5AD4B;
+  --success: #79B879;
 
   /* Priorities */
-  --priority-critical: var(--raw-danger-light);
-  --priority-high: var(--raw-warning-light);
+  --priority-critical: #E45B52;
+  --priority-high: #E5AD4B;
   --priority-medium: #A85A22;
-  --priority-low: var(--raw-success-light);
-  --priority-critical-bg: rgba(209, 42, 39, 0.16);
-  --priority-high-bg: rgba(199, 130, 53, 0.16);
-  --priority-medium-bg: rgba(168, 90, 34, 0.16);
-  --priority-low-bg: rgba(139, 168, 93, 0.15);
+  --priority-low: #79B879;
+  --priority-critical-bg: rgba(228, 91, 82, 0.14);
+  --priority-high-bg: rgba(229, 173, 75, 0.14);
+  --priority-medium-bg: rgba(168, 90, 34, 0.14);
+  --priority-low-bg: rgba(121, 184, 121, 0.14);
 
   /* Palette backward-compatibility aliases */
-  --palette-brick: var(--raw-brick-light);
-  --palette-brick-hover: #E33835;
-  --palette-brick-subtle: rgba(209, 42, 39, 0.18);
-  --palette-brick-border: rgba(209, 42, 39, 0.35);
-  --palette-walnut: var(--raw-walnut-light);
-  --palette-walnut-hover: #9E4610;
-  --palette-walnut-subtle: rgba(140, 62, 14, 0.22);
-  --palette-walnut-surface: var(--raw-walnut-surface);
+  --palette-brick: #E32620;
+  --palette-brick-hover: #C51D18;
+  --palette-brick-subtle: rgba(227, 38, 32, 0.14);
+  --palette-brick-border: rgba(227, 38, 32, 0.35);
+  --palette-walnut: #6B2B06;
+  --palette-walnut-hover: #542205;
+  --palette-walnut-subtle: rgba(107, 43, 6, 0.18);
+  --palette-walnut-surface: #241C15;
 
   --accent: var(--accent-primary);
   --accent-color: var(--accent-primary);

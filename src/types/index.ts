@@ -397,11 +397,17 @@ export interface AcademicExam {
 
 export interface TimetableSlot {
   id: string;
+  workspaceId?: string;
   subjectId: string;
-  dayOfWeek: number; // 1=Mon .. 6=Sat
+  subjectName?: string;
+  courseCode?: string;
+  professor?: string;
+  dayOfWeek: number; // 1=Mon .. 7=Sun
   startTime: string; // "09:00"
   endTime: string;   // "10:30"
   room: string;
+  color?: string;
+  recurring?: boolean;
 }
 
 // ==========================================
@@ -516,10 +522,21 @@ export interface ReminderSettings {
 
 export type DesignVariant = 'agent' | 'taste' | 'impeccable';
 
+export interface UserWorkspace {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AppSettings {
   theme: 'dark' | 'light';
   designVariant?: DesignVariant;
   userName: string;
+  userEmail?: string;
+  userAvatar?: string;
+  userGreeting?: string;
   currencySymbol: string;
   geminiApiKey?: string;
   reminder: ReminderSettings;
@@ -529,8 +546,18 @@ export interface AppSettings {
   defaultFocusDuration?: number;
   dismissedTips?: string[];
   isDemoMode?: boolean;
-  userAvatar?: string;
-  userGreeting?: string;
+  activeWorkspaceId?: string;
+  workspaces?: UserWorkspace[];
+  dashboardWidgets?: {
+    priorities?: boolean;
+    tasks?: boolean;
+    habits?: boolean;
+    schedule?: boolean;
+    goals?: boolean;
+    finance?: boolean;
+    fitness?: boolean;
+    academics?: boolean;
+  };
 }
 
 // ==========================================

@@ -24,6 +24,9 @@ import {
   Sun,
   Moon,
   Plus,
+  Sliders,
+  X,
+  Activity,
 } from 'lucide-react';
 import useStore, { isHabitScheduledOnDate } from '../store/useStore';
 import type { Task, Priority, Goal, Habit } from '../types';
@@ -37,15 +40,19 @@ export default function Dashboard() {
   const habitEntries = useStore((s) => s.habitEntries);
   const financeTransactions = useStore((s) => s.financeTransactions);
   const academicSubjects = useStore((s) => s.academicSubjects);
+  const timetableSlots = useStore((s) => s.timetableSlots);
   const workoutSessions = useStore((s) => s.workoutSessions);
   const eveningReviews = useStore((s) => s.eveningReviews);
   const settings = useStore((s) => s.settings);
+  const updateSettings = useStore((s) => s.updateSettings);
   const setActiveView = useStore((s) => s.setActiveView);
   const toggleHabitEntry = useStore((s) => s.toggleHabitEntry);
   const completeTask = useStore((s) => s.completeTask);
   const updateTask = useStore((s) => s.updateTask);
   const rescheduleTask = useStore((s) => s.rescheduleTask);
   const startTaskFocusSession = useStore((s) => s.startTaskFocusSession);
+
+  const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -174,11 +181,19 @@ export default function Dashboard() {
 
   // Academic attendance safety
   const attendanceAvg = useMemo(() => {
-    if (academicSubjects.length === 0) return 85.0;
+    if (academicSubjects.length === 0) return null;
     const totalClasses = academicSubjects.reduce((acc, s) => acc + s.totalClasses, 0);
     const attended = academicSubjects.reduce((acc, s) => acc + s.attendedClasses, 0);
-    return totalClasses > 0 ? (attended / totalClasses) * 100 : 85.0;
+    return totalClasses > 0 ? (attended / totalClasses) * 100 : 100.0;
   }, [academicSubjects]);
+
+  // Today's scheduled classes from personal timetable
+  const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
+  const todayClasses = useMemo(() => {
+    return timetableSlots
+      .filter((s) => s.dayOfWeek === currentDayOfWeek)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  }, [timetableSlots, currentDayOfWeek]);
 
   const academicAlertSubject = useMemo(() => {
     return academicSubjects.find(
@@ -192,6 +207,21 @@ export default function Dashboard() {
       .filter((t) => t.type === 'expense' && t.date.startsWith(todayStr.slice(0, 7)))
       .reduce((sum, t) => sum + t.amount, 0);
   }, [financeTransactions, todayStr]);
+
+  const hasFinanceData = financeTransactions.length > 0;
+  const hasFitnessData = workoutSessions.length > 0;
+
+  // Widget visibility preferences
+  const widgets = {
+    focusTimer: true,
+    todayTasks: true,
+    goals: true,
+    habits: true,
+    academics: true,
+    finance: true,
+    fitness: true,
+    ...settings.dashboardWidgets,
+  };
 
   const handleToggleTask = (task: Task) => {
     if (task.isCompleted) {
@@ -256,7 +286,7 @@ export default function Dashboard() {
                 textShadow: '0 2px 10px rgba(0,0,0,0.5)',
               }}
             >
-              {greeting}, {settings.userName}
+              {settings.userName?.trim() ? `${greeting}, ${settings.userName.trim()}` : `${greeting}, Welcome to LIFE OS`}
             </h1>
 
             <p
@@ -363,6 +393,29 @@ export default function Dashboard() {
               <span>Tasks: <strong style={{ color: 'var(--text-primary)' }}>{completedTodayCount}/{todayTasks.length + completedTodayCount}</strong></span>
               <span>Habits: <strong style={{ color: 'var(--text-primary)' }}>{habitsCompletedTodayCount}/{habitsToday.length}</strong></span>
             </div>
+
+            <button
+              onClick={() => setShowWidgetCustomizer(true)}
+              style={{
+                width: '100%',
+                marginTop: '12px',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <Sliders size={12} />
+              <span>Customize Dashboard</span>
+            </button>
           </div>
         </div>
       </section>
@@ -707,131 +760,134 @@ export default function Dashboard() {
       {/* =========================================================================
           3. PHOTOGRAPHIC PRIORITY GOAL THUMBNAILS (LIFE OS 3.0)
       ========================================================================= */}
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-              <span style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--palette-brick)' }}>
-                Question 2 · Long-Term Vision
+      {widgets.goals !== false && (
+        <section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--palette-brick)' }}>
+                  Question 2 · Long-Term Vision
+                </span>
+              </div>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                What is most important?
+              </h2>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                Strategic Horizons: Goal architecture & milestone progress
               </span>
             </div>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              What is most important?
-            </h2>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-              Strategic Horizons: Goal architecture & milestone progress
-            </span>
+            <button
+              onClick={() => setActiveView('goals')}
+              className="btn btn-ghost btn-sm"
+              style={{ color: 'var(--accent-primary)' }}
+            >
+              Manage Goals <ArrowRight size={13} />
+            </button>
           </div>
-          <button
-            onClick={() => setActiveView('goals')}
-            className="btn btn-ghost btn-sm"
-            style={{ color: 'var(--accent-primary)' }}
-          >
-            Manage Goals <ArrowRight size={13} />
-          </button>
-        </div>
 
-        {priorityGoals.length === 0 ? (
-          <EmptyState
-            illustration="goals"
-            badge="Ambitions & Horizons"
-            title="Give your ambitions a direction."
-            description="Define milestones, track progress percentages, and connect your goals to daily habits."
-            action={
-              <button
-                onClick={() => setActiveView('goals')}
-                className="btn btn-primary btn-sm"
-              >
-                <Plus size={14} /> Create a goal
-              </button>
-            }
-          />
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-            {priorityGoals.map((g, idx) => {
-              const photoUrl = getGoalPhoto(g.category, idx);
-              return (
-                <div
-                  key={g.id}
-                  className="photo-tile"
+          {priorityGoals.length === 0 ? (
+            <EmptyState
+              illustration="goals"
+              badge="Ambitions & Horizons"
+              title="Give your ambitions a direction."
+              description="Define milestones, track progress percentages, and connect your goals to daily habits."
+              action={
+                <button
                   onClick={() => setActiveView('goals')}
+                  className="btn btn-primary btn-sm"
                 >
-                  <div className="photo-tile-image-wrap">
-                    <img
-                      src={photoUrl}
-                      alt={g.title}
-                      className="photo-tile-img"
-                      loading="lazy"
-                    />
-                    <div className="photo-tile-scrim" />
-                    <span
-                      className="badge"
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        background: 'rgba(20, 19, 1, 0.85)',
-                        color: g.priority === 'critical' ? 'var(--status-danger)' : 'var(--accent-light)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        backdropFilter: 'blur(6px)',
-                      }}
-                    >
-                      {g.priority}
-                    </span>
-                    <span
-                      style={{
-                        position: 'absolute',
-                        bottom: '8px',
-                        left: '14px',
-                        fontSize: '11px',
-                        color: 'var(--accent-light)',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                      }}
-                    >
-                      {g.category}
-                    </span>
-                  </div>
-
-                  <div style={{ padding: '16px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
-                      {g.title}
-                    </h3>
-                    <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxHeight: '36px', overflow: 'hidden' }}>
-                      {g.description || 'Dedicated strategic progression.'}
-                    </p>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
-                      <span style={{ color: 'var(--text-secondary)' }}>Overall Progress</span>
-                      <span className="tabular" style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
-                        {g.progress}%
+                  <Plus size={14} /> Create a goal
+                </button>
+              }
+            />
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+              {priorityGoals.map((g, idx) => {
+                const photoUrl = getGoalPhoto(g.category, idx);
+                return (
+                  <div
+                    key={g.id}
+                    className="photo-tile"
+                    onClick={() => setActiveView('goals')}
+                  >
+                    <div className="photo-tile-image-wrap">
+                      <img
+                        src={photoUrl}
+                        alt={g.title}
+                        className="photo-tile-img"
+                        loading="lazy"
+                      />
+                      <div className="photo-tile-scrim" />
+                      <span
+                        className="badge"
+                        style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          background: 'rgba(20, 19, 1, 0.85)',
+                          color: g.priority === 'critical' ? 'var(--status-danger)' : 'var(--accent-light)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(6px)',
+                        }}
+                      >
+                        {g.priority}
+                      </span>
+                      <span
+                        style={{
+                          position: 'absolute',
+                          bottom: '8px',
+                          left: '14px',
+                          fontSize: '11px',
+                          color: 'var(--accent-light)',
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {g.category}
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: '4px', background: 'var(--border-default)', borderRadius: '2px', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: `${g.progress}%`,
-                          height: '100%',
-                          background: 'var(--accent-primary)',
-                          borderRadius: '2px',
-                        }}
-                      />
+                    <div style={{ padding: '16px' }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+                        {g.title}
+                      </h3>
+                      <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxHeight: '36px', overflow: 'hidden' }}>
+                        {g.description || 'Dedicated strategic progression.'}
+                      </p>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Overall Progress</span>
+                        <span className="tabular" style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
+                          {g.progress}%
+                        </span>
+                      </div>
+
+                      <div style={{ width: '100%', height: '4px', background: 'var(--border-default)', borderRadius: '2px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${g.progress}%`,
+                            height: '100%',
+                            background: 'var(--accent-primary)',
+                            borderRadius: '2px',
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* =========================================================================
           4. IMAGE-BASED HABIT TRACKER (LIFE OS 3.0)
       ========================================================================= */}
-      <section>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+      {widgets.habits !== false && (
+        <section>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
               Habit Rhythm & Daily Consistency
@@ -962,59 +1018,115 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+      )}
 
       {/* =========================================================================
           5. OPERATIONAL REMINDERS & CROSS-MODULE RADAR (Non-Card Horizontal Strip)
       ========================================================================= */}
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
         
-        {/* Academic Safety Reminders */}
-        <div
-          className="editorial-island"
-          style={{ cursor: 'pointer' }}
-          onClick={() => setActiveView('academics')}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Academic Safety
-            </span>
-            <GraduationCap size={16} color="var(--accent-primary)" />
+        {/* Academic & Timetable Radar */}
+        {widgets.academics !== false && (
+          <div
+            className="editorial-island"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveView('academics')}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Academic & Schedule
+              </span>
+              <GraduationCap size={16} color="var(--accent-primary, #E32620)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              {academicSubjects.length === 0 && todayClasses.length === 0 ? (
+                <>
+                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    No Classes
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>scheduled today</span>
+                </>
+              ) : todayClasses.length > 0 ? (
+                <>
+                  <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {todayClasses.length} {todayClasses.length === 1 ? 'Class' : 'Classes'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>today</span>
+                </>
+              ) : (
+                <>
+                  <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: attendanceAvg !== null && attendanceAvg < 75 ? 'var(--status-danger)' : 'var(--text-primary)' }}>
+                    {attendanceAvg !== null ? `${attendanceAvg.toFixed(1)}%` : '100%'}
+                  </span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>attendance margin</span>
+                </>
+              )}
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+              {academicSubjects.length === 0 && todayClasses.length === 0
+                ? '+ Add your class schedule & courses'
+                : todayClasses.length > 0
+                ? `Next: ${todayClasses[0].subjectName || todayClasses[0].courseCode || 'Class'} (${todayClasses[0].startTime}) · Room ${todayClasses[0].room}`
+                : academicAlertSubject
+                ? `⚠️ ${academicAlertSubject.name} attendance alert (<${academicAlertSubject.targetAttendancePercentage}%)`
+                : '✓ All enrolled courses safely above threshold'}
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: attendanceAvg >= 75 ? 'var(--text-primary)' : 'var(--status-danger)' }}>
-              {attendanceAvg.toFixed(1)}%
-            </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>attendance margin</span>
-          </div>
-          <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-            {academicAlertSubject
-              ? `⚠️ ${academicAlertSubject.name} attendance alert (<${academicAlertSubject.targetAttendancePercentage}%)`
-              : '✓ All enrolled subjects safely above threshold'}
-          </p>
-        </div>
+        )}
 
         {/* Financial Velocity */}
-        <div
-          className="editorial-island"
-          style={{ cursor: 'pointer' }}
-          onClick={() => setActiveView('finance')}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Monthly Cash Velocity
-            </span>
-            <TrendingUp size={16} color="var(--status-warning)" />
+        {widgets.finance !== false && (
+          <div
+            className="editorial-island"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveView('finance')}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Monthly Cashflow
+              </span>
+              <DollarSign size={16} color="var(--status-warning, #E5AD4B)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                ${monthlyExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>spent this month</span>
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+              {hasFinanceData
+                ? `${financeTransactions.length} transaction${financeTransactions.length !== 1 ? 's' : ''} tracked this month`
+                : '+ Start tracking your cashflow & budget'}
+            </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              ${monthlyExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '1,840.00'}
-            </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>spent this month</span>
+        )}
+
+        {/* Physical Conditioning & Fitness */}
+        {widgets.fitness !== false && (
+          <div
+            className="editorial-island"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveView('fitness')}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Physical Conditioning
+              </span>
+              <Dumbbell size={16} color="var(--status-success, #79B879)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+              <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {workoutSessions.length} {workoutSessions.length === 1 ? 'Session' : 'Sessions'}
+              </span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>logged</span>
+            </div>
+            <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+              {hasFitnessData
+                ? `Latest: ${workoutSessions[workoutSessions.length - 1]?.title || 'Workout session'}`
+                : '+ Add your fitness & workout routine'}
+            </p>
           </div>
-          <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-            Runway healthy · 4.8 months liquid reserve buffer
-          </p>
-        </div>
+        )}
 
         {/* Evening Shutdown & Review (Question 5) */}
         <div
@@ -1030,7 +1142,7 @@ export default function Dashboard() {
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
             <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              What should I improve tomorrow?
+              Evening Review
             </span>
           </div>
           <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
@@ -1039,6 +1151,144 @@ export default function Dashboard() {
         </div>
 
       </section>
+
+      {/* DASHBOARD WIDGET CUSTOMIZER MODAL */}
+      {showWidgetCustomizer && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowWidgetCustomizer(false);
+          }}
+        >
+          <div
+            style={{
+              background: 'var(--bg-card, #241C15)',
+              border: '1px solid var(--border-default, #49382A)',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '460px',
+              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)',
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              color: 'var(--text-primary, #F5F1E9)',
+            }}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border-default, #49382A)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'var(--bg-elevated, #302419)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sliders size={18} color="var(--accent-primary, #E32620)" />
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Customize Dashboard Widgets</h3>
+              </div>
+              <button
+                onClick={() => setShowWidgetCustomizer(false)}
+                className="btn btn-ghost"
+                style={{ padding: '4px', color: 'var(--text-muted)' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Choose which modules and sections appear on your personal dashboard overview:
+              </p>
+
+              {[
+                { key: 'focusTimer', label: 'Photographic Focus Timer', desc: 'Pomodoro timer sanctuary with soundscapes' },
+                { key: 'todayTasks', label: 'Today Action Triage', desc: 'Rule of 3 priority tasks & overdue alerts' },
+                { key: 'goals', label: 'Long-Term Vision Goals', desc: 'Active strategic horizons and progress tiles' },
+                { key: 'habits', label: 'Daily Habit Rituals', desc: 'Checkable habit rhythm cards with streaks' },
+                { key: 'academics', label: 'Academic & Timetable Schedule', desc: 'Class timetable and attendance margin radar' },
+                { key: 'finance', label: 'Financial Velocity', desc: 'Monthly cashflow and expense metrics' },
+                { key: 'fitness', label: 'Physical Conditioning', desc: 'Workout log count and training summary' },
+              ].map((item) => {
+                const isChecked = (widgets as any)[item.key] !== false;
+                return (
+                  <label
+                    key={item.key}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-main, #100E0A)',
+                      border: '1px solid var(--border-default, #49382A)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={(e) => {
+                        updateSettings({
+                          dashboardWidgets: {
+                            ...widgets,
+                            [item.key]: e.target.checked,
+                          },
+                        });
+                      }}
+                      style={{
+                        accentColor: 'var(--accent-primary, #E32620)',
+                        width: '16px',
+                        height: '16px',
+                        marginTop: '2px',
+                      }}
+                    />
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        {item.desc}
+                      </div>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                padding: '12px 20px',
+                borderTop: '1px solid var(--border-default, #49382A)',
+                background: 'var(--bg-elevated, #302419)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                onClick={() => setShowWidgetCustomizer(false)}
+                className="btn btn-primary btn-sm"
+                style={{ fontSize: '12px', padding: '6px 16px' }}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

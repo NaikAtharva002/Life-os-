@@ -43,6 +43,7 @@ import type {
   HabitType,
   HabitScheduleType,
   HabitRoutine,
+  UserWorkspace,
 } from '../types';
 
 interface StoreState {
@@ -143,6 +144,7 @@ interface StoreState {
   addExam: (exam: Omit<AcademicExam, 'id'>) => Promise<void>;
   deleteExam: (id: string) => Promise<void>;
   addTimetableSlot: (slot: Omit<TimetableSlot, 'id'>) => Promise<void>;
+  updateTimetableSlot: (id: string, updates: Partial<TimetableSlot>) => Promise<void>;
   deleteTimetableSlot: (id: string) => Promise<void>;
 
   // 7. Career
@@ -177,6 +179,13 @@ interface StoreState {
 
   // 11. Settings & Nav
   settings: AppSettings;
+  workspaces: UserWorkspace[];
+  activeWorkspaceId: string;
+  createWorkspace: (name: string) => Promise<UserWorkspace>;
+  switchWorkspace: (workspaceId: string) => Promise<void>;
+  deleteWorkspace: (workspaceId: string) => Promise<void>;
+  loadDemoData: () => Promise<void>;
+  purgeSeedData: () => Promise<void>;
   designVariant: DesignVariant;
   comparisonMode: 'single' | 'split';
   setDesignVariant: (variant: DesignVariant) => Promise<void>;
@@ -641,28 +650,49 @@ export const useStore = create<StoreState>((set, get) => ({
     {
       id: 'msg-init',
       role: 'assistant',
-      content: 'Greetings Atharva! I am Astra, your LIFE OS AI copilot. I analyze your tasks, goals, habits, finances, workouts, and academics in real-time. Ask me to plan your day, audit your spending, or review your priorities.',
+      content: 'Greetings! I am Astra, your LIFE OS AI copilot. I analyze your tasks, goals, habits, finances, workouts, and academics in real-time. Ask me to plan your day, audit your spending, or review your priorities.',
       timestamp: new Date().toISOString(),
     },
   ],
   isOnboardingOpen: false,
   setIsOnboardingOpen: (open) => set({ isOnboardingOpen: open }),
 
+  workspaces: [
+    {
+      id: 'workspace-default',
+      name: 'Personal Space',
+      isDefault: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ],
+  activeWorkspaceId: 'workspace-default',
+
   settings: {
     theme: 'dark',
-    userName: 'Atharva',
+    userName: '',
     currencySymbol: '$',
     reminder: {
-      enabled: true,
+      enabled: false,
       time: '21:30',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     },
-    onboardingCompleted: true,
-    selectedLifeAreas: ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career', 'obsidian'],
+    onboardingCompleted: false,
+    selectedLifeAreas: ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career'],
     weekStartDay: 'monday',
     defaultFocusDuration: 25,
     dismissedTips: [],
     isDemoMode: false,
+    activeWorkspaceId: 'workspace-default',
+    workspaces: [
+      {
+        id: 'workspace-default',
+        name: 'Personal Space',
+        isDefault: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ],
   },
 
   initializeFromDB: async () => {
@@ -688,13 +718,26 @@ export const useStore = create<StoreState>((set, get) => ({
       const hasCompleted =
         data.settings?.onboardingCompleted ??
         (localStorage.getItem('lifeos_onboarding_completed') === 'true');
-      const hasExistingRecords = data.tasks.length > 0 || data.goals.length > 0;
-      const isDrafting = localStorage.getItem('lifeos_onboarding_draft') !== null;
-      const shouldOpenOnboarding = (!hasCompleted && !hasExistingRecords) || isDrafting;
+      const shouldOpenOnboarding = !hasCompleted;
+
+      const loadedWorkspaces = data.settings?.workspaces?.length
+        ? data.settings.workspaces
+        : [
+            {
+              id: 'workspace-default',
+              name: 'Personal Space',
+              isDefault: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ];
+      const activeWorkspaceId = data.settings?.activeWorkspaceId || 'workspace-default';
 
       set({
         ...data,
         habits: habitsWithEntries,
+        workspaces: loadedWorkspaces,
+        activeWorkspaceId,
         designVariant: loadedVariant,
         isLoaded: true,
         isOnboardingOpen: shouldOpenOnboarding,
@@ -2248,9 +2291,122 @@ export const useStore = create<StoreState>((set, get) => ({
     await LifeOSRepository.saveTimetableSlot(newSlot);
   },
 
+  updateTimetableSlot: async (id, updates) => {
+    let updated: TimetableSlot | undefined;
+    set((s) => ({
+      timetableSlots: s.timetableSlots.map((ts) => {
+        if (ts.id === id) {
+          updated = { ...ts, ...updates };
+          return updated;
+        }
+        return ts;
+      }),
+    }));
+    if (updated) {
+      await LifeOSRepository.saveTimetableSlot(updated);
+    }
+  },
+
   deleteTimetableSlot: async (id) => {
     set((s) => ({ timetableSlots: s.timetableSlots.filter((ts) => ts.id !== id) }));
     await LifeOSRepository.deleteTimetableSlot(id);
+  },
+
+  createWorkspace: async (name) => {
+    const newWs: UserWorkspace = {
+      id: `workspace-${uuidv4().slice(0, 8)}`,
+      name: name.trim() || 'Untitled Workspace',
+      isDefault: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const nextWorkspaces = [...get().workspaces, newWs];
+    const newSettings = {
+      ...get().settings,
+      workspaces: nextWorkspaces,
+      activeWorkspaceId: newWs.id,
+    };
+    set({
+      workspaces: nextWorkspaces,
+      activeWorkspaceId: newWs.id,
+      settings: newSettings,
+    });
+    await LifeOSRepository.saveSettings(newSettings);
+    get().addToast({
+      type: 'success',
+      title: 'Workspace Created',
+      message: `Switched to workspace "${newWs.name}".`,
+    });
+    return newWs;
+  },
+
+  switchWorkspace: async (workspaceId) => {
+    const ws = get().workspaces.find((w) => w.id === workspaceId);
+    if (!ws) return;
+    const newSettings = {
+      ...get().settings,
+      activeWorkspaceId: workspaceId,
+    };
+    set({
+      activeWorkspaceId: workspaceId,
+      settings: newSettings,
+    });
+    await LifeOSRepository.saveSettings(newSettings);
+    get().addToast({
+      type: 'info',
+      title: 'Workspace Switched',
+      message: `Active space: ${ws.name}`,
+    });
+  },
+
+  deleteWorkspace: async (workspaceId) => {
+    const ws = get().workspaces.find((w) => w.id === workspaceId);
+    if (!ws || ws.isDefault) {
+      get().addToast({
+        type: 'warning',
+        title: 'Action Denied',
+        message: 'Default workspace cannot be deleted.',
+      });
+      return;
+    }
+    const nextWorkspaces = get().workspaces.filter((w) => w.id !== workspaceId);
+    const defaultWs = nextWorkspaces.find((w) => w.isDefault) || nextWorkspaces[0];
+    const newSettings = {
+      ...get().settings,
+      workspaces: nextWorkspaces,
+      activeWorkspaceId: defaultWs.id,
+    };
+    set({
+      workspaces: nextWorkspaces,
+      activeWorkspaceId: defaultWs.id,
+      settings: newSettings,
+    });
+    await LifeOSRepository.saveSettings(newSettings);
+    get().addToast({
+      type: 'info',
+      title: 'Workspace Deleted',
+      message: `Switched back to ${defaultWs.name}.`,
+    });
+  },
+
+  loadDemoData: async () => {
+    await LifeOSRepository.loadDemoData();
+    await get().initializeFromDB();
+    get().addToast({
+      type: 'success',
+      title: 'Showcase Data Loaded',
+      message: 'Demo records successfully loaded into active workspace.',
+    });
+  },
+
+  purgeSeedData: async () => {
+    await LifeOSRepository.purgeSeedDemoData();
+    await get().initializeFromDB();
+    get().addToast({
+      type: 'info',
+      title: 'Clean Slate Restored',
+      message: 'All demo and sample records removed.',
+    });
   },
 
   // ----------------------------------------------------

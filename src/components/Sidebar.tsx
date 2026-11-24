@@ -169,7 +169,7 @@ export default function Sidebar({
         className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
         style={{
           width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-width)',
-          background: 'var(--bg-surface)',
+          background: 'var(--bg-sidebar, var(--bg-surface))',
           borderRight: '1px solid var(--border-default)',
           transition: 'width 0.15s ease',
         }}

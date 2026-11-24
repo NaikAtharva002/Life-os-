@@ -61,63 +61,63 @@ export class LifeOSRepository {
     const isInitialized = await db.appMeta.get('initialized');
 
     if (!isInitialized) {
-      console.log('[LifeOS IndexedDB] Fresh installation detected. Seeding database...');
-      const seed = getInitialSeedData();
+      console.log('[LifeOS IndexedDB] Fresh installation detected. Initializing clean personal workspace...');
+      const defaultSettings: AppSettings = {
+        theme: 'dark',
+        userName: '',
+        currencySymbol: '$',
+        reminder: {
+          enabled: false,
+          time: '21:30',
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        },
+        onboardingCompleted: false,
+        selectedLifeAreas: ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career'],
+        weekStartDay: 'monday',
+        defaultFocusDuration: 25,
+        dismissedTips: [],
+        isDemoMode: false,
+        activeWorkspaceId: 'workspace-default',
+        workspaces: [
+          {
+            id: 'workspace-default',
+            name: 'Personal Space',
+            isDefault: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        ],
+      };
 
-      await db.transaction('rw', [
-        db.goals,
-        db.tasks,
-        db.habits,
-        db.habitEntries,
-        db.financeTransactions,
-        db.financeBudgets,
-        db.savingsGoals,
-        db.exercises,
-        db.workoutSessions,
-        db.bodyMetrics,
-        db.fitnessGoals,
-        db.academicSemesters,
-        db.academicSubjects,
-        db.academicAssignments,
-        db.academicExams,
-        db.timetableSlots,
-        db.careerGoals,
-        db.careerSkills,
-        db.careerProjects,
-        db.careerApplications,
-        db.careerDocuments,
-        db.eveningReviews,
-        db.obsidianNotes,
-        db.appMeta,
-      ], async () => {
-        await db.goals.bulkAdd(seed.goals);
-        await db.tasks.bulkAdd(seed.tasks);
-        await db.habits.bulkAdd(seed.habits);
-        await db.habitEntries.bulkAdd(seed.habitEntries);
-        await db.financeTransactions.bulkAdd(seed.financeTransactions);
-        await db.financeBudgets.bulkAdd(seed.financeBudgets);
-        await db.savingsGoals.bulkAdd(seed.savingsGoals);
-        await db.exercises.bulkAdd(seed.exercises);
-        await db.workoutSessions.bulkAdd(seed.workoutSessions);
-        await db.bodyMetrics.bulkAdd(seed.bodyMetrics);
-        await db.fitnessGoals.bulkAdd(seed.fitnessGoals);
-        await db.academicSemesters.bulkAdd(seed.academicSemesters);
-        await db.academicSubjects.bulkAdd(seed.academicSubjects);
-        await db.academicAssignments.bulkAdd(seed.academicAssignments);
-        await db.academicExams.bulkAdd(seed.academicExams);
-        await db.timetableSlots.bulkAdd(seed.timetableSlots);
-        await db.careerGoals.bulkAdd(seed.careerGoals);
-        await db.careerSkills.bulkAdd(seed.careerSkills);
-        await db.careerProjects.bulkAdd(seed.careerProjects);
-        await db.careerApplications.bulkAdd(seed.careerApplications);
-        await db.careerDocuments.bulkAdd(seed.careerDocuments);
-        await db.eveningReviews.bulkAdd(seed.eveningReviews);
-        await db.obsidianNotes.bulkAdd(seed.obsidianNotes);
-        await db.appMeta.put({ key: 'initialized', value: true });
-        await db.appMeta.put({ key: 'settings', value: seed.settings });
-      });
+      await db.appMeta.put({ key: 'initialized', value: true });
+      await db.appMeta.put({ key: 'settings', value: defaultSettings });
 
-      return seed;
+      return {
+        goals: [],
+        tasks: [],
+        habits: [],
+        habitEntries: [],
+        financeTransactions: [],
+        financeBudgets: [],
+        savingsGoals: [],
+        exercises: [],
+        workoutSessions: [],
+        bodyMetrics: [],
+        fitnessGoals: [],
+        academicSemesters: [],
+        academicSubjects: [],
+        academicAssignments: [],
+        academicExams: [],
+        timetableSlots: [],
+        careerGoals: [],
+        careerSkills: [],
+        careerProjects: [],
+        careerApplications: [],
+        careerDocuments: [],
+        eveningReviews: [],
+        obsidianNotes: [],
+        settings: defaultSettings,
+      };
     }
 
     // Load existing data from IndexedDB
@@ -175,13 +175,26 @@ export class LifeOSRepository {
 
     const defaultSettings: AppSettings = {
       theme: 'dark',
-      userName: 'Atharva',
+      userName: '',
       currencySymbol: '$',
       reminder: {
-        enabled: true,
+        enabled: false,
         time: '21:30',
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
       },
+      onboardingCompleted: false,
+      weekStartDay: 'monday',
+      isDemoMode: false,
+      activeWorkspaceId: 'workspace-default',
+      workspaces: [
+        {
+          id: 'workspace-default',
+          name: 'Personal Space',
+          isDefault: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
     };
 
     return {
@@ -518,6 +531,119 @@ export class LifeOSRepository {
       await db.careerDocuments.clear();
       await db.eveningReviews.clear();
       await db.obsidianNotes.clear();
+    });
+  }
+
+  /**
+   * Purges known fake demo records so users have a clean slate while preserving genuinely created records.
+   */
+  static async purgeSeedDemoData(): Promise<void> {
+    const seed = getInitialSeedData();
+    const seedGoalIds = new Set(seed.goals.map((g) => g.id));
+    const seedTaskIds = new Set(seed.tasks.map((t) => t.id));
+    const seedHabitIds = new Set(seed.habits.map((h) => h.id));
+    const seedTxIds = new Set(seed.financeTransactions.map((tx) => tx.id));
+    const seedSubIds = new Set(seed.academicSubjects.map((s) => s.id));
+    const seedSlotIds = new Set(seed.timetableSlots.map((ts) => ts.id));
+    const seedAsgIds = new Set(seed.academicAssignments.map((a) => a.id));
+    const seedExamIds = new Set(seed.academicExams.map((e) => e.id));
+    const seedProjIds = new Set(seed.careerProjects.map((p) => p.id));
+    const seedAppIds = new Set(seed.careerApplications.map((a) => a.id));
+    const seedWsIds = new Set(seed.workoutSessions.map((w) => w.id));
+
+    await db.transaction('rw', [
+      db.goals, db.tasks, db.habits, db.habitEntries,
+      db.financeTransactions, db.academicSubjects,
+      db.timetableSlots, db.academicAssignments, db.academicExams,
+      db.careerProjects, db.careerApplications, db.workoutSessions,
+    ], async () => {
+      const allGoals = await db.goals.toArray();
+      for (const g of allGoals) {
+        if (seedGoalIds.has(g.id)) await db.goals.delete(g.id);
+      }
+      const allTasks = await db.tasks.toArray();
+      for (const t of allTasks) {
+        if (seedTaskIds.has(t.id)) await db.tasks.delete(t.id);
+      }
+      const allHabits = await db.habits.toArray();
+      for (const h of allHabits) {
+        if (seedHabitIds.has(h.id)) {
+          await db.habits.delete(h.id);
+          await db.habitEntries.where('habitId').equals(h.id).delete();
+        }
+      }
+      const allTxs = await db.financeTransactions.toArray();
+      for (const tx of allTxs) {
+        if (seedTxIds.has(tx.id)) await db.financeTransactions.delete(tx.id);
+      }
+      const allSubs = await db.academicSubjects.toArray();
+      for (const s of allSubs) {
+        if (seedSubIds.has(s.id)) await db.academicSubjects.delete(s.id);
+      }
+      const allSlots = await db.timetableSlots.toArray();
+      for (const sl of allSlots) {
+        if (seedSlotIds.has(sl.id)) await db.timetableSlots.delete(sl.id);
+      }
+      const allAsgs = await db.academicAssignments.toArray();
+      for (const a of allAsgs) {
+        if (seedAsgIds.has(a.id)) await db.academicAssignments.delete(a.id);
+      }
+      const allExams = await db.academicExams.toArray();
+      for (const e of allExams) {
+        if (seedExamIds.has(e.id)) await db.academicExams.delete(e.id);
+      }
+      const allProjs = await db.careerProjects.toArray();
+      for (const p of allProjs) {
+        if (seedProjIds.has(p.id)) await db.careerProjects.delete(p.id);
+      }
+      const allApps = await db.careerApplications.toArray();
+      for (const a of allApps) {
+        if (seedAppIds.has(a.id)) await db.careerApplications.delete(a.id);
+      }
+      const allWs = await db.workoutSessions.toArray();
+      for (const w of allWs) {
+        if (seedWsIds.has(w.id)) await db.workoutSessions.delete(w.id);
+      }
+    });
+  }
+
+  /**
+   * Loads sample showcase demo records when explicitly requested.
+   */
+  static async loadDemoData(): Promise<void> {
+    const seed = getInitialSeedData();
+    await db.transaction('rw', [
+      db.goals, db.tasks, db.habits, db.habitEntries,
+      db.financeTransactions, db.financeBudgets, db.savingsGoals,
+      db.exercises, db.workoutSessions, db.bodyMetrics, db.fitnessGoals,
+      db.academicSemesters, db.academicSubjects, db.academicAssignments,
+      db.academicExams, db.timetableSlots, db.careerGoals, db.careerSkills,
+      db.careerProjects, db.careerApplications, db.careerDocuments,
+      db.eveningReviews, db.obsidianNotes,
+    ], async () => {
+      await db.goals.bulkPut(seed.goals);
+      await db.tasks.bulkPut(seed.tasks);
+      await db.habits.bulkPut(seed.habits);
+      await db.habitEntries.bulkPut(seed.habitEntries);
+      await db.financeTransactions.bulkPut(seed.financeTransactions);
+      await db.financeBudgets.bulkPut(seed.financeBudgets);
+      await db.savingsGoals.bulkPut(seed.savingsGoals);
+      await db.exercises.bulkPut(seed.exercises);
+      await db.workoutSessions.bulkPut(seed.workoutSessions);
+      await db.bodyMetrics.bulkPut(seed.bodyMetrics);
+      await db.fitnessGoals.bulkPut(seed.fitnessGoals);
+      await db.academicSemesters.bulkPut(seed.academicSemesters);
+      await db.academicSubjects.bulkPut(seed.academicSubjects);
+      await db.academicAssignments.bulkPut(seed.academicAssignments);
+      await db.academicExams.bulkPut(seed.academicExams);
+      await db.timetableSlots.bulkPut(seed.timetableSlots);
+      await db.careerGoals.bulkPut(seed.careerGoals);
+      await db.careerSkills.bulkPut(seed.careerSkills);
+      await db.careerProjects.bulkPut(seed.careerProjects);
+      await db.careerApplications.bulkPut(seed.careerApplications);
+      await db.careerDocuments.bulkPut(seed.careerDocuments);
+      await db.eveningReviews.bulkPut(seed.eveningReviews);
+      await db.obsidianNotes.bulkPut(seed.obsidianNotes);
     });
   }
 

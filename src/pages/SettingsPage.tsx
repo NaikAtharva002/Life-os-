@@ -19,6 +19,10 @@ import {
   Sparkles,
   Compass,
   RotateCcw,
+  Layers,
+  Plus,
+  Sliders,
+  Check,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { LifeOSRepository } from '../db/repository';
@@ -39,9 +43,18 @@ export default function SettingsPage() {
   const toggleDemoMode = useStore((s) => s.toggleDemoMode);
   const resetToFreshSlate = useStore((s) => s.resetToFreshSlate);
 
-  const [userName, setUserName] = useState(settings.userName || 'Atharva');
+  const workspaces = useStore((s) => s.workspaces);
+  const activeWorkspaceId = useStore((s) => s.activeWorkspaceId);
+  const createWorkspace = useStore((s) => s.createWorkspace);
+  const switchWorkspace = useStore((s) => s.switchWorkspace);
+  const deleteWorkspace = useStore((s) => s.deleteWorkspace);
+  const loadDemoData = useStore((s) => s.loadDemoData);
+  const purgeSeedData = useStore((s) => s.purgeSeedData);
+
+  const [userName, setUserName] = useState(settings.userName || '');
   const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol || '$');
   const [geminiApiKey, setGeminiApiKey] = useState(settings.geminiApiKey || '');
+  const [newWorkspaceName, setNewWorkspaceName] = useState('');
 
   const [reminderEnabled, setReminderEnabled] = useState(settings.reminder.enabled);
   const [reminderTime, setReminderTime] = useState(settings.reminder.time || '21:30');
@@ -56,7 +69,7 @@ export default function SettingsPage() {
   useEffect(() => {
     setReminderEnabled(settings.reminder.enabled);
     setReminderTime(settings.reminder.time || '21:30');
-    setUserName(settings.userName || 'Atharva');
+    setUserName(settings.userName || '');
     setCurrencySymbol(settings.currencySymbol || '$');
     setGeminiApiKey(settings.geminiApiKey || '');
   }, [settings]);
@@ -157,6 +170,45 @@ export default function SettingsPage() {
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newWorkspaceName.trim()) return;
+    await createWorkspace(newWorkspaceName.trim());
+    setNewWorkspaceName('');
+    setStatusMessage('New workspace created and activated.');
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  const handleSwitchWorkspace = async (wsId: string) => {
+    await switchWorkspace(wsId);
+    setStatusMessage('Switched workspace successfully.');
+    setTimeout(() => setStatusMessage(null), 3000);
+  };
+
+  const handleDeleteWorkspace = async (wsId: string, name: string) => {
+    if (window.confirm(`Delete workspace "${name}" and all of its associated records?`)) {
+      await deleteWorkspace(wsId);
+      setStatusMessage(`Workspace "${name}" removed.`);
+      setTimeout(() => setStatusMessage(null), 3000);
+    }
+  };
+
+  const handlePurgeSeedData = async () => {
+    if (window.confirm('Remove demo seed records from your workspace? Any genuine records you created will remain safe.')) {
+      await purgeSeedData();
+      setStatusMessage('Demo seed records purged. Your workspace now contains only your genuine data.');
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
+  const handleLoadDemoData = async () => {
+    if (window.confirm('Load showcase demonstration data into the active workspace?')) {
+      await loadDemoData();
+      setStatusMessage('Showcase demonstration data loaded successfully.');
+      setTimeout(() => setStatusMessage(null), 4000);
+    }
+  };
+
   return (
     <div className="page-container" style={{ padding: '24px 28px', maxWidth: '880px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
@@ -175,6 +227,103 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {/* SECTION 0: WORKSPACES & DATA SCOPING */}
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="section-eyebrow">WORKSPACES & DATA ISOLATION</span>
+          </div>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            {workspaces.length} Workspace{workspaces.length !== 1 ? 's' : ''} configured
+          </span>
+        </div>
+
+        <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+          Create separate workspaces (e.g., Personal, Academic, Work, Startup) to completely isolate goals, tasks, habits, and schedules.
+        </p>
+
+        {/* Existing workspaces list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+          {workspaces.map((ws) => {
+            const isActive = ws.id === activeWorkspaceId;
+            return (
+              <div
+                key={ws.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  background: isActive ? 'var(--bg-elevated)' : 'var(--bg-subtle)',
+                  border: isActive ? '1px solid var(--accent-primary, #E32620)' : '1px solid var(--border-default)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Layers size={16} color={isActive ? 'var(--accent-primary, #E32620)' : 'var(--text-muted)'} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
+                      {ws.name}
+                      {ws.isDefault && (
+                        <span style={{ fontSize: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-default)', padding: '1px 6px', borderRadius: '4px', marginLeft: '6px', color: 'var(--text-muted)' }}>
+                          Default
+                        </span>
+                      )}
+                      {isActive && (
+                        <span style={{ fontSize: '10px', background: 'var(--accent-primary, #E32620)', color: '#FFFFFF', padding: '1px 6px', borderRadius: '4px', marginLeft: '6px', fontWeight: 700 }}>
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {!isActive && (
+                    <button
+                      onClick={() => handleSwitchWorkspace(ws.id)}
+                      className="btn btn-secondary btn-sm"
+                      style={{ fontSize: '11px', height: '28px' }}
+                    >
+                      Switch to Workspace
+                    </button>
+                  )}
+                  {workspaces.length > 1 && !ws.isDefault && (
+                    <button
+                      onClick={() => handleDeleteWorkspace(ws.id, ws.name)}
+                      className="btn btn-ghost"
+                      style={{ padding: '4px', color: 'var(--status-danger, #E45B52)' }}
+                      title="Delete workspace"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Create new workspace form */}
+        <form onSubmit={handleCreateWorkspace} style={{ display: 'flex', gap: '10px' }}>
+          <input
+            type="text"
+            className="input"
+            value={newWorkspaceName}
+            onChange={(e) => setNewWorkspaceName(e.target.value)}
+            placeholder="New workspace name (e.g. University, Ventures)..."
+            style={{ fontSize: '13px' }}
+          />
+          <button
+            type="submit"
+            className="btn btn-secondary"
+            style={{ fontSize: '12px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> Create Workspace
+          </button>
+        </form>
+      </div>
+
       {/* SECTION 1: USER PROFILE & CURRENCY */}
       <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
@@ -190,8 +339,7 @@ export default function SettingsPage() {
                 className="input"
                 value={userName}
                 onChange={(e) => setUserName(e.target.value)}
-                placeholder="Atharva"
-                required
+                placeholder="Enter your preferred name..."
               />
             </div>
             <div>
@@ -302,7 +450,7 @@ export default function SettingsPage() {
               gap: '8px',
             }}
           >
-            <Moon size={14} color="var(--accent-primary)" /> Dark Theme (Pitch Black &amp; Walnut)
+            <Moon size={14} color="var(--accent-primary)" /> Dark Theme (Espresso Dark &amp; Crimson)
           </button>
           <button
             onClick={() => setTheme('light')}
@@ -325,22 +473,96 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* SECTION 4: ONBOARDING, PROGRESSIVE GUIDANCE & DEMO MODE */}
+      {/* SECTION 3B: DASHBOARD WIDGET VISIBILITY */}
       <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-          <span className="section-eyebrow">ONBOARDING & PROGRESSIVE GUIDANCE</span>
+          <span className="section-eyebrow">DASHBOARD WIDGET CONTROLS</span>
         </div>
         <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
-          Revisit the first-time setup wizard, restore contextual guidance tips across modules, or toggle sample scenario demo data.
+          Toggle visible sections and overview widgets shown on your personal dashboard overview:
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+          {[
+            { key: 'focusTimer', label: 'Photographic Focus Timer' },
+            { key: 'todayTasks', label: 'Today Action Triage' },
+            { key: 'goals', label: 'Long-Term Vision Goals' },
+            { key: 'habits', label: 'Daily Habit Rituals' },
+            { key: 'academics', label: 'Academic & Schedule Radar' },
+            { key: 'finance', label: 'Financial Velocity' },
+            { key: 'fitness', label: 'Physical Conditioning' },
+          ].map((item) => {
+            const isChecked = (settings.dashboardWidgets as any)?.[item.key] !== false;
+            return (
+              <label
+                key={item.key}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  background: 'var(--bg-subtle)',
+                  border: '1px solid var(--border-default)',
+                  fontSize: '12px',
+                  color: 'var(--text-primary)',
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => {
+                    updateSettings({
+                      dashboardWidgets: {
+                        ...settings.dashboardWidgets,
+                        [item.key]: e.target.checked,
+                      },
+                    });
+                  }}
+                  style={{ accentColor: 'var(--accent-primary, #E32620)', width: '15px', height: '15px' }}
+                />
+                <span style={{ fontWeight: 500 }}>{item.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECTION 4: ONBOARDING, PROGRESSIVE GUIDANCE & DEMO DATA MANAGEMENT */}
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span className="section-eyebrow">DATA MANAGEMENT & DEMO CONTROLS</span>
+        </div>
+        <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+          Safely purge pre-filled sample data, inject showcase demonstration records on demand, or restart the lightweight workspace onboarding.
         </p>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setIsOnboardingOpen(true)}
-            className="btn btn-primary"
+            className="btn btn-secondary"
             style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
-            <Sparkles size={13} /> Relaunch Setup Wizard
+            <Sparkles size={13} /> Relaunch Welcome Setup
+          </button>
+
+          <button
+            onClick={handlePurgeSeedData}
+            className="btn btn-secondary"
+            style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px', borderColor: 'var(--status-warning, #E5AD4B)' }}
+            title="Remove pre-filled demo data while keeping real records"
+          >
+            <Trash2 size={13} color="var(--status-warning, #E5AD4B)" /> Purge Demo Seed Data
+          </button>
+
+          <button
+            onClick={handleLoadDemoData}
+            className="btn btn-secondary"
+            style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            title="Load full showcase demo data across all modules"
+          >
+            <Database size={13} /> Load Showcase Demo Data
           </button>
 
           <button
@@ -352,22 +574,6 @@ export default function SettingsPage() {
           </button>
 
           <button
-            onClick={() => toggleDemoMode(!settings.isDemoMode)}
-            className="btn btn-secondary"
-            style={{
-              fontSize: '11.5px',
-              height: '32px',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              color: settings.isDemoMode ? 'var(--palette-brick)' : 'var(--text-primary)',
-              borderColor: settings.isDemoMode ? 'var(--palette-brick)' : 'var(--border-default)',
-            }}
-          >
-            <Compass size={13} /> {settings.isDemoMode ? 'Exit Demo Mode' : 'Explore Demo Mode'}
-          </button>
-
-          <button
             onClick={() => {
               if (window.confirm('⚠️ Reset all records to a clean slate (0 tasks, 0 goals, 0 habits)? This will open the fresh onboarding wizard.')) {
                 resetToFreshSlate();
@@ -376,7 +582,7 @@ export default function SettingsPage() {
             className="btn btn-danger"
             style={{ fontSize: '11.5px', height: '32px', marginLeft: 'auto' }}
           >
-            <Trash2 size={13} /> Reset to Clean Slate (0 Records)
+            <Trash2 size={13} /> Clean Slate (0 Records)
           </button>
         </div>
       </div>

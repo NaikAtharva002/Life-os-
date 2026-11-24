@@ -13,10 +13,15 @@ import {
   UserX,
   Award,
   Layers,
+  Edit2,
+  MapPin,
+  User,
 } from 'lucide-react';
 import { getPhoto } from '../utils/photoAssets';
 import { EmptyState } from '../components/ui';
 import ContextualTipBanner from '../components/ContextualTipBanner';
+import ClassModal from '../components/ClassModal';
+import type { TimetableSlot } from '../types';
 
 export default function AcademicsPage() {
   const semesters = useStore((s) => s.academicSemesters);
@@ -24,6 +29,7 @@ export default function AcademicsPage() {
   const assignments = useStore((s) => s.academicAssignments);
   const exams = useStore((s) => s.academicExams);
   const timetableSlots = useStore((s) => s.timetableSlots);
+  const deleteTimetableSlot = useStore((s) => s.deleteTimetableSlot);
   const addSubject = useStore((s) => s.addSubject);
   const updateSubjectAttendance = useStore((s) => s.updateSubjectAttendance);
   const deleteSubject = useStore((s) => s.deleteSubject);
@@ -42,6 +48,9 @@ export default function AcademicsPage() {
   const [showAsgModal, setShowAsgModal] = useState(false);
   const [showExamModal, setShowExamModal] = useState(false);
   const [showSemModal, setShowSemModal] = useState(false);
+  const [showClassModal, setShowClassModal] = useState(false);
+  const [editingClassSlot, setEditingClassSlot] = useState<TimetableSlot | null>(null);
+  const [classModalDay, setClassModalDay] = useState<number>(1);
 
   // Form states
   const [subName, setSubName] = useState('');
@@ -596,58 +605,230 @@ export default function AcademicsPage() {
 
       {/* TAB 4: TIMETABLE */}
       {activeTab === 'timetable' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-          {daysOfWeek.map((dayName, dIdx) => {
-            const dayNum = dIdx + 1;
-            const slotsForDay = timetableSlots.filter((ts) => ts.dayOfWeek === dayNum);
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                Weekly Lecture Schedule & Timetable
+              </h2>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                {timetableSlots.length === 0
+                  ? 'No classes scheduled'
+                  : `${timetableSlots.length} lecture ${timetableSlots.length === 1 ? 'slot' : 'slots'} configured across the week`}
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setEditingClassSlot(null);
+                setClassModalDay(1);
+                setShowClassModal(true);
+              }}
+              className="btn btn-primary"
+              style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={16} /> Add Class
+            </button>
+          </div>
 
-            return (
+          {timetableSlots.length === 0 ? (
+            <div
+              style={{
+                padding: '48px 24px',
+                textAlign: 'center',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <div
-                key={dayName}
-                className="card"
                 style={{
-                  padding: '16px',
-                  background: 'var(--bg-card)',
+                  width: '56px',
+                  height: '56px',
                   borderRadius: '12px',
-                  border: '1px solid var(--border)',
+                  background: 'rgba(227, 38, 32, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-primary, #E32620)',
+                  marginBottom: '16px',
                 }}
               >
-                <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px 0', borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>
-                  {dayName}
-                </h3>
-
-                {slotsForDay.length === 0 ? (
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '10px 0' }}>
-                    No scheduled lectures.
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {slotsForDay.map((slot) => {
-                      const sub = subjects.find((s) => s.id === slot.subjectId);
-                      return (
-                        <div
-                          key={slot.id}
-                          style={{
-                            padding: '8px 10px',
-                            background: 'var(--bg-secondary)',
-                            borderRadius: '8px',
-                            borderLeft: `3px solid ${sub?.color || 'var(--accent)'}`,
-                          }}
-                        >
-                          <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
-                            {sub?.name || 'Class'}
-                          </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                            {slot.startTime} - {slot.endTime} • {slot.room}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <Calendar size={28} />
               </div>
-            );
-          })}
+              <h3 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
+                Your Timetable is Empty
+              </h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', maxWidth: '420px', margin: '0 0 20px 0', lineHeight: 1.5 }}>
+                No lecture schedules created yet. Add your weekly courses, timings, professors, and classroom locations.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingClassSlot(null);
+                  setClassModalDay(1);
+                  setShowClassModal(true);
+                }}
+                className="btn btn-primary"
+                style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Plus size={16} /> Add First Class
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {daysOfWeek.map((dayName, dIdx) => {
+                const dayNum = dIdx + 1;
+                const slotsForDay = timetableSlots
+                  .filter((ts) => ts.dayOfWeek === dayNum)
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+                return (
+                  <div
+                    key={dayName}
+                    className="card"
+                    style={{
+                      padding: '16px',
+                      background: 'var(--bg-card)',
+                      borderRadius: '12px',
+                      border: '1px solid var(--border)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '12px',
+                        borderBottom: '1px solid var(--border)',
+                        paddingBottom: '8px',
+                      }}
+                    >
+                      <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                        {dayName}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setEditingClassSlot(null);
+                          setClassModalDay(dayNum);
+                          setShowClassModal(true);
+                        }}
+                        className="btn btn-ghost"
+                        title={`Add class on ${dayName}`}
+                        style={{ padding: '4px', color: 'var(--text-muted)' }}
+                      >
+                        <Plus size={14} />
+                      </button>
+                    </div>
+
+                    {slotsForDay.length === 0 ? (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '16px 0', textAlign: 'center' }}>
+                        No scheduled lectures
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {slotsForDay.map((slot) => {
+                          const sub = subjects.find((s) => s.id === slot.subjectId);
+                          const slotColor = slot.color || sub?.color || 'var(--accent-primary, #E32620)';
+                          const title = slot.subjectName || sub?.name || 'Class';
+                          const code = slot.courseCode || sub?.code;
+                          const prof = slot.professor || sub?.professor;
+                          const location = slot.room || sub?.roomOrLink || 'TBD';
+
+                          return (
+                            <div
+                              key={slot.id}
+                              style={{
+                                padding: '10px 12px',
+                                background: 'var(--bg-secondary)',
+                                borderRadius: '8px',
+                                borderLeft: `3px solid ${slotColor}`,
+                                border: '1px solid var(--border)',
+                                borderLeftWidth: '3px',
+                                borderLeftColor: slotColor,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px',
+                                position: 'relative',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                                <div>
+                                  <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
+                                    {title}
+                                  </div>
+                                  {code && (
+                                    <span
+                                      style={{
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        color: 'var(--text-muted)',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.04em',
+                                      }}
+                                    >
+                                      {code}
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                  <button
+                                    onClick={() => {
+                                      setEditingClassSlot(slot);
+                                      setClassModalDay(slot.dayOfWeek);
+                                      setShowClassModal(true);
+                                    }}
+                                    className="btn btn-ghost"
+                                    title="Edit class"
+                                    style={{ padding: '3px', color: 'var(--text-muted)' }}
+                                  >
+                                    <Edit2 size={13} />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteTimetableSlot(slot.id)}
+                                    className="btn btn-ghost"
+                                    title="Delete class"
+                                    style={{ padding: '3px', color: 'var(--text-muted)' }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11.5px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                                <Clock size={12} style={{ color: 'var(--text-muted)' }} />
+                                <span>{slot.startTime} – {slot.endTime}</span>
+                              </div>
+
+                              {(location || prof) && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  {location && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <MapPin size={11} /> {location}
+                                    </span>
+                                  )}
+                                  {prof && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <User size={11} /> {prof}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -993,6 +1174,17 @@ export default function AcademicsPage() {
           </div>
         </div>
       )}
+
+      {/* MODAL: ADD / EDIT CLASS */}
+      <ClassModal
+        isOpen={showClassModal}
+        onClose={() => {
+          setShowClassModal(false);
+          setEditingClassSlot(null);
+        }}
+        editingSlot={editingClassSlot}
+        defaultDay={classModalDay}
+      />
     </div>
   );
 }
