@@ -20,11 +20,15 @@ import DesignSystemPage from './pages/DesignSystemPage';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
 import { scheduleEveningReminder, showNotification } from './utils/notifications';
-import { Menu, Plus, Search, Sparkles, Terminal } from 'lucide-react';
+import { Menu, Plus, Search, Sparkles, Terminal, Zap, HelpCircle } from 'lucide-react';
 import { aiEngine, type AIEngineStatus } from './services/aiEngineClient';
 import VariantHeaderBanner from './components/VariantHeaderBanner';
 import ComparisonDrawer from './components/ComparisonDrawer';
 import MobileBottomNav from './components/MobileBottomNav';
+import GlobalCommandPalette from './components/GlobalCommandPalette';
+import QuickActionModal from './components/QuickActionModal';
+import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
+import BreadcrumbNav from './components/BreadcrumbNav';
 import { ToastContainer } from './components/ui';
 
 export default function App() {
@@ -38,11 +42,28 @@ export default function App() {
   const setDesignVariant = useStore((s) => s.setDesignVariant);
   const comparisonMode = useStore((s) => s.comparisonMode);
 
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // Persistent sidebar state from localStorage
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('lifeos_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleSetSidebarCollapsed = (collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+    try {
+      localStorage.setItem('lifeos_sidebar_collapsed', String(collapsed));
+    } catch {}
+  };
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Command palette & quick creation modals
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [quickActionModalOpen, setQuickActionModalOpen] = useState(false);
+  const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
   const [quickTaskModalOpen, setQuickTaskModalOpen] = useState(false);
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
   const [comparisonMatrixOpen, setComparisonMatrixOpen] = useState(false);
@@ -97,20 +118,95 @@ export default function App() {
     return cleanup;
   }, [settings.reminder?.enabled, settings.reminder?.time, setActiveView]);
 
-  // 5. Global Keyboard Shortcuts (Cmd+K / Ctrl+K)
+  // 5. Global Keyboard Shortcuts (Cmd+K, /, ?, N, Escape, G+Key)
   useEffect(() => {
+    let lastKey = '';
+    let lastKeyTime = 0;
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInputActive =
+        activeEl instanceof HTMLInputElement ||
+        activeEl instanceof HTMLTextAreaElement ||
+        activeEl instanceof HTMLSelectElement ||
+        (activeEl as HTMLElement)?.isContentEditable;
+
+      // 1. Command Palette: Cmd+K / Ctrl+K
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCommandPaletteOpen((prev) => !prev);
+        return;
       }
+
+      // 2. Escape: Close open modals
       if (e.key === 'Escape') {
         setCommandPaletteOpen(false);
+        setQuickActionModalOpen(false);
+        setShortcutsHelpOpen(false);
+        setQuickTaskModalOpen(false);
+        setQuickGoalModalOpen(false);
+        setComparisonMatrixOpen(false);
+        return;
+      }
+
+      // Don't intercept single key shortcuts if user is typing in form fields
+      if (isInputActive) return;
+
+      // 3. Slash /: Focus Search / Command Palette
+      if (e.key === '/') {
+        e.preventDefault();
+        setCommandPaletteOpen(true);
+        return;
+      }
+
+      // 4. Question Mark ?: Open Keyboard Shortcuts Guide
+      if (e.key === '?') {
+        e.preventDefault();
+        setShortcutsHelpOpen((prev) => !prev);
+        return;
+      }
+
+      // 5. N: Quick Task
+      if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        setQuickTaskModalOpen(true);
+        return;
+      }
+
+      // 6. Two-key chord (G then key for navigation)
+      const now = Date.now();
+      if (e.key.toLowerCase() === 'g') {
+        lastKey = 'g';
+        lastKeyTime = now;
+        return;
+      }
+
+      if (lastKey === 'g' && now - lastKeyTime < 1000) {
+        lastKey = '';
+        const jumpMap: Record<string, string> = {
+          d: 'dashboard',
+          t: 'tasks',
+          g: 'goals',
+          h: 'habits',
+          f: 'finance',
+          w: 'fitness',
+          a: 'academics',
+          c: 'career',
+          n: 'obsidian',
+          r: 'review',
+          s: 'settings',
+        };
+        const targetView = jumpMap[e.key.toLowerCase()];
+        if (targetView) {
+          e.preventDefault();
+          setActiveView(targetView);
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [setActiveView]);
 
   const renderActiveView = () => {
     switch (activeView) {
@@ -156,9 +252,10 @@ export default function App() {
       {/* Sidebar Navigation (Section 2.A) */}
       <Sidebar
         collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
+        setCollapsed={handleSetSidebarCollapsed}
         mobileOpen={mobileMenuOpen}
         setMobileOpen={setMobileMenuOpen}
+        onOpenShortcutsHelp={() => setShortcutsHelpOpen(true)}
       />
 
       {/* Main Workspace Area (Section 2.B & 2.C) */}
@@ -187,14 +284,14 @@ export default function App() {
               aria-label="Search and command palette"
             >
               <Search size={13} style={{ flexShrink: 0 }} />
-              <span className="toolbar-search-text">Search or type command...</span>
+              <span className="toolbar-search-text">Search records, actions, or jump...</span>
               <kbd className="desktop-only toolbar-search-kbd">
                 ⌘K
               </kbd>
             </button>
           </div>
 
-          {/* Right: Architecture Engine Status + New Task, New Goal, AI Assistant */}
+          {/* Right: Architecture Engine Status + Quick Actions + Help + AI Assistant */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {/* Ambient Multi-Engine Badge */}
             <div
@@ -229,10 +326,20 @@ export default function App() {
               </span>
             </div>
 
+            {/* Quick Actions Launcher Button */}
+            <button
+              onClick={() => setQuickActionModalOpen(true)}
+              className="btn btn-secondary btn-sm"
+              title="Open Quick Action Launcher"
+            >
+              <Zap size={13} color="var(--palette-brick)" />
+              <span className="desktop-only">Quick Actions</span>
+            </button>
+
             <button
               onClick={() => setQuickTaskModalOpen(true)}
               className="btn btn-secondary btn-sm desktop-only"
-              title="Create new task"
+              title="Create new task (N)"
             >
               <Plus size={13} /> New Task
             </button>
@@ -243,6 +350,18 @@ export default function App() {
             >
               <Plus size={13} /> New Goal
             </button>
+
+            {/* Keyboard Shortcuts Help Button */}
+            <button
+              onClick={() => setShortcutsHelpOpen(true)}
+              className="btn btn-ghost btn-sm desktop-only"
+              style={{ padding: '6px', color: 'var(--text-muted)' }}
+              title="Keyboard Shortcuts Guide (?)"
+              aria-label="Keyboard Shortcuts Guide"
+            >
+              <HelpCircle size={15} />
+            </button>
+
             <button
               onClick={() => setActiveView('assistant')}
               className="btn btn-primary btn-sm"
@@ -252,6 +371,9 @@ export default function App() {
             </button>
           </div>
         </header>
+
+        {/* BREADCRUMB CONTEXTUAL NAVIGATION STRIP */}
+        <BreadcrumbNav />
 
         {/* Workspace Body */}
         {comparisonMode === 'split' ? (
@@ -346,7 +468,7 @@ export default function App() {
         {/* MOBILE BOTTOM NAVIGATION BAR */}
         <MobileBottomNav
           onOpenMenu={() => setMobileMenuOpen(true)}
-          onQuickCreate={() => setQuickTaskModalOpen(true)}
+          onQuickCreate={() => setQuickActionModalOpen(true)}
         />
       </main>
 
@@ -364,78 +486,27 @@ export default function App() {
         />
       )}
 
-      {/* COMMAND PALETTE (⌘K / Ctrl+K) */}
-      {commandPaletteOpen && (
-        <div className="modal-overlay" onClick={() => setCommandPaletteOpen(false)}>
-          <div
-            className="modal"
-            style={{ maxWidth: '480px', padding: 0, overflow: 'hidden' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid var(--border-default)' }}>
-              <Search size={16} color="var(--text-muted)" style={{ marginRight: '10px' }} />
-              <input
-                type="text"
-                autoFocus
-                placeholder="Search views, modules, or actions..."
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  outline: 'none',
-                  width: '100%',
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') setCommandPaletteOpen(false);
-                }}
-              />
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>ESC</span>
-            </div>
+      {/* GLOBAL COMMAND PALETTE 2.0 (⌘K / Ctrl+K / /) */}
+      <GlobalCommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onOpenQuickTask={() => setQuickTaskModalOpen(true)}
+        onOpenQuickGoal={() => setQuickGoalModalOpen(true)}
+      />
 
-            <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '300px', overflowY: 'auto' }}>
-              {[
-                { id: 'dashboard', label: 'Go to Dashboard', shortcut: 'G D' },
-                { id: 'tasks', label: 'Go to Task Management', shortcut: 'G T' },
-                { id: 'goals', label: 'Go to Goal Management', shortcut: 'G G' },
-                { id: 'habits', label: 'Go to Habit Tracker', shortcut: 'G H' },
-                { id: 'finance', label: 'Go to Finance Command', shortcut: 'G F' },
-                { id: 'academics', label: 'Go to Academics & Attendance', shortcut: 'G A' },
-                { id: 'fitness', label: 'Go to Gym & Fitness', shortcut: 'G W' },
-                { id: 'career', label: 'Go to Career Roadmap', shortcut: 'G C' },
-                { id: 'assistant', label: 'Ask Astra AI Copilot', shortcut: 'G I' },
-                { id: 'review', label: 'Start Evening Review', shortcut: 'G R' },
-                { id: 'settings', label: 'Open Settings', shortcut: 'G S' },
-                { id: 'design-system', label: 'Developer: Design System Showcase', shortcut: 'G DS' },
-              ].map((cmd) => (
-                <button
-                  key={cmd.id}
-                  onClick={() => {
-                    setActiveView(cmd.id);
-                    setCommandPaletteOpen(false);
-                  }}
-                  className="btn btn-ghost"
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    fontSize: '13px',
-                    borderRadius: 'var(--radius-small)',
-                    width: '100%',
-                    textAlign: 'left',
-                  }}
-                >
-                  <span>{cmd.label}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {cmd.shortcut}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* QUICK ACTION LAUNCHER MODAL */}
+      <QuickActionModal
+        isOpen={quickActionModalOpen}
+        onClose={() => setQuickActionModalOpen(false)}
+        onOpenNewTask={() => setQuickTaskModalOpen(true)}
+        onOpenNewGoal={() => setQuickGoalModalOpen(true)}
+      />
+
+      {/* KEYBOARD SHORTCUTS GUIDE MODAL (?) */}
+      <KeyboardShortcutsModal
+        isOpen={shortcutsHelpOpen}
+        onClose={() => setShortcutsHelpOpen(false)}
+      />
 
       {/* INTERACTIVE COMPARISON MATRIX DRAWER */}
       <ComparisonDrawer

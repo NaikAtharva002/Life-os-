@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   LayoutDashboard,
   Target,
@@ -19,6 +19,9 @@ import {
   AlertCircle,
   Compass,
   X,
+  Pin,
+  HelpCircle,
+  Palette,
   type LucideIcon,
 } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -29,6 +32,7 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
   mobileOpen: boolean;
   setMobileOpen: (open: boolean) => void;
+  onOpenShortcutsHelp?: () => void;
 }
 
 interface NavItem {
@@ -50,6 +54,7 @@ export default function Sidebar({
   setCollapsed,
   mobileOpen,
   setMobileOpen,
+  onOpenShortcutsHelp,
 }: SidebarProps) {
   const activeView = useStore((s) => s.activeView);
   const setActiveView = useStore((s) => s.setActiveView);
@@ -57,6 +62,8 @@ export default function Sidebar({
   const goals = useStore((s) => s.goals);
   const academicSubjects = useStore((s) => s.academicSubjects);
   const settings = useStore((s) => s.settings);
+  const pinnedViews = useStore((s) => s.pinnedViews) || [];
+  const togglePinView = useStore((s) => s.togglePinView);
 
   // Counts for badges
   const todayStr = new Date().toISOString().split('T')[0];
@@ -70,9 +77,16 @@ export default function Sidebar({
 
   const navSections: NavSection[] = [
     {
-      title: 'CORE',
+      title: 'OVERVIEW',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'focus', label: 'Focus Mode / My Day', icon: Compass },
+        { id: 'history', label: 'Review Archive', icon: History },
+      ],
+    },
+    {
+      title: 'PERSONAL MANAGEMENT',
+      items: [
         {
           id: 'goals',
           label: 'Goals',
@@ -88,11 +102,11 @@ export default function Sidebar({
           badgeColor: 'var(--danger)',
         },
         { id: 'habits', label: 'Habits', icon: Repeat },
-        { id: 'focus', label: 'Focus Mode', icon: Compass },
+        { id: 'obsidian', label: 'Obsidian Notes', icon: FileText },
       ],
     },
     {
-      title: 'DOMAINS',
+      title: 'LIFE AREAS',
       items: [
         { id: 'finance', label: 'Finances', icon: DollarSign },
         { id: 'fitness', label: 'Gym & Fitness', icon: Dumbbell },
@@ -108,20 +122,31 @@ export default function Sidebar({
     {
       title: 'INTELLIGENCE',
       items: [
-        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'analytics', label: 'Analytics & Reports', icon: BarChart3 },
+        { id: 'review', label: 'Evening Review', icon: Moon },
         { id: 'assistant', label: 'AI Copilot', icon: Sparkles },
-        { id: 'obsidian', label: 'Obsidian Notes', icon: FileText },
       ],
     },
     {
       title: 'SYSTEM',
       items: [
-        { id: 'review', label: 'Evening Review', icon: Moon },
-        { id: 'history', label: 'Review Archive', icon: History },
         { id: 'settings', label: 'Settings', icon: Settings },
+        { id: 'design-system', label: 'Component Showcase', icon: Palette },
       ],
     },
   ];
+
+  const allItemsMap = useMemo(() => {
+    const map = new Map<string, NavItem>();
+    navSections.forEach((s) => s.items.forEach((item) => map.set(item.id, item)));
+    return map;
+  }, [navSections]);
+
+  const pinnedItems = useMemo(() => {
+    return pinnedViews
+      .map((id) => allItemsMap.get(id))
+      .filter((item): item is NavItem => Boolean(item));
+  }, [pinnedViews, allItemsMap]);
 
   const handleNavigate = (viewId: string) => {
     setActiveView(viewId);
@@ -238,6 +263,77 @@ export default function Sidebar({
 
         {/* Nav Items List */}
         <div style={{ flex: 1, overflowY: 'auto', padding: collapsed ? '8px 4px' : '10px 8px' }}>
+          {/* PINNED FAVORITES (Rendered at top when pinnedViews exist) */}
+          {pinnedItems.length > 0 && (
+            <div style={{ marginBottom: '14px', paddingBottom: '8px', borderBottom: '1px solid var(--border-default)' }}>
+              {!collapsed && (
+                <div
+                  style={{
+                    fontSize: '9.5px',
+                    fontWeight: 700,
+                    color: 'var(--palette-brick)',
+                    letterSpacing: '0.08em',
+                    padding: '2px 8px 4px',
+                    textTransform: 'uppercase',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                  }}
+                >
+                  <Pin size={10} style={{ transform: 'rotate(45deg)' }} />
+                  <span>PINNED FAVORITES</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {pinnedItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeView === item.id;
+                  return (
+                    <button
+                      key={`pinned-${item.id}`}
+                      onClick={() => handleNavigate(item.id)}
+                      title={collapsed ? `Pinned: ${item.label}` : undefined}
+                      className="sidebar-nav-btn group"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: collapsed ? 'center' : 'space-between',
+                        width: '100%',
+                        padding: collapsed ? '7px 0' : '5px 8px',
+                        borderRadius: 'var(--radius-small)',
+                        border: isActive ? '1px solid var(--palette-brick-border)' : '1px solid transparent',
+                        background: isActive ? 'var(--palette-brick-subtle)' : 'transparent',
+                        color: isActive ? 'var(--palette-brick)' : 'var(--text-primary)',
+                        fontWeight: isActive ? 700 : 500,
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.12s ease',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icon size={14} color={isActive ? 'var(--palette-brick)' : 'var(--text-muted)'} />
+                        {!collapsed && <span>{item.label}</span>}
+                      </div>
+                      {!collapsed && (
+                        <span
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePinView(item.id);
+                          }}
+                          title="Unpin destination"
+                          style={{ opacity: 0.7, padding: '2px', cursor: 'pointer' }}
+                        >
+                          <Pin size={11} color="var(--palette-brick)" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {navSections.map((section, sIdx) => (
             <div key={sIdx} style={{ marginBottom: '12px' }}>
               {!collapsed && (
@@ -258,6 +354,7 @@ export default function Sidebar({
                 {section.items.map((item) => {
                   const Icon = item.icon;
                   const isActive = activeView === item.id;
+                  const isPinned = pinnedViews.includes(item.id);
 
                   return (
                     <button
@@ -321,6 +418,21 @@ export default function Sidebar({
                               {item.badge}
                             </span>
                           )}
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              togglePinView(item.id);
+                            }}
+                            title={isPinned ? 'Unpin' : 'Pin to favorites'}
+                            style={{
+                              opacity: isPinned ? 0.9 : 0.2,
+                              padding: '2px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                            }}
+                          >
+                            <Pin size={10} color={isPinned ? 'var(--palette-brick)' : 'var(--text-muted)'} />
+                          </span>
                         </div>
                       )}
                     </button>
@@ -389,7 +501,22 @@ export default function Sidebar({
             </div>
           )}
 
-          {!collapsed && <ThemeToggle />}
+          {!collapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {onOpenShortcutsHelp && (
+                <button
+                  onClick={onOpenShortcutsHelp}
+                  className="btn btn-ghost"
+                  style={{ padding: '4px', height: '24px', width: '24px', color: 'var(--text-muted)' }}
+                  title="Keyboard Shortcuts (?)"
+                  aria-label="Keyboard Shortcuts"
+                >
+                  <HelpCircle size={14} />
+                </button>
+              )}
+              <ThemeToggle />
+            </div>
+          )}
         </div>
       </aside>
     </>

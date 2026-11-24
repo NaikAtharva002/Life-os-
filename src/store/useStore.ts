@@ -149,6 +149,11 @@ interface StoreState {
   toasts: ToastItem[];
   addToast: (toast: Omit<ToastItem, 'id'>) => void;
   removeToast: (id: string) => void;
+
+  // 13. Navigation & Command Center 2.0
+  pinnedViews: string[];
+  recentViews: string[];
+  togglePinView: (viewId: string) => void;
 }
 
 export const useStore = create<StoreState>((set, get) => ({
@@ -156,6 +161,22 @@ export const useStore = create<StoreState>((set, get) => ({
   activeView: 'dashboard',
   designVariant: 'agent',
   comparisonMode: 'single',
+  pinnedViews: (() => {
+    try {
+      const saved = localStorage.getItem('lifeos_pinned_views');
+      return saved ? JSON.parse(saved) : ['tasks', 'habits', 'finance'];
+    } catch {
+      return ['tasks', 'habits', 'finance'];
+    }
+  })(),
+  recentViews: (() => {
+    try {
+      const saved = localStorage.getItem('lifeos_recent_views');
+      return saved ? JSON.parse(saved) : ['dashboard'];
+    } catch {
+      return ['dashboard'];
+    }
+  })(),
 
   goals: [],
   tasks: [],
@@ -977,7 +998,23 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   setActiveView: (view) => {
-    set({ activeView: view });
+    const currentRecent = get().recentViews || [];
+    const updatedRecent = [view, ...currentRecent.filter((v) => v !== view)].slice(0, 6);
+    try {
+      localStorage.setItem('lifeos_recent_views', JSON.stringify(updatedRecent));
+    } catch {}
+    set({ activeView: view, recentViews: updatedRecent });
+  },
+
+  togglePinView: (viewId) => {
+    const current = get().pinnedViews || [];
+    const updated = current.includes(viewId)
+      ? current.filter((id) => id !== viewId)
+      : [...current, viewId];
+    try {
+      localStorage.setItem('lifeos_pinned_views', JSON.stringify(updated));
+    } catch {}
+    set({ pinnedViews: updated });
   },
 
   // 12. Micro-Interactions & Toasts
