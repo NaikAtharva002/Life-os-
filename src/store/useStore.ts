@@ -40,6 +40,9 @@ import type {
   GoalMeasurementType,
   Milestone,
   GoalActivityEvent,
+  HabitType,
+  HabitScheduleType,
+  HabitRoutine,
 } from '../types';
 
 interface StoreState {
@@ -85,13 +88,20 @@ interface StoreState {
   recordTaskFocusDuration: (taskId: string, minutes: number) => Promise<void>;
   markOverdueTasks: () => Promise<void>;
 
-  // 3. Habits
+  // 3. Habits (Advanced Habit Tracking 2.0)
   habits: Habit[];
   habitEntries: HabitEntry[];
-  addHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'streak' | 'longestStreak'> & { category?: string; entries?: HabitEntry[] }) => Promise<void>;
+  habitRoutines: HabitRoutine[];
+  addHabit: (habit: Partial<Habit> & { name: string; category?: string }) => Promise<Habit>;
   updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
   deleteHabit: (id: string) => Promise<void>;
   toggleHabitEntry: (habitId: string, date: string) => Promise<void>;
+  recordHabitProgress: (habitId: string, date: string, value: number, note?: string, status?: 'completed' | 'skipped' | 'partial') => Promise<void>;
+  skipHabitEntry: (habitId: string, date: string, note?: string) => Promise<void>;
+  addRoutine: (routine: Omit<HabitRoutine, 'id'>) => Promise<HabitRoutine>;
+  updateRoutine: (id: string, updates: Partial<HabitRoutine>) => Promise<void>;
+  deleteRoutine: (id: string) => Promise<void>;
+  reorderRoutineHabits: (routineId: string, habitIds: string[]) => Promise<void>;
 
   // 4. Finance
   financeTransactions: FinanceTransaction[];
@@ -374,6 +384,206 @@ export function createActivityEvent(
   };
 }
 
+// ----------------------------------------------------
+// HABIT 2.0 HELPERS & SCHEDULING SYSTEM
+// ----------------------------------------------------
+export const DEFAULT_HABIT_ROUTINES: HabitRoutine[] = [
+  {
+    id: 'routine-morning',
+    title: 'Morning Ignition',
+    description: 'High-energy priming routine to conquer the morning.',
+    timeOfDay: 'morning',
+    habitIds: [],
+    order: 0,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'routine-afternoon',
+    title: 'Deep Work & Focus',
+    description: 'Midday focus, hydration, and mental stamina habits.',
+    timeOfDay: 'afternoon',
+    habitIds: [],
+    order: 1,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'routine-evening',
+    title: 'Evening Wind-Down',
+    description: 'Decompression, screen disconnect, and restorative reflection.',
+    timeOfDay: 'evening',
+    habitIds: [],
+    order: 2,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+export function isHabitScheduledOnDate(habit: Habit, dateStr: string): boolean {
+  if (habit.startDate && dateStr < habit.startDate) return false;
+  if (habit.endDate && dateStr > habit.endDate) return false;
+
+  const dateObj = new Date(dateStr + 'T00:00:00');
+  const dayOfWeek = dateObj.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const dayOfMonth = dateObj.getDate();
+
+  const scheduleType = habit.scheduleType || 'daily';
+
+  if (scheduleType === 'daily') {
+    if (habit.targetDays && habit.targetDays.length > 0 && !habit.targetDays.includes(dayOfWeek)) {
+      return false;
+    }
+    return true;
+  }
+
+  if (scheduleType === 'weekdays') {
+    const days = habit.scheduleDays && habit.scheduleDays.length > 0 ? habit.scheduleDays : (habit.targetDays || [1, 2, 3, 4, 5]);
+    return days.includes(dayOfWeek);
+  }
+
+  if (scheduleType === 'monthly_dates') {
+    const dates = habit.monthlyDates && habit.monthlyDates.length > 0 ? habit.monthlyDates : [1];
+    return dates.includes(dayOfMonth);
+  }
+
+  if (scheduleType === 'custom_interval') {
+    const interval = Math.max(1, habit.customIntervalDays || 2);
+    const startStr = habit.startDate || habit.createdAt?.split('T')[0] || dateStr;
+    const startObj = new Date(startStr + 'T00:00:00');
+    const diffDays = Math.round((dateObj.getTime() - startObj.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays >= 0 && diffDays % interval === 0;
+  }
+
+  if (scheduleType === 'weekly_target' || scheduleType === 'monthly_target') {
+    return true;
+  }
+
+  if (habit.targetDays && habit.targetDays.length > 0) {
+    return habit.targetDays.includes(dayOfWeek);
+  }
+
+  return true;
+}
+
+export function computeHabitStreak(
+  habit: Habit,
+  entries: HabitEntry[]
+): { streak: number; longestStreak: number; totalCompletions: number } {
+  const habitEntries = entries.filter((e) => e.habitId === habit.id);
+  const entryMap = new Map<string, HabitEntry>();
+  habitEntries.forEach((e) => entryMap.set(e.date, e));
+
+  const totalCompletions = habitEntries.filter(
+    (e) => e.completed || e.status === 'completed'
+  ).length;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Compute current streak walking backward from today
+  let currentStreak = 0;
+  let checkDate = new Date(today);
+
+  for (let i = 0; i < 365; i++) {
+    const dateStr = checkDate.toISOString().split('T')[0];
+    const isScheduled = isHabitScheduledOnDate(habit, dateStr);
+
+    if (isScheduled) {
+      const entry = entryMap.get(dateStr);
+      const isCompleted = entry && (entry.completed || entry.status === 'completed');
+      const isSkipped = entry && entry.status === 'skipped';
+
+      if (i === 0) {
+        if (isCompleted) {
+          currentStreak++;
+        } else if (isSkipped) {
+          // Preserved without incrementing
+        } else {
+          // Today not completed yet - streak from yesterday remains alive
+        }
+      } else {
+        if (isCompleted) {
+          currentStreak++;
+        } else if (isSkipped) {
+          // Preserved without incrementing
+        } else {
+          // Missed scheduled day -> streak broken
+          break;
+        }
+      }
+    }
+
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  // Compute longest streak
+  let longest = habit.longestStreak || 0;
+  let runningStreak = 0;
+  const scanDate = new Date(today);
+  scanDate.setDate(scanDate.getDate() - 365);
+
+  for (let d = 0; d <= 365; d++) {
+    const dStr = scanDate.toISOString().split('T')[0];
+    const isScheduled = isHabitScheduledOnDate(habit, dStr);
+
+    if (isScheduled) {
+      const entry = entryMap.get(dStr);
+      const isCompleted = entry && (entry.completed || entry.status === 'completed');
+      const isSkipped = entry && entry.status === 'skipped';
+
+      if (isCompleted) {
+        runningStreak++;
+        if (runningStreak > longest) longest = runningStreak;
+      } else if (isSkipped) {
+        // preserve
+      } else {
+        runningStreak = 0;
+      }
+    }
+
+    scanDate.setDate(scanDate.getDate() + 1);
+  }
+
+  longest = Math.max(longest, currentStreak);
+
+  return {
+    streak: currentStreak,
+    longestStreak: longest,
+    totalCompletions,
+  };
+}
+
+export function computeHabitConsistency(
+  habit: Habit,
+  entries: HabitEntry[],
+  days: number = 30
+): { rate: number; scheduledCount: number; completedCount: number } {
+  const habitEntries = entries.filter((e) => e.habitId === habit.id);
+  const entryMap = new Map<string, HabitEntry>();
+  habitEntries.forEach((e) => entryMap.set(e.date, e));
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let scheduledCount = 0;
+  let completedCount = 0;
+
+  for (let i = 0; i < days; i++) {
+    const cur = new Date(today);
+    cur.setDate(cur.getDate() - i);
+    const dateStr = cur.toISOString().split('T')[0];
+
+    if (isHabitScheduledOnDate(habit, dateStr)) {
+      scheduledCount++;
+      const entry = entryMap.get(dateStr);
+      if (entry && (entry.completed || entry.status === 'completed')) {
+        completedCount++;
+      }
+    }
+  }
+
+  const rate = scheduledCount > 0 ? Math.round((completedCount / scheduledCount) * 100) : 100;
+  return { rate, scheduledCount, completedCount };
+}
+
 export const useStore = create<StoreState>((set, get) => ({
   isLoaded: false,
   activeView: 'dashboard',
@@ -400,6 +610,14 @@ export const useStore = create<StoreState>((set, get) => ({
   tasks: [],
   habits: [],
   habitEntries: [],
+  habitRoutines: (() => {
+    try {
+      const saved = localStorage.getItem('lifeos_habit_routines');
+      return saved ? JSON.parse(saved) : DEFAULT_HABIT_ROUTINES;
+    } catch {
+      return DEFAULT_HABIT_ROUTINES;
+    }
+  })(),
   financeTransactions: [],
   financeBudgets: [],
   savingsGoals: [],
@@ -451,11 +669,18 @@ export const useStore = create<StoreState>((set, get) => ({
     try {
       const data = await LifeOSRepository.initialize();
 
-      // Attach habitEntries to habit objects for compatibility with card renders
-      const habitsWithEntries = data.habits.map((h) => ({
-        ...h,
-        entries: data.habitEntries.filter((e) => e.habitId === h.id),
-      }));
+      // Attach habitEntries to habit objects and recalculate streak & total completions
+      const habitsWithEntries = data.habits.map((h) => {
+        const hEntries = data.habitEntries.filter((e) => e.habitId === h.id);
+        const streakInfo = computeHabitStreak(h, hEntries);
+        return {
+          ...h,
+          streak: streakInfo.streak,
+          longestStreak: Math.max(h.longestStreak || 0, streakInfo.longestStreak),
+          totalCompletions: streakInfo.totalCompletions,
+          entries: hEntries,
+        };
+      });
 
       const loadedVariant = (data.settings?.designVariant as DesignVariant) || 'agent';
 
@@ -1329,123 +1554,485 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   // ----------------------------------------------------
-  // HABITS
+  // HABITS (Habits 2.0 Engine)
   // ----------------------------------------------------
   addHabit: async (habitData) => {
+    const id = uuidv4();
+    const scheduleType = habitData.scheduleType || 'daily';
+    const targetDays = habitData.targetDays && habitData.targetDays.length > 0
+      ? habitData.targetDays
+      : scheduleType === 'weekdays'
+      ? (habitData.scheduleDays && habitData.scheduleDays.length > 0 ? habitData.scheduleDays : [1, 2, 3, 4, 5])
+      : [0, 1, 2, 3, 4, 5, 6];
+
     const newHabit: Habit = {
       ...habitData,
-      category: habitData.category || 'General',
-      id: uuidv4(),
+      id,
+      category: habitData.category || 'Lifestyle',
+      color: habitData.color || '#B80C09',
+      icon: habitData.icon || '⚡',
+      frequency: habitData.frequency || 'daily',
+      type: habitData.type || 'boolean',
+      scheduleType,
+      targetDays,
+      scheduleDays: habitData.scheduleDays || (scheduleType === 'weekdays' ? [1, 2, 3, 4, 5] : undefined),
+      monthlyDates: habitData.monthlyDates,
+      weeklyTargetCount: habitData.weeklyTargetCount,
+      monthlyTargetCount: habitData.monthlyTargetCount,
+      customIntervalDays: habitData.customIntervalDays,
+      targetValue: habitData.targetValue || (habitData.type === 'duration' ? 30 : habitData.type === 'numeric' ? 10 : 1),
+      unit: habitData.unit || (habitData.type === 'duration' ? 'mins' : habitData.type === 'numeric' ? 'units' : 'times'),
       streak: 0,
       longestStreak: 0,
+      totalCompletions: 0,
       entries: [],
       createdAt: new Date().toISOString(),
     };
+
+    // Update state and persistence
     set((s) => ({ habits: [...s.habits, newHabit] }));
     await LifeOSRepository.saveHabit(newHabit);
+
+    // Link to routine if assigned
+    if (newHabit.routineId) {
+      set((s) => {
+        const nextRoutines = s.habitRoutines.map((r) =>
+          r.id === newHabit.routineId && !r.habitIds.includes(id)
+            ? { ...r, habitIds: [...r.habitIds, id] }
+            : r
+        );
+        try {
+          localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+        } catch {
+          // ignore
+        }
+        return { habitRoutines: nextRoutines };
+      });
+    }
+
+    // Link to goal if assigned
+    if (newHabit.goalId) {
+      const goal = get().goals.find((g) => g.id === newHabit.goalId);
+      if (goal && (!goal.linkedHabitIds || !goal.linkedHabitIds.includes(id))) {
+        await get().updateGoal(newHabit.goalId, {
+          linkedHabitIds: [...(goal.linkedHabitIds || []), id],
+        });
+      }
+    }
+
+    get().addToast({
+      type: 'success',
+      title: 'Habit Established',
+      message: `"${newHabit.name}" is now tracking. Let's build consistency! 🚀`,
+    });
+
+    return newHabit;
   },
 
   updateHabit: async (id, updates) => {
     let updated: Habit | undefined;
+    const prevHabit = get().habits.find((h) => h.id === id);
+
     set((s) => ({
       habits: s.habits.map((h) => {
         if (h.id === id) {
-          updated = { ...h, ...updates };
-          return updated;
+          const merged = { ...h, ...updates };
+          // Keep targetDays synchronized if schedule changed
+          if (updates.scheduleType || updates.scheduleDays) {
+            merged.targetDays = merged.scheduleType === 'weekdays'
+              ? (merged.scheduleDays && merged.scheduleDays.length > 0 ? merged.scheduleDays : [1, 2, 3, 4, 5])
+              : (merged.targetDays && merged.targetDays.length > 0 ? merged.targetDays : [0, 1, 2, 3, 4, 5, 6]);
+          }
+          const streakInfo = computeHabitStreak(merged, s.habitEntries);
+          merged.streak = streakInfo.streak;
+          merged.longestStreak = Math.max(merged.longestStreak || 0, streakInfo.longestStreak);
+          merged.totalCompletions = streakInfo.totalCompletions;
+          updated = merged;
+          return merged;
         }
         return h;
       }),
     }));
+
     if (updated) {
       await LifeOSRepository.saveHabit(updated);
+
+      // Handle routine assignment changes
+      if (prevHabit && updates.routineId !== undefined && updates.routineId !== prevHabit.routineId) {
+        set((s) => {
+          const nextRoutines = s.habitRoutines.map((r) => {
+            if (r.id === prevHabit.routineId) {
+              return { ...r, habitIds: r.habitIds.filter((hId) => hId !== id) };
+            }
+            if (r.id === updates.routineId && !r.habitIds.includes(id)) {
+              return { ...r, habitIds: [...r.habitIds, id] };
+            }
+            return r;
+          });
+          try {
+            localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+          } catch {
+            // ignore
+          }
+          return { habitRoutines: nextRoutines };
+        });
+      }
+
+      // Handle goal assignment changes
+      if (prevHabit && updates.goalId !== undefined && updates.goalId !== prevHabit.goalId) {
+        if (prevHabit.goalId) {
+          const oldGoal = get().goals.find((g) => g.id === prevHabit.goalId);
+          if (oldGoal?.linkedHabitIds?.includes(id)) {
+            await get().updateGoal(prevHabit.goalId, {
+              linkedHabitIds: oldGoal.linkedHabitIds.filter((hId) => hId !== id),
+            });
+          }
+        }
+        if (updates.goalId) {
+          const newGoal = get().goals.find((g) => g.id === updates.goalId);
+          if (newGoal && (!newGoal.linkedHabitIds || !newGoal.linkedHabitIds.includes(id))) {
+            await get().updateGoal(updates.goalId, {
+              linkedHabitIds: [...(newGoal.linkedHabitIds || []), id],
+            });
+          }
+        }
+      }
     }
   },
 
   deleteHabit: async (id) => {
-    set((s) => ({
-      habits: s.habits.filter((h) => h.id !== id),
-      habitEntries: s.habitEntries.filter((e) => e.habitId !== id),
-    }));
+    const habit = get().habits.find((h) => h.id === id);
+    set((s) => {
+      const nextRoutines = s.habitRoutines.map((r) => ({
+        ...r,
+        habitIds: r.habitIds.filter((hId) => hId !== id),
+      }));
+      try {
+        localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+      } catch {
+        // ignore
+      }
+      return {
+        habits: s.habits.filter((h) => h.id !== id),
+        habitEntries: s.habitEntries.filter((e) => e.habitId !== id),
+        habitRoutines: nextRoutines,
+      };
+    });
+
+    if (habit?.goalId) {
+      const goal = get().goals.find((g) => g.id === habit.goalId);
+      if (goal?.linkedHabitIds?.includes(id)) {
+        await get().updateGoal(habit.goalId, {
+          linkedHabitIds: goal.linkedHabitIds.filter((hId) => hId !== id),
+        });
+      }
+    }
+
     await LifeOSRepository.deleteHabit(id);
+    get().addToast({
+      type: 'info',
+      title: 'Habit Archived',
+      message: 'Habit and completion history removed.',
+    });
   },
 
   toggleHabitEntry: async (habitId, date) => {
     const entries = get().habitEntries;
     const existing = entries.find((e) => e.habitId === habitId && e.date === date);
+    const habit = get().habits.find((h) => h.id === habitId);
     let nextEntries: HabitEntry[];
+    let wasCompleted = false;
 
     if (existing) {
-      if (existing.completed) {
+      if (existing.completed || existing.status === 'completed') {
+        // Undo completion
         nextEntries = entries.filter((e) => e.id !== existing.id);
         await LifeOSRepository.deleteHabitEntry(existing.id);
       } else {
-        const updated = { ...existing, completed: true };
+        // Was partial or skipped -> complete it
+        const updated: HabitEntry = {
+          ...existing,
+          completed: true,
+          status: 'completed',
+          value: habit?.targetValue || 1,
+          loggedAt: new Date().toISOString(),
+        };
         nextEntries = entries.map((e) => (e.id === existing.id ? updated : e));
         await LifeOSRepository.saveHabitEntry(updated);
+        wasCompleted = true;
       }
     } else {
+      // New completion entry
       const newEntry: HabitEntry = {
         id: `he-${uuidv4()}`,
         habitId,
         date,
         completed: true,
+        status: 'completed',
+        value: habit?.targetValue || 1,
+        targetValue: habit?.targetValue || 1,
+        unit: habit?.unit || 'times',
+        loggedAt: new Date().toISOString(),
+      };
+      nextEntries = [...entries, newEntry];
+      await LifeOSRepository.saveHabitEntry(newEntry);
+      wasCompleted = true;
+    }
+
+    if (habit) {
+      const streakInfo = computeHabitStreak(habit, nextEntries);
+      const updatedHabit: Habit = {
+        ...habit,
+        streak: streakInfo.streak,
+        longestStreak: Math.max(habit.longestStreak || 0, streakInfo.longestStreak),
+        totalCompletions: streakInfo.totalCompletions,
+        entries: nextEntries.filter((e) => e.habitId === habitId),
+      };
+
+      set((s) => ({
+        habitEntries: nextEntries,
+        habits: s.habits.map((h) => (h.id === habitId ? updatedHabit : h)),
+      }));
+
+      await LifeOSRepository.saveHabit(updatedHabit);
+
+      // Recompute linked goal progress if habit-based
+      if (habit.goalId) {
+        const goal = get().goals.find((g) => g.id === habit.goalId);
+        if (goal) {
+          const relatedTasks = get().tasks.filter((t) => t.goalId === habit.goalId);
+          const progress = computeGoalProgress(goal, relatedTasks, nextEntries);
+          await get().updateGoal(habit.goalId, { progress });
+        }
+      }
+
+      if (wasCompleted) {
+        get().addToast({
+          type: 'success',
+          title: 'Habit Logged',
+          message: `${habit.name} recorded! 🔥 ${streakInfo.streak}d streak maintained.`,
+        });
+      }
+    } else {
+      set({ habitEntries: nextEntries });
+    }
+  },
+
+  recordHabitProgress: async (habitId, date, value, notes) => {
+    const habit = get().habits.find((h) => h.id === habitId);
+    if (!habit) return;
+
+    const entries = get().habitEntries;
+    const existing = entries.find((e) => e.habitId === habitId && e.date === date);
+    const target = habit.targetValue || 1;
+
+    let isCompleted = false;
+    let status: 'completed' | 'partial' | 'skipped' = 'partial';
+
+    if (habit.type === 'negative') {
+      // For negative avoidance habit: 0 incidents logged = successful adherence
+      if (value === 0) {
+        isCompleted = true;
+        status = 'completed';
+      } else {
+        isCompleted = false;
+        status = 'partial';
+      }
+    } else {
+      if (value >= target) {
+        isCompleted = true;
+        status = 'completed';
+      } else if (value > 0) {
+        isCompleted = false;
+        status = 'partial';
+      } else {
+        isCompleted = false;
+        status = 'partial';
+      }
+    }
+
+    let nextEntries: HabitEntry[];
+    if (existing) {
+      const updated: HabitEntry = {
+        ...existing,
+        completed: isCompleted,
+        status,
+        value,
+        notes: notes !== undefined ? notes : existing.notes,
+        loggedAt: new Date().toISOString(),
+      };
+      nextEntries = entries.map((e) => (e.id === existing.id ? updated : e));
+      await LifeOSRepository.saveHabitEntry(updated);
+    } else {
+      const newEntry: HabitEntry = {
+        id: `he-${uuidv4()}`,
+        habitId,
+        date,
+        completed: isCompleted,
+        status,
+        value,
+        targetValue: target,
+        unit: habit.unit || 'units',
+        notes,
+        loggedAt: new Date().toISOString(),
       };
       nextEntries = [...entries, newEntry];
       await LifeOSRepository.saveHabitEntry(newEntry);
     }
 
-    // Recalculate streak
-    const habitEntriesForHabit = nextEntries
-      .filter((e) => e.habitId === habitId && e.completed)
-      .map((e) => e.date);
-    const dateSet = new Set(habitEntriesForHabit);
-
-    let streak = 0;
-    const checkDate = new Date();
-    checkDate.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < 365; i++) {
-      const dStr = checkDate.toISOString().split('T')[0];
-      if (dateSet.has(dStr)) {
-        streak++;
-      } else {
-        if (i === 0) {
-          checkDate.setDate(checkDate.getDate() - 1);
-          continue;
-        }
-        break;
-      }
-      checkDate.setDate(checkDate.getDate() - 1);
-    }
-
-    const currentHabit = get().habits.find((h) => h.id === habitId);
-    const longestStreak = Math.max(currentHabit?.longestStreak || 0, streak);
+    const streakInfo = computeHabitStreak(habit, nextEntries);
+    const updatedHabit: Habit = {
+      ...habit,
+      streak: streakInfo.streak,
+      longestStreak: Math.max(habit.longestStreak || 0, streakInfo.longestStreak),
+      totalCompletions: streakInfo.totalCompletions,
+      entries: nextEntries.filter((e) => e.habitId === habitId),
+    };
 
     set((s) => ({
       habitEntries: nextEntries,
-      habits: s.habits.map((h) =>
-        h.id === habitId
-          ? {
-              ...h,
-              streak,
-              longestStreak,
-              entries: nextEntries.filter((e) => e.habitId === habitId),
-            }
-          : h
-      ),
+      habits: s.habits.map((h) => (h.id === habitId ? updatedHabit : h)),
     }));
 
-    if (currentHabit) {
-      await LifeOSRepository.saveHabit({ ...currentHabit, streak, longestStreak });
-      const isCompletedNow = nextEntries.some((e) => e.habitId === habitId && e.date === date && e.completed);
-      if (isCompletedNow) {
-        get().addToast({
-          type: 'success',
-          title: 'Habit Logged',
-          message: `${currentHabit.name} logged! 🔥 ${streak}d streak maintained.`
-        });
+    await LifeOSRepository.saveHabit(updatedHabit);
+
+    if (habit.goalId) {
+      const goal = get().goals.find((g) => g.id === habit.goalId);
+      if (goal) {
+        const relatedTasks = get().tasks.filter((t) => t.goalId === habit.goalId);
+        const progress = computeGoalProgress(goal, relatedTasks, nextEntries);
+        await get().updateGoal(habit.goalId, { progress });
       }
     }
+
+    get().addToast({
+      type: isCompleted ? 'success' : 'info',
+      title: isCompleted ? 'Target Achieved!' : 'Progress Recorded',
+      message: `${habit.name}: ${value} / ${target} ${habit.unit || ''} logged.`,
+    });
+  },
+
+  skipHabitEntry: async (habitId, date, notes) => {
+    const habit = get().habits.find((h) => h.id === habitId);
+    if (!habit) return;
+
+    const entries = get().habitEntries;
+    const existing = entries.find((e) => e.habitId === habitId && e.date === date);
+
+    let nextEntries: HabitEntry[];
+    if (existing) {
+      const updated: HabitEntry = {
+        ...existing,
+        completed: false,
+        status: 'skipped',
+        notes: notes || 'Scheduled rest / recovery day',
+        loggedAt: new Date().toISOString(),
+      };
+      nextEntries = entries.map((e) => (e.id === existing.id ? updated : e));
+      await LifeOSRepository.saveHabitEntry(updated);
+    } else {
+      const newEntry: HabitEntry = {
+        id: `he-${uuidv4()}`,
+        habitId,
+        date,
+        completed: false,
+        status: 'skipped',
+        notes: notes || 'Scheduled rest / recovery day',
+        loggedAt: new Date().toISOString(),
+      };
+      nextEntries = [...entries, newEntry];
+      await LifeOSRepository.saveHabitEntry(newEntry);
+    }
+
+    const streakInfo = computeHabitStreak(habit, nextEntries);
+    const updatedHabit: Habit = {
+      ...habit,
+      streak: streakInfo.streak,
+      longestStreak: Math.max(habit.longestStreak || 0, streakInfo.longestStreak),
+      totalCompletions: streakInfo.totalCompletions,
+      entries: nextEntries.filter((e) => e.habitId === habitId),
+    };
+
+    set((s) => ({
+      habitEntries: nextEntries,
+      habits: s.habits.map((h) => (h.id === habitId ? updatedHabit : h)),
+    }));
+
+    await LifeOSRepository.saveHabit(updatedHabit);
+
+    get().addToast({
+      type: 'info',
+      title: 'Habit Skipped',
+      message: `${habit.name} skipped for today. Streak preserved! 🛡️`,
+    });
+  },
+
+  // ----------------------------------------------------
+  // ROUTINES ENGINE
+  // ----------------------------------------------------
+  addRoutine: async (routineData) => {
+    const newRoutine: HabitRoutine = {
+      ...routineData,
+      id: `routine-${uuidv4()}`,
+      order: get().habitRoutines.length,
+      createdAt: new Date().toISOString(),
+    };
+    const nextRoutines = [...get().habitRoutines, newRoutine];
+    try {
+      localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+    } catch {
+      // ignore
+    }
+    set({ habitRoutines: nextRoutines });
+    get().addToast({
+      type: 'success',
+      title: 'Routine Created',
+      message: `"${newRoutine.title}" stack established.`,
+    });
+
+    return newRoutine;
+  },
+
+  updateRoutine: async (id, updates) => {
+    const nextRoutines = get().habitRoutines.map((r) =>
+      r.id === id ? { ...r, ...updates } : r
+    );
+    try {
+      localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+    } catch {
+      // ignore
+    }
+    set({ habitRoutines: nextRoutines });
+  },
+
+  deleteRoutine: async (id) => {
+    const nextRoutines = get().habitRoutines.filter((r) => r.id !== id);
+    try {
+      localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+    } catch {
+      // ignore
+    }
+    // Remove routineId from any habits
+    const habitsToUpdate = get().habits.filter((h) => h.routineId === id);
+    set((s) => ({
+      habitRoutines: nextRoutines,
+      habits: s.habits.map((h) => (h.routineId === id ? { ...h, routineId: undefined } : h)),
+    }));
+    for (const h of habitsToUpdate) {
+      await LifeOSRepository.saveHabit({ ...h, routineId: undefined });
+    }
+  },
+
+  reorderRoutineHabits: async (routineId, habitIds) => {
+    const nextRoutines = get().habitRoutines.map((r) =>
+      r.id === routineId ? { ...r, habitIds } : r
+    );
+    try {
+      localStorage.setItem('lifeos_habit_routines', JSON.stringify(nextRoutines));
+    } catch {
+      // ignore
+    }
+    set({ habitRoutines: nextRoutines });
   },
 
   // ----------------------------------------------------

@@ -25,7 +25,7 @@ import {
   Moon,
   Plus,
 } from 'lucide-react';
-import useStore from '../store/useStore';
+import useStore, { isHabitScheduledOnDate } from '../store/useStore';
 import type { Task, Priority, Goal, Habit } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 import { Checkbox, EmptyState } from '../components/ui';
@@ -124,9 +124,8 @@ export default function Dashboard() {
 
   // Habits today
   const habitsToday = useMemo(() => {
-    const dayOfWeek = new Date().getDay();
-    return habits.filter((h) => h.targetDays.includes(dayOfWeek));
-  }, [habits]);
+    return habits.filter((h) => isHabitScheduledOnDate(h, todayStr));
+  }, [habits, todayStr]);
 
   const habitsCompletedTodayCount = useMemo(() => {
     return habitsToday.filter((h) =>
@@ -906,7 +905,7 @@ export default function Dashboard() {
                       }}
                     >
                       <Flame size={12} color="var(--palette-brick)" fill="var(--palette-brick)" />
-                      <span className="tabular">{h.streak || 5}d</span> streak
+                      <span className="tabular">{h.streak || 0}d</span> streak
                     </div>
                   </div>
 

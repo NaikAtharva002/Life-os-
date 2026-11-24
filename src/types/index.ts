@@ -171,12 +171,43 @@ export interface Task {
 // ==========================================
 // 3. HABIT TRACKER
 // ==========================================
+export type HabitType =
+  | 'boolean'
+  | 'numeric'
+  | 'duration'
+  | 'frequency'
+  | 'negative';
+
+export type HabitScheduleType =
+  | 'daily'
+  | 'weekdays'
+  | 'monthly_dates'
+  | 'weekly_target'
+  | 'monthly_target'
+  | 'custom_interval';
+
 export interface HabitEntry {
   id: string;
   habitId: string;
   date: string; // YYYY-MM-DD
   completed: boolean;
+  status?: 'completed' | 'skipped' | 'partial';
+  value?: number;
+  targetValue?: number;
+  unit?: string;
   note?: string;
+  notes?: string;
+  loggedAt?: string;
+}
+
+export interface HabitRoutine {
+  id: string;
+  title: string;
+  description?: string;
+  timeOfDay?: 'morning' | 'afternoon' | 'evening' | 'anytime';
+  habitIds: string[];
+  order?: number;
+  createdAt?: string;
 }
 
 export interface Habit {
@@ -188,8 +219,27 @@ export interface Habit {
   targetDays: number[]; // 0=Sun..6=Sat
   color: string;
   icon: string;
+  coverImage?: string;
+  type?: HabitType;
+  scheduleType?: HabitScheduleType;
+  scheduleDays?: number[]; // [1, 3, 5]
+  monthlyDates?: number[]; // [1, 15]
+  weeklyTargetCount?: number; // e.g. 3 times a week
+  monthlyTargetCount?: number; // e.g. 10 times a month
+  customIntervalDays?: number; // e.g. every 2 days
+  startDate?: string;
+  endDate?: string;
+  targetValue?: number;
+  unit?: string;
+  reminderTime?: string; // HH:mm
+  reminderEnabled?: boolean;
+  goalId?: string;
+  routineId?: string;
   streak: number;
   longestStreak: number;
+  totalCompletions?: number;
+  notes?: string;
+  isArchived?: boolean;
   createdAt: string;
   entries?: HabitEntry[];
 }
