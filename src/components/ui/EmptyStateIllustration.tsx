@@ -7,6 +7,7 @@ export type IllustrationType =
   | 'finance'
   | 'fitness'
   | 'academics'
+  | 'career'
   | 'notes'
   | 'search';
 
@@ -163,6 +164,26 @@ export const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({
           {/* Mortarboard cap outline */}
           <path d="M36 12L52 19L36 26L20 19L36 12Z" fill={brick} />
           <path d="M52 19V26" stroke={walnut} strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
+
+    case 'career':
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 72 72"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          className={className}
+          style={style}
+          aria-hidden="true"
+        >
+          {/* Briefcase */}
+          <rect x="16" y="24" width="40" height="30" rx="6" fill="var(--bg-elevated)" stroke={border} strokeWidth="1.5" />
+          <path d="M28 24V18C28 16.5 29.5 15 31 15H41C42.5 15 44 16.5 44 18V24" stroke={brick} strokeWidth="2" strokeLinecap="round" />
+          <line x1="16" y1="36" x2="56" y2="36" stroke={walnut} strokeWidth="1.5" />
+          <rect x="32" y="32" width="8" height="8" rx="2" fill={brick} />
         </svg>
       );
 

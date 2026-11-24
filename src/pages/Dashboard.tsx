@@ -23,11 +23,12 @@ import {
   DollarSign,
   Sun,
   Moon,
+  Plus,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import type { Task, Priority, Goal, Habit } from '../types';
 import { getPhoto } from '../utils/photoAssets';
-import { Checkbox } from '../components/ui';
+import { Checkbox, EmptyState } from '../components/ui';
 
 export default function Dashboard() {
   const goals = useStore((s) => s.goals);
@@ -556,9 +557,47 @@ export default function Dashboard() {
           )}
 
           {/* Today Tasks List (Top 3) */}
-          {todayTasks.length === 0 && overdueTasks.length === 0 ? (
-            <div style={{ padding: '36px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13.5px' }}>
-              ✓ All tasks for today are complete. Enjoy your evening or explore long-term goals.
+          {tasks.length === 0 ? (
+            <div style={{ padding: '16px' }}>
+              <EmptyState
+                illustration="tasks"
+                badge="Clean Slate"
+                title="Your day is open."
+                description="Create tasks to organize your day, categorize by life area, and build momentum."
+                action={
+                  <button
+                    onClick={() => setActiveView('tasks')}
+                    className="btn btn-primary btn-sm"
+                  >
+                    <Plus size={14} /> Create your first task
+                  </button>
+                }
+                secondaryAction={
+                  <button
+                    onClick={() => setActiveView('focus')}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Clock size={14} /> Start 25m Focus
+                  </button>
+                }
+              />
+            </div>
+          ) : todayTasks.length === 0 && overdueTasks.length === 0 ? (
+            <div style={{ padding: '16px' }}>
+              <EmptyState
+                illustration="tasks"
+                badge="Today All Clear"
+                title="All clear for today!"
+                description="No pending tasks are scheduled for today. Enjoy your evening or plan tomorrow."
+                action={
+                  <button
+                    onClick={() => setActiveView('tasks')}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Plus size={14} /> Schedule a task
+                  </button>
+                }
+              />
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -665,83 +704,100 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-          {priorityGoals.map((g, idx) => {
-            const photoUrl = getGoalPhoto(g.category, idx);
-            return (
-              <div
-                key={g.id}
-                className="photo-tile"
+        {priorityGoals.length === 0 ? (
+          <EmptyState
+            illustration="goals"
+            badge="Ambitions & Horizons"
+            title="Give your ambitions a direction."
+            description="Define milestones, track progress percentages, and connect your goals to daily habits."
+            action={
+              <button
                 onClick={() => setActiveView('goals')}
+                className="btn btn-primary btn-sm"
               >
-                <div className="photo-tile-image-wrap">
-                  <img
-                    src={photoUrl}
-                    alt={g.title}
-                    className="photo-tile-img"
-                    loading="lazy"
-                  />
-                  <div className="photo-tile-scrim" />
-                  <span
-                    className="badge"
-                    style={{
-                      position: 'absolute',
-                      top: '12px',
-                      right: '12px',
-                      background: 'rgba(20, 19, 1, 0.85)',
-                      color: g.priority === 'critical' ? 'var(--status-danger)' : 'var(--accent-light)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      backdropFilter: 'blur(6px)',
-                    }}
-                  >
-                    {g.priority}
-                  </span>
-                  <span
-                    style={{
-                      position: 'absolute',
-                      bottom: '8px',
-                      left: '14px',
-                      fontSize: '11px',
-                      color: 'var(--accent-light)',
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    {g.category}
-                  </span>
-                </div>
-
-                <div style={{ padding: '16px' }}>
-                  <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
-                    {g.title}
-                  </h3>
-                  <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxHeight: '36px', overflow: 'hidden' }}>
-                    {g.description || 'Dedicated strategic progression.'}
-                  </p>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Overall Progress</span>
-                    <span className="tabular" style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
-                      {g.progress}%
+                <Plus size={14} /> Create a goal
+              </button>
+            }
+          />
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+            {priorityGoals.map((g, idx) => {
+              const photoUrl = getGoalPhoto(g.category, idx);
+              return (
+                <div
+                  key={g.id}
+                  className="photo-tile"
+                  onClick={() => setActiveView('goals')}
+                >
+                  <div className="photo-tile-image-wrap">
+                    <img
+                      src={photoUrl}
+                      alt={g.title}
+                      className="photo-tile-img"
+                      loading="lazy"
+                    />
+                    <div className="photo-tile-scrim" />
+                    <span
+                      className="badge"
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        right: '12px',
+                        background: 'rgba(20, 19, 1, 0.85)',
+                        color: g.priority === 'critical' ? 'var(--status-danger)' : 'var(--accent-light)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        backdropFilter: 'blur(6px)',
+                      }}
+                    >
+                      {g.priority}
+                    </span>
+                    <span
+                      style={{
+                        position: 'absolute',
+                        bottom: '8px',
+                        left: '14px',
+                        fontSize: '11px',
+                        color: 'var(--accent-light)',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      {g.category}
                     </span>
                   </div>
 
-                  <div style={{ width: '100%', height: '4px', background: 'var(--border-default)', borderRadius: '2px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${g.progress}%`,
-                        height: '100%',
-                        background: 'var(--accent-primary)',
-                        borderRadius: '2px',
-                      }}
-                    />
+                  <div style={{ padding: '16px' }}>
+                    <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+                      {g.title}
+                    </h3>
+                    <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxHeight: '36px', overflow: 'hidden' }}>
+                      {g.description || 'Dedicated strategic progression.'}
+                    </p>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Overall Progress</span>
+                      <span className="tabular" style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
+                        {g.progress}%
+                      </span>
+                    </div>
+
+                    <div style={{ width: '100%', height: '4px', background: 'var(--border-default)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          width: `${g.progress}%`,
+                          height: '100%',
+                          background: 'var(--accent-primary)',
+                          borderRadius: '2px',
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* =========================================================================
@@ -766,101 +822,118 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          {habitsToday.map((h, idx) => {
-            const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
-            const photoUrl = getHabitPhoto(h.name, idx);
-
-            return (
-              <div
-                key={h.id}
-                className="photo-tile"
-                style={{
-                  borderColor: isDone ? 'var(--palette-brick-border)' : 'var(--border-default)',
-                }}
+        {habitsToday.length === 0 ? (
+          <EmptyState
+            illustration="habits"
+            badge="Daily Consistency"
+            title="Small actions create lasting change."
+            description="Anchor your daily routine with small disciplines. Build momentum one checkmark at a time."
+            action={
+              <button
+                onClick={() => setActiveView('habits')}
+                className="btn btn-primary btn-sm"
               >
-                <div className="photo-tile-image-wrap" style={{ height: '110px' }}>
-                  <img
-                    src={photoUrl}
-                    alt={h.name}
-                    className="photo-tile-img"
-                    loading="lazy"
-                  />
-                  <div className="photo-tile-scrim" />
-                  
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: '10px',
-                      left: '10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: 'var(--status-warning)',
-                      background: 'rgba(20, 19, 1, 0.82)',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      backdropFilter: 'blur(4px)',
-                    }}
-                  >
-                    <Flame size={12} color="var(--palette-brick)" fill="var(--palette-brick)" />
-                    <span className="tabular">{h.streak || 5}d</span> streak
-                  </div>
-                </div>
+                <Plus size={14} /> Build your first habit
+              </button>
+            }
+          />
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+            {habitsToday.map((h, idx) => {
+              const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
+              const photoUrl = getHabitPhoto(h.name, idx);
 
+              return (
                 <div
+                  key={h.id}
+                  className="photo-tile"
                   style={{
-                    padding: '12px 14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    borderColor: isDone ? 'var(--palette-brick-border)' : 'var(--border-default)',
                   }}
                 >
-                  <div>
-                    <h4 style={{ margin: '0 0 2px 0', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {h.name}
-                    </h4>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                      {h.category || 'Daily Habit'}
-                    </span>
+                  <div className="photo-tile-image-wrap" style={{ height: '110px' }}>
+                    <img
+                      src={photoUrl}
+                      alt={h.name}
+                      className="photo-tile-img"
+                      loading="lazy"
+                    />
+                    <div className="photo-tile-scrim" />
+                    
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        color: 'var(--status-warning)',
+                        background: 'rgba(20, 19, 1, 0.82)',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        backdropFilter: 'blur(4px)',
+                      }}
+                    >
+                      <Flame size={12} color="var(--palette-brick)" fill="var(--palette-brick)" />
+                      <span className="tabular">{h.streak || 5}d</span> streak
+                    </div>
                   </div>
 
-                  <button
-                    onClick={() => toggleHabitEntry(h.id, todayStr)}
-                    className="btn-habit-check"
+                  <div
                     style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      border: isDone ? 'none' : '1.5px solid var(--border-default)',
-                      background: isDone ? 'var(--palette-brick)' : 'var(--bg-elevated)',
-                      color: isDone ? 'var(--text-on-accent)' : 'var(--text-muted)',
+                      padding: '12px 14px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                      boxShadow: isDone ? '0 2px 8px rgba(184, 12, 9, 0.35)' : 'none',
-                      transform: isDone ? 'scale(1.05)' : 'scale(1)',
+                      justifyContent: 'space-between',
                     }}
-                    title={isDone ? 'Completed today' : 'Mark completed'}
-                    aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
                   >
-                    <Check
-                      size={16}
-                      strokeWidth={2.5}
+                    <div>
+                      <h4 style={{ margin: '0 0 2px 0', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {h.name}
+                      </h4>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {h.category || 'Daily Habit'}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => toggleHabitEntry(h.id, todayStr)}
+                      className="btn-habit-check"
                       style={{
-                        animation: isDone ? 'checkboxPop 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        border: isDone ? 'none' : '1.5px solid var(--border-default)',
+                        background: isDone ? 'var(--palette-brick)' : 'var(--bg-elevated)',
+                        color: isDone ? 'var(--text-on-accent)' : 'var(--text-muted)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                        boxShadow: isDone ? '0 2px 8px rgba(184, 12, 9, 0.35)' : 'none',
+                        transform: isDone ? 'scale(1.05)' : 'scale(1)',
                       }}
-                    />
-                  </button>
+                      title={isDone ? 'Completed today' : 'Mark completed'}
+                      aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
+                    >
+                      <Check
+                        size={16}
+                        strokeWidth={2.5}
+                        style={{
+                          animation: isDone ? 'checkboxPop 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                        }}
+                      />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* =========================================================================

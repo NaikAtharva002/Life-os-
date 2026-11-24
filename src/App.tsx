@@ -30,6 +30,7 @@ import GlobalCommandPalette from './components/GlobalCommandPalette';
 import QuickActionModal from './components/QuickActionModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import BreadcrumbNav from './components/BreadcrumbNav';
+import OnboardingModal from './components/OnboardingModal';
 import { ToastContainer } from './components/ui';
 
 export default function App() {
@@ -269,6 +270,35 @@ export default function App() {
           currentVariant="agent"
           onOpenMatrix={() => setComparisonMatrixOpen(true)}
         />
+
+        {/* Optional Demo Mode Status Banner */}
+        {settings.isDemoMode && (
+          <div
+            style={{
+              background: 'var(--palette-walnut-subtle, rgba(107, 43, 6, 0.2))',
+              borderBottom: '1px solid var(--palette-walnut)',
+              color: 'var(--text-primary)',
+              padding: '6px 20px',
+              fontSize: '11.5px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              zIndex: 99,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontWeight: 700, color: 'var(--palette-brick)' }}>DEMO MODE:</span>
+              <span>Exploring with sample scenario records. Your real workspace is untouched.</span>
+            </div>
+            <button
+              onClick={() => useStore.getState().toggleDemoMode(false)}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '11px', padding: '2px 8px' }}
+            >
+              Exit Demo Mode
+            </button>
+          </div>
+        )}
 
         {/* Global Top Toolbar (Single consistent toolbar across all pages) */}
         <header className="global-toolbar">
@@ -518,6 +548,9 @@ export default function App() {
         isOpen={comparisonMatrixOpen}
         onClose={() => setComparisonMatrixOpen(false)}
       />
+
+      {/* FIRST-TIME GUIDED ONBOARDING WIZARD 2.0 */}
+      <OnboardingModal />
 
       {/* GLOBAL TOAST NOTIFICATION PORTAL */}
       <ToastContainer />

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { getPhoto } from '../utils/photoAssets';
 import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 import type { TransactionType } from '../types';
 
 export default function FinancePage() {
@@ -239,6 +240,17 @@ export default function FinancePage() {
           </div>
         </div>
       </section>
+
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="finance_intro"
+        icon={DollarSign}
+        title="Financial Velocity & Cash Runway"
+        description="Track incoming cash flow, monthly recurring commitments, and compute your liquid emergency runway. All transaction data is stored locally in your browser."
+        actionText="Log Transaction"
+        onAction={() => setShowTxModal(true)}
+        style={{ marginBottom: '14px' }}
+      />
 
       {/* Sleek Financial Summary Strip (replaces bulky AI cards) */}
       <div
@@ -528,23 +540,52 @@ export default function FinancePage() {
           {/* Structured Transactions Table */}
           {filteredTransactions.length === 0 ? (
             <div style={{ padding: '36px 16px' }}>
-              <EmptyState
-                illustration="finance"
-                title="No Financial Records Found"
-                description="Log income, expenses, or recurring bills to track your personal cash velocity."
-                action={
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setFilterCategory('All');
-                      setFilterType('all');
-                      setShowTxModal(true);
-                    }}
-                  >
-                    <Plus size={15} /> Log First Transaction
-                  </button>
-                }
-              />
+              {transactions.length === 0 ? (
+                <EmptyState
+                  illustration="finance"
+                  badge="Clean Slate"
+                  title="Your financial picture starts here."
+                  description="Log income, recurring bills, and daily expenses to calculate your net cash runway."
+                  action={
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setFilterCategory('All');
+                        setFilterType('all');
+                        setShowTxModal(true);
+                      }}
+                    >
+                      <Plus size={15} /> Add your first transaction
+                    </button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  illustration="finance"
+                  badge="Filtered View"
+                  title="No matching transactions found"
+                  description="No financial records match your selected category or type filter."
+                  action={
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setFilterCategory('All');
+                        setFilterType('all');
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  }
+                  secondaryAction={
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => setShowTxModal(true)}
+                    >
+                      <Plus size={15} /> Log Transaction
+                    </button>
+                  }
+                />
+              )}
             </div>
           ) : (
             <>

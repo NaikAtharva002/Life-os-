@@ -469,6 +469,58 @@ export class LifeOSRepository {
     }
   }
 
+  static async clearAllData(): Promise<void> {
+    await db.transaction('rw', [
+      db.goals,
+      db.tasks,
+      db.habits,
+      db.habitEntries,
+      db.financeTransactions,
+      db.financeBudgets,
+      db.savingsGoals,
+      db.exercises,
+      db.workoutSessions,
+      db.bodyMetrics,
+      db.fitnessGoals,
+      db.academicSemesters,
+      db.academicSubjects,
+      db.academicAssignments,
+      db.academicExams,
+      db.timetableSlots,
+      db.careerGoals,
+      db.careerSkills,
+      db.careerProjects,
+      db.careerApplications,
+      db.careerDocuments,
+      db.eveningReviews,
+      db.obsidianNotes,
+    ], async () => {
+      await db.goals.clear();
+      await db.tasks.clear();
+      await db.habits.clear();
+      await db.habitEntries.clear();
+      await db.financeTransactions.clear();
+      await db.financeBudgets.clear();
+      await db.savingsGoals.clear();
+      await db.exercises.clear();
+      await db.workoutSessions.clear();
+      await db.bodyMetrics.clear();
+      await db.fitnessGoals.clear();
+      await db.academicSemesters.clear();
+      await db.academicSubjects.clear();
+      await db.academicAssignments.clear();
+      await db.academicExams.clear();
+      await db.timetableSlots.clear();
+      await db.careerGoals.clear();
+      await db.careerSkills.clear();
+      await db.careerProjects.clear();
+      await db.careerApplications.clear();
+      await db.careerDocuments.clear();
+      await db.eveningReviews.clear();
+      await db.obsidianNotes.clear();
+    });
+  }
+
   static async resetDatabaseToFactory() {
     await db.delete();
     window.location.reload();

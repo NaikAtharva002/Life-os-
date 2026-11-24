@@ -368,6 +368,14 @@ export interface AppSettings {
   currencySymbol: string;
   geminiApiKey?: string;
   reminder: ReminderSettings;
+  onboardingCompleted?: boolean;
+  selectedLifeAreas?: string[];
+  weekStartDay?: 'monday' | 'sunday';
+  defaultFocusDuration?: number;
+  dismissedTips?: string[];
+  isDemoMode?: boolean;
+  userAvatar?: string;
+  userGreeting?: string;
 }
 
 // ==========================================

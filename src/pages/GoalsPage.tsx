@@ -21,6 +21,7 @@ import GoalModal from '../components/GoalModal';
 import type { Goal, Priority } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 import { EmptyState, ImageWithFallback } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 
 const PRIORITY_ORDER: Record<Priority, number> = {
   critical: 0,
@@ -212,6 +213,20 @@ export default function GoalsPage() {
         </div>
       </section>
 
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="goals_intro"
+        icon={Target}
+        title="Strategic Horizons & Milestones"
+        description="Define long-term ambitions and break them down into measurable milestones. Goals can be linked directly with daily habit loops."
+        actionText="Create Goal"
+        onAction={() => {
+          setEditingGoal(undefined);
+          setIsModalOpen(true);
+        }}
+        style={{ marginBottom: '14px' }}
+      />
+
       {/* 2. SUMMARY STRIP & VIEW SWITCHER */}
       <div
         style={{
@@ -347,23 +362,56 @@ export default function GoalsPage() {
 
       {/* 4. CONTENT VIEW: EDITORIAL PHOTOGRAPHIC GRID OR TABLE */}
       {filteredGoals.length === 0 ? (
-        <EmptyState
-          illustration="goals"
-          title="No Matching Goals Found"
-          description="Define your next ambitious milestone, career objective, or physical achievement."
-          action={
-            <button
-              onClick={() => {
-                setEditingGoal(undefined);
-                setIsModalOpen(true);
-              }}
-              className="btn btn-primary btn-sm"
-              style={{ marginTop: '8px' }}
-            >
-              <Plus size={14} /> Create First Goal
-            </button>
-          }
-        />
+        goals.length === 0 ? (
+          <EmptyState
+            illustration="goals"
+            badge="Clean Slate"
+            title="Give your ambitions a direction."
+            description="Define milestones, track completion progress, and attach daily habits to long-term goals."
+            action={
+              <button
+                onClick={() => {
+                  setEditingGoal(undefined);
+                  setIsModalOpen(true);
+                }}
+                className="btn btn-primary btn-sm"
+              >
+                <Plus size={14} /> Create your first goal
+              </button>
+            }
+          />
+        ) : (
+          <EmptyState
+            illustration="goals"
+            badge="Filtered View"
+            title="No matching goals found"
+            description="No goals match your active category filter or search query."
+            action={
+              <button
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setPriorityFilter('all');
+                  setStatusFilter('all');
+                  setSearchQuery('');
+                }}
+                className="btn btn-primary btn-sm"
+              >
+                Clear filters
+              </button>
+            }
+            secondaryAction={
+              <button
+                onClick={() => {
+                  setEditingGoal(undefined);
+                  setIsModalOpen(true);
+                }}
+                className="btn btn-secondary btn-sm"
+              >
+                <Plus size={14} /> New Goal
+              </button>
+            }
+          />
+        )
       ) : viewMode === 'editorial' ? (
         /* EDITORIAL PHOTOGRAPHIC CARDS GRID */
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>

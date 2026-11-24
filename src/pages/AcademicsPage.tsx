@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { getPhoto } from '../utils/photoAssets';
 import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 
 export default function AcademicsPage() {
   const semesters = useStore((s) => s.academicSemesters);
@@ -282,20 +283,32 @@ export default function AcademicsPage() {
         ))}
       </div>
 
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="academics_intro"
+        icon={GraduationCap}
+        title="Academic Safety & Attendance Radar"
+        description="Maintain safe attendance thresholds across courses and track upcoming exams. The safety algorithm computes how many classes you can afford to miss while staying above 75%."
+        actionText="Enroll Subject"
+        onAction={() => setShowSubjectModal(true)}
+        style={{ marginBottom: '16px' }}
+      />
+
       {/* TAB 1: ATTENDANCE TRACKER */}
       {activeTab === 'attendance' && (
         subjects.length === 0 ? (
           <div className="card" style={{ padding: '36px 20px' }}>
             <EmptyState
               illustration="academics"
-              title="No Academic Subjects Enrolled"
-              description="Track current semester courses, minimum attendance thresholds, and safe bunk margins."
+              badge="Clean Slate"
+              title="Academic roadmap is clear."
+              description="Enroll courses, track minimum attendance thresholds, and monitor exam milestones."
               action={
                 <button
                   className="btn btn-primary"
                   onClick={() => setShowSubjectModal(true)}
                 >
-                  <Plus size={15} /> Enroll First Subject
+                  <Plus size={15} /> Enroll your first subject
                 </button>
               }
             />

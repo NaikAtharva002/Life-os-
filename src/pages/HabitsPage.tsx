@@ -3,6 +3,7 @@ import { Plus, Repeat, Calendar, Check, Edit2, Trash2, LayoutGrid, List, Flame, 
 import useStore from '../store/useStore';
 import HabitModal from '../components/HabitModal';
 import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 import type { Habit } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 
@@ -170,6 +171,20 @@ export default function HabitsPage() {
         </div>
       </section>
 
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="habits_intro"
+        icon={Repeat}
+        title="Daily Habit Loops & Momentum"
+        description="Consistency over intensity. Build automatic routines by tracking 7-day completion matrices and streak milestones."
+        actionText="Add Habit"
+        onAction={() => {
+          setEditingHabit(undefined);
+          setIsModalOpen(true);
+        }}
+        style={{ marginBottom: '14px' }}
+      />
+
       {/* 2. STATS & SUMMARY STRIP */}
       <div
         style={{
@@ -267,22 +282,51 @@ export default function HabitsPage() {
       {/* 4. CONTENT: PHOTOGRAPHIC HABIT TILES OR TABLE */}
       {filteredHabits.length === 0 ? (
         <div className="card" style={{ padding: '36px 20px' }}>
-          <EmptyState
-            illustration="habits"
-            title="No Habits Tracked Yet"
-            description="Anchor your daily routine with small disciplines. Build momentum one checkmark at a time."
-            action={
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  setEditingHabit(undefined);
-                  setIsModalOpen(true);
-                }}
-              >
-                <Plus size={15} /> Add First Habit
-              </button>
-            }
-          />
+          {habits.length === 0 ? (
+            <EmptyState
+              illustration="habits"
+              badge="Clean Slate"
+              title="Small actions create lasting change."
+              description="Anchor your daily routine with small disciplines. Build momentum one checkmark at a time."
+              action={
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setEditingHabit(undefined);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Plus size={15} /> Build your first habit
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              illustration="habits"
+              badge="Filtered View"
+              title="No matching habits found"
+              description="No habits match your active category filter."
+              action={
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setSelectedCategory('all')}
+                >
+                  Clear filter
+                </button>
+              }
+              secondaryAction={
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setEditingHabit(undefined);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Plus size={15} /> Add Habit
+                </button>
+              }
+            />
+          )}
         </div>
       ) : viewMode === 'photographic' ? (
         /* PHOTOGRAPHIC HABIT TILES GRID */

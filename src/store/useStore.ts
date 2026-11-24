@@ -30,6 +30,7 @@ import type {
   AssistantMessage,
   ReminderSettings,
   ToastItem,
+  Priority,
 } from '../types';
 
 interface StoreState {
@@ -154,6 +155,25 @@ interface StoreState {
   pinnedViews: string[];
   recentViews: string[];
   togglePinView: (viewId: string) => void;
+
+  // 14. Onboarding & Contextual Guidance 2.0
+  isOnboardingOpen: boolean;
+  setIsOnboardingOpen: (open: boolean) => void;
+  dismissTip: (tipId: string) => Promise<void>;
+  resetDismissedTips: () => Promise<void>;
+  toggleDemoMode: (enable: boolean) => Promise<void>;
+  completeOnboarding: (data: {
+    userName: string;
+    selectedLifeAreas: string[];
+    theme: 'dark' | 'light';
+    weekStartDay: 'monday' | 'sunday';
+    defaultFocusDuration: number;
+    userAvatar?: string;
+    userGreeting?: string;
+    initialGoals?: Array<{ title: string; category: string; priority: Priority; targetDate?: string }>;
+    initialHabits?: Array<{ name: string; category: string; frequency: string }>;
+  }) => Promise<void>;
+  resetToFreshSlate: () => Promise<void>;
 }
 
 export const useStore = create<StoreState>((set, get) => ({
@@ -209,6 +229,9 @@ export const useStore = create<StoreState>((set, get) => ({
       timestamp: new Date().toISOString(),
     },
   ],
+  isOnboardingOpen: false,
+  setIsOnboardingOpen: (open) => set({ isOnboardingOpen: open }),
+
   settings: {
     theme: 'dark',
     userName: 'Atharva',
@@ -218,6 +241,12 @@ export const useStore = create<StoreState>((set, get) => ({
       time: '21:30',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
     },
+    onboardingCompleted: true,
+    selectedLifeAreas: ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career', 'obsidian'],
+    weekStartDay: 'monday',
+    defaultFocusDuration: 25,
+    dismissedTips: [],
+    isDemoMode: false,
   },
 
   initializeFromDB: async () => {
@@ -231,11 +260,21 @@ export const useStore = create<StoreState>((set, get) => ({
       }));
 
       const loadedVariant = (data.settings?.designVariant as DesignVariant) || 'agent';
+
+      // Check onboarding status
+      const hasCompleted =
+        data.settings?.onboardingCompleted ??
+        (localStorage.getItem('lifeos_onboarding_completed') === 'true');
+      const hasExistingRecords = data.tasks.length > 0 || data.goals.length > 0;
+      const isDrafting = localStorage.getItem('lifeos_onboarding_draft') !== null;
+      const shouldOpenOnboarding = (!hasCompleted && !hasExistingRecords) || isDrafting;
+
       set({
         ...data,
         habits: habitsWithEntries,
         designVariant: loadedVariant,
         isLoaded: true,
+        isOnboardingOpen: shouldOpenOnboarding,
       });
       document.documentElement.setAttribute('data-variant', loadedVariant);
       get().markOverdueTasks();
@@ -1026,6 +1065,126 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   removeToast: (id) => {
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
+  },
+
+  // 14. Onboarding & Contextual Guidance Actions
+  dismissTip: async (tipId) => {
+    const currentDismissed = get().settings?.dismissedTips || [];
+    if (!currentDismissed.includes(tipId)) {
+      const updated = [...currentDismissed, tipId];
+      await get().updateSettings({ dismissedTips: updated });
+    }
+  },
+
+  resetDismissedTips: async () => {
+    await get().updateSettings({ dismissedTips: [] });
+    get().addToast({
+      type: 'info',
+      title: 'Guidance Restored',
+      message: 'All contextual guidance tips have been re-enabled.',
+    });
+  },
+
+  toggleDemoMode: async (enable) => {
+    await get().updateSettings({ isDemoMode: enable });
+    get().addToast({
+      type: enable ? 'info' : 'success',
+      title: enable ? 'Demo Mode Active' : 'Real Workspace Active',
+      message: enable
+        ? 'Exploring with sample scenario data. Real records are untouched.'
+        : 'Returned to your primary workspace.',
+    });
+  },
+
+  completeOnboarding: async (data) => {
+    // 1. Update settings
+    const updatedSettings: Partial<AppSettings> = {
+      userName: data.userName,
+      selectedLifeAreas: data.selectedLifeAreas,
+      theme: data.theme,
+      weekStartDay: data.weekStartDay,
+      defaultFocusDuration: data.defaultFocusDuration,
+      userAvatar: data.userAvatar,
+      userGreeting: data.userGreeting,
+      onboardingCompleted: true,
+    };
+    await get().updateSettings(updatedSettings);
+
+    // 2. Set theme in DOM
+    document.documentElement.setAttribute('data-theme', data.theme);
+
+    // 3. Create initial goals if requested
+    if (data.initialGoals && data.initialGoals.length > 0) {
+      for (const g of data.initialGoals) {
+        await get().addGoal({
+          title: g.title,
+          category: g.category,
+          priority: g.priority,
+          type: 'short-term',
+          description: 'Created during onboarding setup.',
+          targetDate: g.targetDate || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+          progress: 0,
+          milestones: [
+            { id: uuidv4(), title: 'Initial setup & plan', isCompleted: false },
+            { id: uuidv4(), title: 'First major milestone', isCompleted: false },
+          ],
+        });
+      }
+    }
+
+    // 4. Create initial habits if requested
+    if (data.initialHabits && data.initialHabits.length > 0) {
+      for (const h of data.initialHabits) {
+        await get().addHabit({
+          name: h.name,
+          category: h.category,
+          frequency: (h.frequency === 'weekly' ? 'weekly' : 'daily'),
+          targetDays: [0, 1, 2, 3, 4, 5, 6],
+          color: '#B80C09',
+          icon: 'Check',
+        });
+      }
+    }
+
+    // 5. Clean up draft state
+    try {
+      localStorage.setItem('lifeos_onboarding_completed', 'true');
+      localStorage.removeItem('lifeos_onboarding_draft');
+    } catch {}
+
+    set({ isOnboardingOpen: false, activeView: 'dashboard' });
+    get().addToast({
+      type: 'success',
+      title: `Welcome to LIFE OS, ${data.userName}!`,
+      message: 'Your personal operating system is configured and ready.',
+    });
+  },
+
+  resetToFreshSlate: async () => {
+    await LifeOSRepository.clearAllData();
+    try {
+      localStorage.removeItem('lifeos_onboarding_completed');
+      localStorage.removeItem('lifeos_onboarding_draft');
+    } catch {}
+    set({
+      goals: [],
+      tasks: [],
+      habits: [],
+      habitEntries: [],
+      financeTransactions: [],
+      workoutSessions: [],
+      academicSubjects: [],
+      careerProjects: [],
+      careerApplications: [],
+      obsidianNotes: [],
+      isOnboardingOpen: true,
+      activeView: 'dashboard',
+    });
+    get().addToast({
+      type: 'info',
+      title: 'Reset to Clean Slate',
+      message: 'Database cleared. Onboarding wizard opened.',
+    });
   },
 }));
 

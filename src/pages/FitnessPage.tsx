@@ -14,6 +14,7 @@ import {
 import type { WorkoutSplit, ExerciseItem, WorkoutSet, LoggedExercise } from '../types';
 import { getPhoto } from '../utils/photoAssets';
 import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 
 export default function FitnessPage() {
   const exercises = useStore((s) => s.exercises);
@@ -263,6 +264,17 @@ export default function FitnessPage() {
         </div>
       </section>
 
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="fitness_intro"
+        icon={Dumbbell}
+        title="Workout Logging & Progressive Overload"
+        description="Record sets, reps, and volume load across push, pull, and leg sessions. Track body weight and composition trends over time."
+        actionText="Log Workout"
+        onAction={() => setShowLogModal(true)}
+        style={{ marginBottom: '14px' }}
+      />
+
       {/* Athletic Training Status Ribbon */}
       <div className="summary-strip">
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -341,14 +353,15 @@ export default function FitnessPage() {
             <div className="card" style={{ padding: '36px 20px' }}>
               <EmptyState
                 illustration="fitness"
-                title="No Workout Sessions Logged"
+                badge="Clean Slate"
+                title="Start building your fitness history."
                 description="Record strength training, cardio, or athletic recovery sessions to track volume and progressive overload."
                 action={
                   <button
                     className="btn btn-primary"
                     onClick={() => setShowLogModal(true)}
                   >
-                    <Plus size={15} /> Log First Workout
+                    <Plus size={15} /> Log your first workout
                   </button>
                 }
               />

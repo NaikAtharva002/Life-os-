@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { getPhoto } from '../utils/photoAssets';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 
 export default function FocusModePage() {
   const setActiveView = useStore((s) => s.setActiveView);
@@ -153,6 +154,17 @@ export default function FocusModePage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Contextual Progressive Guidance Tip */}
+      <div style={{ position: 'relative', zIndex: 10, maxWidth: '640px', margin: '0 auto 16px', width: '100%' }}>
+        <ContextualTipBanner
+          tipId="focus_intro"
+          icon={Compass}
+          title="Focus Sanctuary & Pomodoro Protocol"
+          description="Immerse in uninterrupted deep work. Pair your session with ambient nature horizons, select an active task objective, and let the timer hold your focus."
+          style={{ marginBottom: 0 }}
+        />
       </div>
 
       {/* Center Hero Timer */}

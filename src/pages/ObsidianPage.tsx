@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { ObsidianNote } from '../types';
 import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 
 export default function ObsidianPage() {
   const notes = useStore((s) => s.obsidianNotes);
@@ -220,6 +221,17 @@ Room: ${sub.roomOrLink || 'Lecture Hall'}
           </button>
         </div>
       </div>
+
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="notes_intro"
+        icon={FileText}
+        title="Obsidian Knowledge Vault & [[Wiki-links]]"
+        description="Draft your thoughts in clean Markdown. Connect ideas bidirectionally using [[wiki-links]] to build your personal knowledge graph. All notes live locally on your device."
+        actionText="Create Note"
+        onAction={handleCreateNew}
+        style={{ marginBottom: '14px' }}
+      />
 
       {/* Main Workspace: Left Note Browser + Right Markdown Editor */}
       <div className="obsidian-workspace-grid" style={{ minHeight: 0, flex: 1 }}>
@@ -466,16 +478,30 @@ Room: ${sub.roomOrLink || 'Lecture Hall'}
           </div>
         ) : (
           <div className="card" style={{ padding: '60px 20px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <EmptyState
-              illustration="notes"
-              title="No Active Note Selected"
-              description="Select a note from the left sidebar or create a new note to start drafting in Markdown with bidirectional [[wiki-links]]."
-              action={
-                <button className="btn btn-primary" onClick={handleCreateNew}>
-                  <Plus size={15} /> Create New Note
-                </button>
-              }
-            />
+            {notes.length === 0 ? (
+              <EmptyState
+                illustration="notes"
+                badge="Clean Slate"
+                title="A space for your thoughts."
+                description="Create your first note in Markdown. Use [[wiki-links]] to connect ideas across your knowledge vault."
+                action={
+                  <button className="btn btn-primary" onClick={handleCreateNew}>
+                    <Plus size={15} /> Create your first note
+                  </button>
+                }
+              />
+            ) : (
+              <EmptyState
+                illustration="notes"
+                title="No Active Note Selected"
+                description="Select a note from the left sidebar or create a new note to start drafting in Markdown with bidirectional [[wiki-links]]."
+                action={
+                  <button className="btn btn-primary" onClick={handleCreateNew}>
+                    <Plus size={15} /> Create New Note
+                  </button>
+                }
+              />
+            )}
           </div>
         )}
       </div>

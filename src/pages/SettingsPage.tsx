@@ -16,6 +16,9 @@ import {
   Database,
   RefreshCw,
   Code2,
+  Sparkles,
+  Compass,
+  RotateCcw,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { LifeOSRepository } from '../db/repository';
@@ -31,6 +34,10 @@ export default function SettingsPage() {
   const updateSettings = useStore((s) => s.updateSettings);
   const setActiveView = useStore((s) => s.setActiveView);
   const updateReminderSettings = useStore((s) => s.updateReminderSettings);
+  const setIsOnboardingOpen = useStore((s) => s.setIsOnboardingOpen);
+  const resetDismissedTips = useStore((s) => s.resetDismissedTips);
+  const toggleDemoMode = useStore((s) => s.toggleDemoMode);
+  const resetToFreshSlate = useStore((s) => s.resetToFreshSlate);
 
   const [userName, setUserName] = useState(settings.userName || 'Atharva');
   const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol || '$');
@@ -318,7 +325,63 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* SECTION 4: DATA SOVEREIGNTY, INDEXEDDB BACKUP & RESTORE */}
+      {/* SECTION 4: ONBOARDING, PROGRESSIVE GUIDANCE & DEMO MODE */}
+      <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <span className="section-eyebrow">ONBOARDING & PROGRESSIVE GUIDANCE</span>
+        </div>
+        <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
+          Revisit the first-time setup wizard, restore contextual guidance tips across modules, or toggle sample scenario demo data.
+        </p>
+
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setIsOnboardingOpen(true)}
+            className="btn btn-primary"
+            style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Sparkles size={13} /> Relaunch Setup Wizard
+          </button>
+
+          <button
+            onClick={resetDismissedTips}
+            className="btn btn-secondary"
+            style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          >
+            <RotateCcw size={13} /> Restore Contextual Tips
+          </button>
+
+          <button
+            onClick={() => toggleDemoMode(!settings.isDemoMode)}
+            className="btn btn-secondary"
+            style={{
+              fontSize: '11.5px',
+              height: '32px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: settings.isDemoMode ? 'var(--palette-brick)' : 'var(--text-primary)',
+              borderColor: settings.isDemoMode ? 'var(--palette-brick)' : 'var(--border-default)',
+            }}
+          >
+            <Compass size={13} /> {settings.isDemoMode ? 'Exit Demo Mode' : 'Explore Demo Mode'}
+          </button>
+
+          <button
+            onClick={() => {
+              if (window.confirm('⚠️ Reset all records to a clean slate (0 tasks, 0 goals, 0 habits)? This will open the fresh onboarding wizard.')) {
+                resetToFreshSlate();
+              }
+            }}
+            className="btn btn-danger"
+            style={{ fontSize: '11.5px', height: '32px', marginLeft: 'auto' }}
+          >
+            <Trash2 size={13} /> Reset to Clean Slate (0 Records)
+          </button>
+        </div>
+      </div>
+
+      {/* SECTION 5: DATA SOVEREIGNTY, INDEXEDDB BACKUP & RESTORE */}
       <div className="card" style={{ padding: '18px 20px', background: 'var(--bg-surface)', borderRadius: '10px', border: '1px solid var(--border-default)', boxShadow: 'var(--panel-shadow)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <span className="section-eyebrow">LOCAL STORAGE & PRIVACY</span>

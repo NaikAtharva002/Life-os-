@@ -15,6 +15,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import type { JobApplication } from '../types';
+import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 
 export default function CareerPage() {
   const careerGoals = useStore((s) => s.careerGoals);
@@ -205,6 +207,17 @@ export default function CareerPage() {
         </span>
       </div>
 
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="career_intro"
+        icon={Briefcase}
+        title="Career Momentum & Portfolio Pipeline"
+        description="Track technical skill proficiencies, manage job application stages, and showcase high-impact portfolio projects in one unified career command center."
+        actionText="Add Application"
+        onAction={() => setShowAppModal(true)}
+        style={{ marginBottom: '16px' }}
+      />
+
       {/* Tabs */}
       <div className="responsive-tabs-bar" style={{ display: 'flex', gap: '6px', marginBottom: '20px', background: 'var(--bg-surface)', padding: '4px', borderRadius: '8px', border: '1px solid var(--border-default)', maxWidth: '100%', overflowX: 'auto' }}>
         {[
@@ -236,7 +249,25 @@ export default function CareerPage() {
 
       {/* TAB 1: APPLICATION PIPELINE KANBAN */}
       {activeTab === 'applications' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', alignItems: 'start' }}>
+        careerApplications.length === 0 ? (
+          <div className="card" style={{ padding: '36px 20px' }}>
+            <EmptyState
+              illustration="career"
+              badge="Clean Slate"
+              title="Build your professional momentum."
+              description="Track job applications, tech stack interviews, and compensation offers in a visual pipeline."
+              action={
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowAppModal(true)}
+                >
+                  <Plus size={15} /> Add your first application
+                </button>
+              }
+            />
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', alignItems: 'start' }}>
           {stages.map((stage) => {
             const appsInStage = careerApplications.filter((a) => a.stage === stage.id);
             return (
@@ -333,6 +364,7 @@ export default function CareerPage() {
             );
           })}
         </div>
+        )
       )}
 
       {/* TAB 2: TECHNICAL SKILLS MATRIX */}

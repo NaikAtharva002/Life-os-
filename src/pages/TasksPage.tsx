@@ -23,6 +23,7 @@ import TaskItem from '../components/TaskItem';
 import TaskModal from '../components/TaskModal';
 import { aiEngine } from '../services/aiEngineClient';
 import { EmptyState } from '../components/ui';
+import ContextualTipBanner from '../components/ContextualTipBanner';
 import type { Task, Priority, TaskStatus } from '../types';
 
 const PRIORITY_ORDER: Record<Priority, number> = {
@@ -288,6 +289,19 @@ export default function TasksPage() {
           </button>
         </div>
       </div>
+
+      {/* Contextual Progressive Guidance Tip */}
+      <ContextualTipBanner
+        tipId="tasks_intro"
+        title="Rule of 3 Focus Triage"
+        description="Anchor your morning by pinning your 3 most critical daily objectives. Press 'N' on your keyboard anytime for instant task capture."
+        actionText="Create Priority Task"
+        onAction={() => {
+          setEditingTask(undefined);
+          setIsModalOpen(true);
+        }}
+        style={{ marginBottom: '14px' }}
+      />
 
       {/* Compact Summary Strip */}
       <div
@@ -611,27 +625,83 @@ export default function TasksPage() {
           {/* Task List */}
           {filteredTasks.length === 0 ? (
             <div className="card" style={{ padding: '32px 20px' }}>
-              <EmptyState
-                illustration="tasks"
-                title="No Tasks in this view"
-                description={
-                  activeTab === 'today'
-                    ? 'All clear for today! Take a breath or schedule a priority item.'
-                    : 'No matching tasks found. Create a new task or adjust your search filter.'
-                }
-                action={
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      setPriorityFilter('all');
-                      setSearchQuery('');
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    <Plus size={15} /> Add Task
-                  </button>
-                }
-              />
+              {tasks.length === 0 ? (
+                <EmptyState
+                  illustration="tasks"
+                  badge="Clean Slate"
+                  title="Your day is open."
+                  description="Organize your day with clear priorities. Set due dates, subtasks, and Eisenhower ratings."
+                  action={
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setPriorityFilter('all');
+                        setCategoryFilter('all');
+                        setSearchQuery('');
+                        setIsModalOpen(true);
+                      }}
+                    >
+                      <Plus size={15} /> Create your first task
+                    </button>
+                  }
+                />
+              ) : searchQuery || priorityFilter !== 'all' || categoryFilter !== 'all' ? (
+                <EmptyState
+                  illustration="tasks"
+                  badge="Filtered Results"
+                  title="No matching tasks found"
+                  description="No tasks match your active search term or category filters."
+                  action={
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setPriorityFilter('all');
+                        setCategoryFilter('all');
+                        setSearchQuery('');
+                      }}
+                    >
+                      Clear all filters
+                    </button>
+                  }
+                  secondaryAction={
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      <Plus size={15} /> New Task
+                    </button>
+                  }
+                />
+              ) : activeTab === 'today' ? (
+                <EmptyState
+                  illustration="tasks"
+                  badge="Today All Clear"
+                  title="All clear for today!"
+                  description="No pending tasks are scheduled for today. Enjoy your evening or schedule an item."
+                  action={
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      <Plus size={15} /> Schedule a task
+                    </button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  illustration="tasks"
+                  title="No tasks in this category"
+                  description="All tasks in this section are complete or archived."
+                  action={
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => setIsModalOpen(true)}
+                    >
+                      <Plus size={15} /> Add Task
+                    </button>
+                  }
+                />
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
