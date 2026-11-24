@@ -37,6 +37,8 @@ export default function DesignSystemPage() {
   const settings = useStore((s) => s.settings);
   const setTheme = useStore((s) => s.setTheme);
   const setActiveView = useStore((s) => s.setActiveView);
+  const designVariant = useStore((s) => s.designVariant);
+  const setDesignVariant = useStore((s) => s.setDesignVariant);
 
   const [activeTab, setActiveTab] = useState<'tokens' | 'components' | 'patterns'>('tokens');
   const [testModalOpen, setTestModalOpen] = useState(false);
@@ -119,6 +121,75 @@ export default function DesignSystemPage() {
           >
             Return to Dashboard
           </Button>
+        </div>
+      </div>
+
+      {/* 3-Variant Live Showdown Banner inside Design System Gallery */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 18px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-default)',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Sparkles size={16} color="var(--palette-brick)" />
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+              Active Design Language:{' '}
+              <span style={{ color: 'var(--palette-brick)', fontWeight: 700 }}>
+                {designVariant === 'agent'
+                  ? '1. Antigravity Editorial'
+                  : designVariant === 'taste'
+                  ? '2. Taste-Skill Craft'
+                  : '3. Impeccable Precision'}
+              </span>
+            </div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Switching morphs all buttons, cards, typography, radii, and micro-interactions in real-time.
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            gap: '6px',
+            background: 'var(--bg-elevated)',
+            padding: '3px',
+            borderRadius: '10px',
+            border: '1px solid var(--border-default)'
+          }}
+        >
+          {[
+            { id: 'agent', label: '1. Antigravity', icon: '🏛️' },
+            { id: 'taste', label: '2. Taste-Skill', icon: '✨' },
+            { id: 'impeccable', label: '3. Impeccable', icon: '📐' }
+          ].map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setDesignVariant(v.id as any)}
+              className="btn btn-sm"
+              style={{
+                fontSize: '11px',
+                padding: '4px 10px',
+                background: designVariant === v.id ? 'var(--palette-brick)' : 'transparent',
+                color: designVariant === v.id ? '#ffffff' : 'var(--text-secondary)',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: designVariant === v.id ? 700 : 500,
+                cursor: 'pointer'
+              }}
+            >
+              <span>{v.icon}</span> {v.label}
+            </button>
+          ))}
         </div>
       </div>
 

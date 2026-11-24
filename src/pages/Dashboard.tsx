@@ -237,7 +237,7 @@ export default function Dashboard() {
                 {todayFormatted}
               </span>
               <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.3)' }} />
-              <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: 500 }}>
+              <span style={{ fontSize: '11px', color: 'var(--palette-silver)', fontWeight: 500 }}>
                 Local-First Ecosystem
               </span>
             </div>
@@ -247,7 +247,7 @@ export default function Dashboard() {
               style={{
                 fontSize: '38px',
                 fontWeight: 500,
-                color: '#ffffff',
+                color: 'var(--text-on-accent)',
                 margin: '0 0 10px 0',
                 letterSpacing: '-0.02em',
                 lineHeight: 1.15,
@@ -262,7 +262,7 @@ export default function Dashboard() {
               style={{
                 fontSize: '16px',
                 fontStyle: 'italic',
-                color: '#d1fae5',
+                color: 'var(--text-on-accent)',
                 lineHeight: 1.6,
                 margin: '0 0 16px 0',
                 opacity: 0.95,
@@ -271,7 +271,7 @@ export default function Dashboard() {
               }}
             >
               "{dailyQuote.text}"
-              <span style={{ display: 'block', fontSize: '12px', fontStyle: 'normal', color: '#9cb1a5', marginTop: '4px' }}>
+              <span style={{ display: 'block', fontSize: '12px', fontStyle: 'normal', color: 'var(--palette-silver)', marginTop: '4px' }}>
                 — {dailyQuote.author}
               </span>
             </p>
@@ -309,7 +309,7 @@ export default function Dashboard() {
                   }}
                 >
                   <AlertTriangle size={14} color="var(--status-danger)" />
-                  <span style={{ fontSize: '12.5px', color: '#fca5a5' }}>
+                  <span style={{ fontSize: '12.5px', color: 'var(--status-danger)' }}>
                     <strong className="tabular">{overdueTasks.length}</strong> overdue pending
                   </span>
                 </div>
@@ -339,7 +339,7 @@ export default function Dashboard() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '10px' }}>
-              <span className="tabular font-editorial" style={{ fontSize: '36px', fontWeight: 600, color: '#ffffff' }}>
+              <span className="tabular font-editorial" style={{ fontSize: '36px', fontWeight: 600, color: 'var(--text-on-accent)' }}>
                 {dailyProgress}%
               </span>
               <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>completed</span>
@@ -422,14 +422,14 @@ export default function Dashboard() {
                 fontSize: '56px',
                 fontWeight: 600,
                 letterSpacing: '-0.02em',
-                color: '#ffffff',
+                color: 'var(--text-on-accent)',
                 textShadow: '0 4px 16px rgba(0,0,0,0.6)',
                 lineHeight: 1,
               }}
             >
               {formatTimer(timerSeconds)}
             </div>
-            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '6px' }}>
+            <div style={{ fontSize: '12px', color: 'var(--palette-silver)', marginTop: '6px' }}>
               {isTimerRunning ? 'Pines & Alpine Stream · Focus block active' : 'Ready to start deep work cadence'}
             </div>
           </div>
@@ -770,7 +770,7 @@ export default function Dashboard() {
                       gap: '4px',
                       fontSize: '11px',
                       fontWeight: 600,
-                      color: '#fef08a',
+                      color: 'var(--status-warning)',
                       background: 'rgba(20, 19, 1, 0.82)',
                       padding: '2px 8px',
                       borderRadius: '12px',
@@ -807,7 +807,7 @@ export default function Dashboard() {
                       borderRadius: '50%',
                       border: isDone ? 'none' : '1px solid var(--border-default)',
                       background: isDone ? 'var(--accent-primary)' : 'var(--bg-elevated)',
-                      color: isDone ? '#FFFFFF' : 'var(--text-muted)',
+                      color: isDone ? 'var(--text-on-accent)' : 'var(--text-muted)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
