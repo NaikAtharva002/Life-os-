@@ -35,6 +35,11 @@ import type {
   TaskStatus,
   TaskRecurrence,
   TaskRecurrenceConfig,
+  LifeArea,
+  GoalStatus,
+  GoalMeasurementType,
+  Milestone,
+  GoalActivityEvent,
 } from '../types';
 
 interface StoreState {
@@ -43,10 +48,20 @@ interface StoreState {
 
   // 1. Goals
   goals: Goal[];
-  addGoal: (goal: Omit<Goal, 'id' | 'createdAt' | 'updatedAt' | 'progress' | 'isArchived'> & { progress?: number; milestones?: Goal['milestones']; type?: Goal['type']; category?: string; coverImage?: string }) => Promise<void>;
+  addGoal: (goal: Partial<Goal> & { title: string; priority: Priority }) => Promise<Goal>;
   updateGoal: (id: string, updates: Partial<Goal>) => Promise<void>;
   deleteGoal: (id: string) => Promise<void>;
   toggleMilestone: (goalId: string, milestoneId: string) => Promise<void>;
+  addMilestone: (goalId: string, milestone: Omit<Milestone, 'id' | 'isCompleted'>) => Promise<void>;
+  updateMilestone: (goalId: string, milestoneId: string, updates: Partial<Milestone>) => Promise<void>;
+  deleteMilestone: (goalId: string, milestoneId: string) => Promise<void>;
+  reorderMilestones: (goalId: string, milestoneIds: string[]) => Promise<void>;
+  setGoalStatus: (goalId: string, status: GoalStatus, isOverride?: boolean) => Promise<void>;
+  archiveGoal: (goalId: string) => Promise<void>;
+  unarchiveGoal: (goalId: string) => Promise<void>;
+  updateGoalProgress: (goalId: string, currentValueOrPercent: number) => Promise<void>;
+  linkTaskToGoal: (taskId: string, goalId: string, milestoneId?: string) => Promise<void>;
+  unlinkTaskFromGoal: (taskId: string) => Promise<void>;
 
   // 2. Tasks
   tasks: Task[];
@@ -232,6 +247,133 @@ export function computeNextDueDate(
   return next.toISOString().split('T')[0];
 }
 
+// ---------------------------------------------------------------------------
+// GOAL PROGRESS & LIFECYCLE ENGINE HELPERS
+// ---------------------------------------------------------------------------
+export function computeGoalProgress(
+  goal: Partial<Goal>,
+  relatedTasks: Task[] = [],
+  habitEntries: HabitEntry[] = []
+): number {
+  if (goal.progressCalculationMode === 'manual' && typeof goal.manualProgress === 'number') {
+    return Math.min(100, Math.max(0, Math.round(goal.manualProgress)));
+  }
+
+  const measurementType =
+    goal.measurementType ||
+    (goal.milestones && goal.milestones.length > 0 ? 'milestone-based' : 'numeric');
+
+  if (measurementType === 'numeric') {
+    if (typeof goal.targetValue === 'number' && goal.targetValue > 0) {
+      const current = goal.currentValue || 0;
+      return Math.min(100, Math.max(0, Math.round((current / goal.targetValue) * 100)));
+    }
+  }
+
+  if (measurementType === 'milestone-based') {
+    if (goal.milestones && goal.milestones.length > 0) {
+      const completed = goal.milestones.filter((m) => m.isCompleted).length;
+      return Math.round((completed / goal.milestones.length) * 100);
+    }
+  }
+
+  if (measurementType === 'completion') {
+    if (goal.status === 'completed') return 100;
+    if (relatedTasks.length > 0) {
+      const completedTasks = relatedTasks.filter((t) => t.isCompleted).length;
+      return Math.round((completedTasks / relatedTasks.length) * 100);
+    }
+    if (goal.milestones && goal.milestones.length > 0) {
+      const completed = goal.milestones.filter((m) => m.isCompleted).length;
+      return Math.round((completed / goal.milestones.length) * 100);
+    }
+  }
+
+  if (measurementType === 'habit-based') {
+    if (goal.linkedHabitIds && goal.linkedHabitIds.length > 0) {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const startStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+      const relevantEntries = habitEntries.filter(
+        (e) => goal.linkedHabitIds!.includes(e.habitId) && e.date >= startStr
+      );
+      if (relevantEntries.length > 0) {
+        const completed = relevantEntries.filter((e) => e.completed).length;
+        return Math.round((completed / relevantEntries.length) * 100);
+      }
+    }
+  }
+
+  return Math.min(100, Math.max(0, Math.round(goal.progress || 0)));
+}
+
+export function computeGoalStatus(
+  goal: Partial<Goal>,
+  progress: number
+): GoalStatus {
+  if (goal.status === 'paused' || goal.status === 'abandoned') {
+    return goal.status;
+  }
+  if (goal.statusOverride && goal.status) {
+    return goal.status;
+  }
+
+  if (progress >= 100) {
+    return 'completed';
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+
+  if (goal.targetDate && goal.targetDate < today && progress < 100) {
+    return 'at-risk';
+  }
+
+  if (goal.milestones && goal.milestones.some((m) => !m.isCompleted && m.dueDate && m.dueDate < today)) {
+    return 'at-risk';
+  }
+
+  if (goal.startDate && goal.targetDate && goal.startDate < goal.targetDate) {
+    const startMs = new Date(goal.startDate).getTime();
+    const endMs = new Date(goal.targetDate).getTime();
+    const nowMs = Date.now();
+    const totalDuration = endMs - startMs;
+    const elapsed = nowMs - startMs;
+
+    if (totalDuration > 0 && elapsed > 0) {
+      const elapsedRatio = elapsed / totalDuration;
+      if (elapsedRatio > 0.5 && progress < 25) {
+        return 'at-risk';
+      }
+      if (elapsedRatio > 0.75 && progress < 50) {
+        return 'at-risk';
+      }
+    }
+  }
+
+  if (progress > 0) {
+    return 'on-track';
+  }
+
+  return 'not-started';
+}
+
+export function createActivityEvent(
+  goalId: string,
+  type: GoalActivityEvent['type'],
+  description: string,
+  metadata?: Record<string, any>
+): GoalActivityEvent {
+  return {
+    id: uuidv4(),
+    goalId,
+    type,
+    description,
+    timestamp: new Date().toISOString(),
+    metadata,
+  };
+}
+
 export const useStore = create<StoreState>((set, get) => ({
   isLoaded: false,
   activeView: 'dashboard',
@@ -341,82 +483,469 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   // ----------------------------------------------------
-  // GOALS
+  // GOALS (Goals 2.0 Engine)
   // ----------------------------------------------------
   addGoal: async (goalData) => {
     const now = new Date().toISOString();
+    const id = uuidv4();
+    const initialMilestones: Milestone[] = (goalData.milestones || []).map((m, idx) => ({
+      ...m,
+      id: m.id || uuidv4(),
+      order: m.order ?? idx,
+      isCompleted: m.isCompleted ?? false,
+    }));
+
+    const partialGoal: Partial<Goal> = {
+      ...goalData,
+      id,
+      milestones: initialMilestones,
+    };
+
+    const initialProgress = computeGoalProgress(partialGoal, [], get().habitEntries);
+    const initialStatus = goalData.status || computeGoalStatus(partialGoal, initialProgress);
+
+    const initialActivity: GoalActivityEvent = createActivityEvent(
+      id,
+      'created',
+      `Goal "${goalData.title}" established.`
+    );
+
     const newGoal: Goal = {
+      id,
       title: goalData.title,
       description: goalData.description || '',
       priority: goalData.priority,
       type: goalData.type || 'short-term',
       category: goalData.category || 'General',
+      lifeArea: goalData.lifeArea || 'personal',
+      startDate: goalData.startDate,
       targetDate: goalData.targetDate,
-      id: uuidv4(),
-      progress: goalData.progress ?? 0,
+      status: initialStatus,
+      statusOverride: goalData.statusOverride ?? false,
+      measurementType:
+        goalData.measurementType ||
+        (initialMilestones.length > 0 ? 'milestone-based' : 'numeric'),
+      targetValue: goalData.targetValue,
+      currentValue: goalData.currentValue ?? 0,
+      unit: goalData.unit,
+      progress: initialProgress,
+      progressCalculationMode: goalData.progressCalculationMode || 'automatic',
+      manualProgress: goalData.manualProgress,
       isArchived: false,
-      milestones: goalData.milestones || [],
+      milestones: initialMilestones,
+      linkedHabitIds: goalData.linkedHabitIds || [],
       coverImage: goalData.coverImage,
+      tags: goalData.tags || [],
+      notes: goalData.notes,
+      whyItMatters: goalData.whyItMatters,
+      desiredOutcome: goalData.desiredOutcome,
+      nextAction: goalData.nextAction,
+      obstacles: goalData.obstacles,
+      activityHistory: [initialActivity],
       createdAt: now,
       updatedAt: now,
     };
+
     set((s) => ({ goals: [newGoal, ...s.goals] }));
     await LifeOSRepository.saveGoal(newGoal);
+    return newGoal;
   },
 
   updateGoal: async (id, updates) => {
     const now = new Date().toISOString();
     let updatedGoal: Goal | undefined;
-    set((s) => ({
-      goals: s.goals.map((g) => {
-        if (g.id === id) {
-          updatedGoal = { ...g, ...updates, updatedAt: now };
-          return updatedGoal;
-        }
-        return g;
-      }),
-    }));
-    if (updatedGoal) {
-      await LifeOSRepository.saveGoal(updatedGoal);
+    const currentGoal = get().goals.find((g) => g.id === id);
+    if (!currentGoal) return;
+
+    const newEvents: GoalActivityEvent[] = [];
+    if (updates.targetDate && updates.targetDate !== currentGoal.targetDate) {
+      newEvents.push(createActivityEvent(id, 'deadline_changed', `Deadline moved to ${updates.targetDate}`));
     }
+    if (updates.status && updates.status !== currentGoal.status) {
+      newEvents.push(createActivityEvent(id, 'status_changed', `Status transitioned to ${updates.status}`));
+    }
+    if (typeof updates.targetValue === 'number' && updates.targetValue !== currentGoal.targetValue) {
+      newEvents.push(createActivityEvent(id, 'target_changed', `Target value updated to ${updates.targetValue} ${currentGoal.unit || ''}`));
+    }
+    if (typeof updates.currentValue === 'number' && updates.currentValue !== currentGoal.currentValue) {
+      newEvents.push(createActivityEvent(id, 'progress_updated', `Current value progressed to ${updates.currentValue} ${currentGoal.unit || ''}`));
+    }
+
+    const merged: Goal = {
+      ...currentGoal,
+      ...updates,
+      updatedAt: now,
+      activityHistory: [
+        ...newEvents,
+        ...(currentGoal.activityHistory || []),
+      ].slice(0, 50),
+    };
+
+    const relatedTasks = get().tasks.filter((t) => t.goalId === id && !t.isArchived);
+    if (updates.progress === undefined) {
+      merged.progress = computeGoalProgress(merged, relatedTasks, get().habitEntries);
+    }
+    if (updates.status === undefined && !merged.statusOverride) {
+      merged.status = computeGoalStatus(merged, merged.progress);
+    }
+    if (merged.progress >= 100 && !merged.completedAt) {
+      merged.completedAt = now;
+      merged.activityHistory = [
+        createActivityEvent(id, 'completed', `Goal "${merged.title}" completed!`),
+        ...(merged.activityHistory || []),
+      ];
+    }
+
+    updatedGoal = merged;
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === id ? updatedGoal! : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
   },
 
   deleteGoal: async (id) => {
-    set((s) => ({ goals: s.goals.filter((g) => g.id !== id) }));
+    set((s) => ({
+      goals: s.goals.filter((g) => g.id !== id),
+      tasks: s.tasks.map((t) => (t.goalId === id ? { ...t, goalId: undefined, milestoneId: undefined } : t)),
+    }));
     await LifeOSRepository.deleteGoal(id);
   },
 
   toggleMilestone: async (goalId, milestoneId) => {
     const now = new Date().toISOString();
-    let updatedGoal: Goal | undefined;
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    let toggledTitle = '';
+    let becameCompleted = false;
+
+    const milestones = currentGoal.milestones.map((m) => {
+      if (m.id !== milestoneId) return m;
+      toggledTitle = m.title;
+      becameCompleted = !m.isCompleted;
+      return {
+        ...m,
+        isCompleted: !m.isCompleted,
+        completedAt: !m.isCompleted ? now : undefined,
+      };
+    });
+
+    const eventDesc = becameCompleted
+      ? `Completed milestone: "${toggledTitle}"`
+      : `Reopened milestone: "${toggledTitle}"`;
+    const milestoneEvent = createActivityEvent(goalId, 'milestone_completed', eventDesc);
+
+    const partialGoal: Goal = {
+      ...currentGoal,
+      milestones,
+      activityHistory: [milestoneEvent, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    const relatedTasks = get().tasks.filter((t) => t.goalId === goalId && !t.isArchived);
+    const progress = computeGoalProgress(partialGoal, relatedTasks, get().habitEntries);
+    const status = currentGoal.statusOverride ? currentGoal.status : computeGoalStatus(partialGoal, progress);
+
+    const updatedGoal: Goal = {
+      ...partialGoal,
+      progress,
+      status,
+      completedAt: progress >= 100 ? currentGoal.completedAt || now : undefined,
+    };
+
     set((s) => ({
-      goals: s.goals.map((g) => {
-        if (g.id !== goalId) return g;
-        const milestones = g.milestones.map((m) =>
-          m.id === milestoneId ? { ...m, isCompleted: !m.isCompleted } : m
-        );
-        const completedCount = milestones.filter((m) => m.isCompleted).length;
-        const progress = milestones.length > 0 ? Math.round((completedCount / milestones.length) * 100) : g.progress;
-        updatedGoal = {
-          ...g,
-          milestones,
-          progress,
-          updatedAt: now,
-        };
-        return updatedGoal;
-      }),
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
     }));
-    if (updatedGoal) {
-      await LifeOSRepository.saveGoal(updatedGoal);
-      const isMilestoneCompleted = updatedGoal.milestones.find((m) => m.id === milestoneId)?.isCompleted;
-      if (isMilestoneCompleted) {
-        get().addToast({
-          type: 'success',
-          title: 'Milestone Completed!',
-          message: `${updatedGoal.title} progress updated to ${updatedGoal.progress}%.`
-        });
-      }
+    await LifeOSRepository.saveGoal(updatedGoal);
+
+    if (becameCompleted) {
+      get().addToast({
+        type: 'success',
+        title: 'Milestone Completed!',
+        message: `${updatedGoal.title} progress updated to ${updatedGoal.progress}%.`,
+      });
     }
+  },
+
+  addMilestone: async (goalId, milestoneData) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    const newMilestone: Milestone = {
+      id: uuidv4(),
+      title: milestoneData.title,
+      description: milestoneData.description,
+      dueDate: milestoneData.dueDate,
+      isCompleted: false,
+      order: currentGoal.milestones.length,
+      targetValue: milestoneData.targetValue,
+      currentValue: milestoneData.currentValue,
+      unit: milestoneData.unit,
+    };
+
+    const milestones = [...currentGoal.milestones, newMilestone];
+    const addEvent = createActivityEvent(goalId, 'milestone_added', `Added milestone: "${newMilestone.title}"`);
+
+    const partialGoal: Goal = {
+      ...currentGoal,
+      milestones,
+      activityHistory: [addEvent, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    const relatedTasks = get().tasks.filter((t) => t.goalId === goalId && !t.isArchived);
+    const progress = computeGoalProgress(partialGoal, relatedTasks, get().habitEntries);
+    const status = currentGoal.statusOverride ? currentGoal.status : computeGoalStatus(partialGoal, progress);
+
+    const updatedGoal: Goal = {
+      ...partialGoal,
+      progress,
+      status,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  updateMilestone: async (goalId, milestoneId, updates) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    const milestones = currentGoal.milestones.map((m) =>
+      m.id === milestoneId ? { ...m, ...updates } : m
+    );
+
+    const partialGoal: Goal = {
+      ...currentGoal,
+      milestones,
+      updatedAt: now,
+    };
+
+    const relatedTasks = get().tasks.filter((t) => t.goalId === goalId && !t.isArchived);
+    const progress = computeGoalProgress(partialGoal, relatedTasks, get().habitEntries);
+    const status = currentGoal.statusOverride ? currentGoal.status : computeGoalStatus(partialGoal, progress);
+
+    const updatedGoal: Goal = {
+      ...partialGoal,
+      progress,
+      status,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  deleteMilestone: async (goalId, milestoneId) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    const deleted = currentGoal.milestones.find((m) => m.id === milestoneId);
+    const milestones = currentGoal.milestones.filter((m) => m.id !== milestoneId);
+    const deleteEvent = createActivityEvent(
+      goalId,
+      'progress_updated',
+      `Deleted milestone: "${deleted?.title || milestoneId}"`
+    );
+
+    const partialGoal: Goal = {
+      ...currentGoal,
+      milestones,
+      activityHistory: [deleteEvent, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    const relatedTasks = get().tasks.filter((t) => t.goalId === goalId && !t.isArchived);
+    const progress = computeGoalProgress(partialGoal, relatedTasks, get().habitEntries);
+    const status = currentGoal.statusOverride ? currentGoal.status : computeGoalStatus(partialGoal, progress);
+
+    const updatedGoal: Goal = {
+      ...partialGoal,
+      progress,
+      status,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  reorderMilestones: async (goalId, milestoneIds) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    const map = new Map(currentGoal.milestones.map((m) => [m.id, m]));
+    const reordered: Milestone[] = [];
+    milestoneIds.forEach((id, idx) => {
+      const m = map.get(id);
+      if (m) {
+        reordered.push({ ...m, order: idx });
+      }
+    });
+
+    const updatedGoal: Goal = {
+      ...currentGoal,
+      milestones: reordered,
+      updatedAt: now,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  setGoalStatus: async (goalId, status, isOverride = true) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    let eventType: GoalActivityEvent['type'] = 'status_changed';
+    let msg = `Status updated to ${status}`;
+    if (status === 'paused') {
+      eventType = 'paused';
+      msg = `Goal "${currentGoal.title}" paused.`;
+    } else if (status === 'in-progress' && currentGoal.status === 'paused') {
+      eventType = 'resumed';
+      msg = `Goal "${currentGoal.title}" resumed.`;
+    } else if (status === 'completed') {
+      eventType = 'completed';
+      msg = `Goal "${currentGoal.title}" marked as completed.`;
+    }
+
+    const statusEvent = createActivityEvent(goalId, eventType, msg);
+    const updatedGoal: Goal = {
+      ...currentGoal,
+      status,
+      statusOverride: isOverride,
+      completedAt: status === 'completed' ? now : undefined,
+      activityHistory: [statusEvent, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  archiveGoal: async (goalId) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    const event = createActivityEvent(goalId, 'archived', `Goal "${currentGoal.title}" archived.`);
+    const updatedGoal: Goal = {
+      ...currentGoal,
+      isArchived: true,
+      activityHistory: [event, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  unarchiveGoal: async (goalId) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    const event = createActivityEvent(goalId, 'resumed', `Goal "${currentGoal.title}" restored from archive.`);
+    const updatedGoal: Goal = {
+      ...currentGoal,
+      isArchived: false,
+      activityHistory: [event, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  updateGoalProgress: async (goalId, currentValueOrPercent) => {
+    const now = new Date().toISOString();
+    const currentGoal = get().goals.find((g) => g.id === goalId);
+    if (!currentGoal) return;
+
+    let updates: Partial<Goal> = {};
+    if (currentGoal.measurementType === 'numeric') {
+      const newCurrent = currentValueOrPercent;
+      const targetVal = currentGoal.targetValue || 1;
+      const pct = Math.min(100, Math.max(0, Math.round((newCurrent / targetVal) * 100)));
+      updates = {
+        currentValue: newCurrent,
+        progress: pct,
+      };
+    } else {
+      const pct = Math.min(100, Math.max(0, Math.round(currentValueOrPercent)));
+      updates = {
+        progress: pct,
+        manualProgress: pct,
+        progressCalculationMode: 'manual',
+      };
+    }
+
+    const event = createActivityEvent(
+      goalId,
+      'progress_updated',
+      `Progress updated to ${updates.progress}%${currentGoal.unit && updates.currentValue !== undefined ? ` (${updates.currentValue} ${currentGoal.unit})` : ''}`
+    );
+
+    const updatedGoal: Goal = {
+      ...currentGoal,
+      ...updates,
+      activityHistory: [event, ...(currentGoal.activityHistory || [])].slice(0, 50),
+      updatedAt: now,
+    };
+
+    if (!updatedGoal.statusOverride) {
+      updatedGoal.status = computeGoalStatus(updatedGoal, updatedGoal.progress);
+    }
+    if (updatedGoal.progress >= 100 && !updatedGoal.completedAt) {
+      updatedGoal.completedAt = now;
+    }
+
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === goalId ? updatedGoal : g)),
+    }));
+    await LifeOSRepository.saveGoal(updatedGoal);
+  },
+
+  linkTaskToGoal: async (taskId, goalId, milestoneId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    await get().updateTask(taskId, { goalId, milestoneId });
+    const goal = get().goals.find((g) => g.id === goalId);
+    if (goal) {
+      const event = createActivityEvent(
+        goalId,
+        'task_linked',
+        `Linked task "${task.title}"${milestoneId ? ' to milestone' : ''}.`
+      );
+      await get().updateGoal(goalId, {
+        activityHistory: [event, ...(goal.activityHistory || [])].slice(0, 50),
+      });
+    }
+  },
+
+  unlinkTaskFromGoal: async (taskId) => {
+    const task = get().tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    await get().updateTask(taskId, { goalId: undefined, milestoneId: undefined });
   },
 
   // ----------------------------------------------------
@@ -566,6 +1095,17 @@ export const useStore = create<StoreState>((set, get) => ({
             : `"${updatedTask.title}" marked done.`,
         });
       }
+
+      if (updatedTask.goalId) {
+        const goal = get().goals.find((g) => g.id === updatedTask!.goalId);
+        if (goal && (goal.measurementType === 'completion' || !goal.measurementType)) {
+          const goalTasks = get().tasks.filter((t) => t.goalId === goal.id && !t.isArchived);
+          const completedCount = goalTasks.filter((t) => t.isCompleted).length;
+          const newProgress = goalTasks.length > 0 ? Math.round((completedCount / goalTasks.length) * 100) : goal.progress;
+          const newStatus = computeGoalStatus(goal, newProgress);
+          await get().updateGoal(goal.id, { progress: newProgress, status: newStatus });
+        }
+      }
     }
   },
 
@@ -594,6 +1134,17 @@ export const useStore = create<StoreState>((set, get) => ({
         title: 'Task Reopened',
         message: `"${updatedTask.title}" moved back to active to-do.`,
       });
+
+      if (updatedTask.goalId) {
+        const goal = get().goals.find((g) => g.id === updatedTask!.goalId);
+        if (goal && (goal.measurementType === 'completion' || !goal.measurementType)) {
+          const goalTasks = get().tasks.filter((t) => t.goalId === goal.id && !t.isArchived);
+          const completedCount = goalTasks.filter((t) => t.isCompleted).length;
+          const newProgress = goalTasks.length > 0 ? Math.round((completedCount / goalTasks.length) * 100) : goal.progress;
+          const newStatus = computeGoalStatus(goal, newProgress);
+          await get().updateGoal(goal.id, { progress: newProgress, status: newStatus });
+        }
+      }
     }
   },
 

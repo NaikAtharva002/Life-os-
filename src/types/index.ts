@@ -31,11 +31,64 @@ export interface TaskRecurrenceConfig {
 // ==========================================
 // 1. GOALS MANAGEMENT
 // ==========================================
+export type LifeArea =
+  | 'personal'
+  | 'academic'
+  | 'career'
+  | 'finance'
+  | 'fitness'
+  | 'relationships'
+  | 'learning'
+  | 'lifestyle'
+  | 'custom';
+
+export type GoalStatus =
+  | 'not-started'
+  | 'in-progress'
+  | 'on-track'
+  | 'at-risk'
+  | 'completed'
+  | 'paused'
+  | 'abandoned';
+
+export type GoalMeasurementType =
+  | 'numeric'
+  | 'completion'
+  | 'habit-based'
+  | 'milestone-based';
+
 export interface Milestone {
   id: string;
   title: string;
-  isCompleted: boolean;
+  description?: string;
   dueDate?: string;
+  isCompleted: boolean;
+  completedAt?: string;
+  order?: number;
+  targetValue?: number;
+  currentValue?: number;
+  unit?: string;
+}
+
+export interface GoalActivityEvent {
+  id: string;
+  goalId: string;
+  type:
+    | 'created'
+    | 'target_changed'
+    | 'progress_updated'
+    | 'milestone_completed'
+    | 'milestone_added'
+    | 'task_linked'
+    | 'deadline_changed'
+    | 'status_changed'
+    | 'paused'
+    | 'resumed'
+    | 'completed'
+    | 'archived';
+  description: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Goal {
@@ -45,11 +98,28 @@ export interface Goal {
   priority: Priority;
   type: GoalType;
   category: string;
+  lifeArea?: LifeArea;
+  startDate?: string;
   targetDate?: string;
+  status?: GoalStatus;
+  statusOverride?: boolean;
+  measurementType?: GoalMeasurementType;
+  targetValue?: number;
+  currentValue?: number;
+  unit?: string;
   progress: number; // 0-100
+  progressCalculationMode?: 'automatic' | 'manual';
+  manualProgress?: number;
   milestones: Milestone[];
   linkedHabitIds?: string[];
   coverImage?: string;
+  tags?: string[];
+  notes?: string;
+  whyItMatters?: string;
+  desiredOutcome?: string;
+  nextAction?: string;
+  obstacles?: string;
+  activityHistory?: GoalActivityEvent[];
   createdAt: string;
   updatedAt: string;
   isArchived: boolean;
@@ -89,6 +159,7 @@ export interface Task {
   isArchived?: boolean;
   order?: number;
   goalId?: string;
+  milestoneId?: string;
   academicSubjectId?: string;
   careerProjectId?: string;
   rescheduled?: boolean;

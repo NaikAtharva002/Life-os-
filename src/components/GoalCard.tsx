@@ -17,6 +17,7 @@ interface GoalCardProps {
   goal: Goal;
   onEdit?: (goal?: Goal) => void;
   onDelete?: (id?: string) => void;
+  onOpenDetails?: (goal: Goal) => void;
 }
 
 const PRIORITY_CONFIG: Record<
@@ -45,7 +46,7 @@ const PRIORITY_CONFIG: Record<
   },
 };
 
-export default function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
+export default function GoalCard({ goal, onEdit, onDelete, onOpenDetails }: GoalCardProps) {
   const updateGoal = useStore((s) => s.updateGoal);
   const [showMilestones, setShowMilestones] = useState(false);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState('');
@@ -213,6 +214,16 @@ export default function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
 
         {/* Actions */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {onOpenDetails && (
+            <button
+              onClick={() => onOpenDetails(goal)}
+              className="btn btn-ghost btn-sm"
+              style={{ padding: '3px', color: 'var(--palette-brick)' }}
+              title="Inspect roadmap & details"
+            >
+              <TrendingUp size={12} />
+            </button>
+          )}
           {onEdit && (
             <button
               onClick={() => onEdit(goal)}
