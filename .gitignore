@@ -38,6 +38,7 @@ playwright-report/
 test-results/
 view-*.png
 *.png
+!android/app/src/main/res/**/*.png
 .pytest_cache/
 
 # Python virtual environment & cache
