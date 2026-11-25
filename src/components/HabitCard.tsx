@@ -1,8 +1,9 @@
-import React from 'react';
+﻿import React from 'react';
 import { Award, Check, Edit2, Trash2, Flame, Shield } from 'lucide-react';
 import type { Habit } from '../types';
 import useStore, { isHabitScheduledOnDate } from '../store/useStore';
 import { todayLocal, toLocalDateString } from '../lib/dates';
+import { HabitIcon } from './ui';
 
 interface HabitCardProps {
   habit: Habit;
@@ -63,7 +64,9 @@ export default function HabitCard({ habit, onEdit, onDelete, onOpenDetail }: Hab
       {/* Top Header: Name + Actions */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '18px' }}>{habit.icon || '⚡'}</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-primary)' }}>
+            <HabitIcon icon={habit.icon} size={18} />
+          </span>
           <div>
             <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text-primary)' }}>
               {habit.name}
@@ -100,7 +103,7 @@ export default function HabitCard({ habit, onEdit, onDelete, onOpenDetail }: Hab
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Flame size={13} color="#B80C09" />
+          <Flame size={13} color="var(--accent-secondary)" />
           <span style={{ color: 'var(--text-muted)' }}>Streak:</span>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)' }} className="tabular">
             {habit.streak || 0} days

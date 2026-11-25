@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
 import { todayLocal } from '../lib/dates';
 import {
@@ -250,7 +250,7 @@ export default function FitnessPage() {
             <button
               onClick={() => setShowMetricModal(true)}
               className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', background: 'rgba(9, 9, 11, 0.82)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
             >
               <Scale size={15} /> Log Weight
             </button>

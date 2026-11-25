@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   Bell,
   Clock,
@@ -52,7 +52,7 @@ export default function SettingsPage() {
   const purgeSeedData = useStore((s) => s.purgeSeedData);
 
   const [userName, setUserName] = useState(settings.userName || '');
-  const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol || '$');
+  const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol || '₹');
   const [geminiApiKey, setGeminiApiKey] = useState(settings.geminiApiKey || '');
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
 
@@ -70,7 +70,7 @@ export default function SettingsPage() {
     setReminderEnabled(settings.reminder.enabled);
     setReminderTime(settings.reminder.time || '21:30');
     setUserName(settings.userName || '');
-    setCurrencySymbol(settings.currencySymbol || '$');
+    setCurrencySymbol(settings.currencySymbol || '₹');
     setGeminiApiKey(settings.geminiApiKey || '');
   }, [settings]);
 
@@ -78,7 +78,7 @@ export default function SettingsPage() {
     e.preventDefault();
     await updateSettings({
       userName: userName.trim(),
-      currencySymbol: currencySymbol.trim() || '$',
+      currencySymbol: currencySymbol.trim() || '₹',
       geminiApiKey: geminiApiKey.trim() || undefined,
     });
     setStatusMessage('Profile and AI preferences saved successfully!');
@@ -236,11 +236,11 @@ export default function SettingsPage() {
                   padding: '10px 14px',
                   borderRadius: '8px',
                   background: isActive ? 'var(--bg-elevated)' : 'var(--bg-subtle)',
-                  border: isActive ? '1px solid var(--accent-primary, #E32620)' : '1px solid var(--border-default)',
+                  border: isActive ? '1px solid var(--accent-primary)' : '1px solid var(--border-default)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Layers size={16} color={isActive ? 'var(--accent-primary, #E32620)' : 'var(--text-muted)'} />
+                  <Layers size={16} color={isActive ? 'var(--accent-primary)' : 'var(--text-muted)'} />
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
                       {ws.name}
@@ -250,7 +250,7 @@ export default function SettingsPage() {
                         </span>
                       )}
                       {isActive && (
-                        <span style={{ fontSize: '10px', background: 'var(--accent-primary, #E32620)', color: '#FFFFFF', padding: '1px 6px', borderRadius: '4px', marginLeft: '6px', fontWeight: 700 }}>
+                        <span style={{ fontSize: '10px', background: 'var(--accent-primary)', color: '#FFFFFF', padding: '1px 6px', borderRadius: '4px', marginLeft: '6px', fontWeight: 700 }}>
                           ACTIVE
                         </span>
                       )}
@@ -272,7 +272,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleDeleteWorkspace(ws.id, ws.name)}
                       className="btn btn-ghost"
-                      style={{ padding: '4px', color: 'var(--status-danger, #E45B52)' }}
+                      style={{ padding: '4px', color: 'var(--status-danger)' }}
                       title="Delete workspace"
                     >
                       <Trash2 size={14} />
@@ -430,7 +430,7 @@ export default function SettingsPage() {
               gap: '8px',
             }}
           >
-            <Moon size={14} color="var(--accent-primary)" /> Dark Theme (Espresso Dark &amp; Crimson)
+            <Moon size={14} color="var(--accent-primary)" /> Obsidian Studio (Dark)
           </button>
           <button
             onClick={() => setTheme('light')}
@@ -448,7 +448,7 @@ export default function SettingsPage() {
               gap: '8px',
             }}
           >
-            <Sun size={14} color="var(--status-warning)" /> Light Theme (Alabaster &amp; Brick Ember)
+            <Sun size={14} color="var(--status-warning)" /> Paper &amp; Ink Studio (Light)
           </button>
         </div>
       </div>
@@ -464,13 +464,13 @@ export default function SettingsPage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
           {[
-            { key: 'focusTimer', label: 'Photographic Focus Timer' },
-            { key: 'todayTasks', label: 'Today Action Triage' },
-            { key: 'goals', label: 'Long-Term Vision Goals' },
-            { key: 'habits', label: 'Daily Habit Rituals' },
-            { key: 'academics', label: 'Academic & Schedule Radar' },
-            { key: 'finance', label: 'Financial Velocity' },
-            { key: 'fitness', label: 'Physical Conditioning' },
+            { key: 'focusTimer', label: 'Focus Sprint Timer' },
+            { key: 'todayTasks', label: 'Today Action Queue' },
+            { key: 'goals', label: 'Active Goals' },
+            { key: 'habits', label: 'Daily Habits' },
+            { key: 'academics', label: 'Academics & Timetable' },
+            { key: 'finance', label: 'Monthly Spend' },
+            { key: 'fitness', label: 'Fitness Summary' },
           ].map((item) => {
             const isChecked = (settings.dashboardWidgets as any)?.[item.key] !== false;
             return (
@@ -500,7 +500,7 @@ export default function SettingsPage() {
                       },
                     });
                   }}
-                  style={{ accentColor: 'var(--accent-primary, #E32620)', width: '15px', height: '15px' }}
+                  style={{ accentColor: 'var(--accent-primary)', width: '15px', height: '15px' }}
                 />
                 <span style={{ fontWeight: 500 }}>{item.label}</span>
               </label>
@@ -530,10 +530,10 @@ export default function SettingsPage() {
           <button
             onClick={handlePurgeSeedData}
             className="btn btn-secondary"
-            style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px', borderColor: 'var(--status-warning, #E5AD4B)' }}
+            style={{ fontSize: '11.5px', height: '32px', display: 'inline-flex', alignItems: 'center', gap: '6px', borderColor: 'var(--status-warning)' }}
             title="Remove pre-filled demo data while keeping real records"
           >
-            <Trash2 size={13} color="var(--status-warning, #E5AD4B)" /> Purge Demo Seed Data
+            <Trash2 size={13} color="var(--status-warning)" /> Purge Demo Seed Data
           </button>
 
           <button

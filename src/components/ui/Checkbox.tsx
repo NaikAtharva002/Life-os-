@@ -94,7 +94,7 @@ export const Checkbox = forwardRef<HTMLDivElement, CheckboxProps>(
             flexShrink: 0,
             marginTop: description ? '2px' : 0,
             transition: 'all 160ms cubic-bezier(0.16, 1, 0.3, 1)',
-            boxShadow: checked ? '0 2px 6px rgba(184, 12, 9, 0.3)' : 'var(--shadow-xs)',
+            boxShadow: checked ? '0 2px 6px rgba(99, 102, 241, 0.3)' : 'var(--shadow-xs)',
           }}
         >
           {checked && (

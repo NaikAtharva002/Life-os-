@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   Plus,
   Clock,
@@ -22,12 +22,12 @@ interface TaskKanbanBoardProps {
 const KANBAN_COLUMNS: { id: TaskStatus; label: string; color: string; desc: string }[] = [
   { id: 'backlog', label: 'Backlog', color: 'var(--text-muted)', desc: 'Future or unorganized ideas' },
   { id: 'todo', label: 'To Do', color: 'var(--text-secondary)', desc: 'Ready for action' },
-  { id: 'in_progress', label: 'In Progress', color: 'var(--palette-brick, #B80C09)', desc: 'Active execution' },
+  { id: 'in_progress', label: 'In Progress', color: 'var(--accent-primary)', desc: 'Active execution' },
   { id: 'completed', label: 'Completed', color: 'var(--status-success, #22C55E)', desc: 'Accomplished milestones' },
 ];
 
 const PRIORITY_COLORS: Record<Priority, string> = {
-  critical: 'var(--priority-critical, #B80C09)',
+  critical: 'var(--priority-critical)',
   high: 'var(--priority-high, #D97706)',
   medium: 'var(--priority-medium, #2563EB)',
   low: 'var(--priority-low, #6B7280)',
@@ -185,7 +185,7 @@ export default function TaskKanbanBoard({
                           className="btn btn-ghost"
                           style={{
                             padding: '2px 4px',
-                            color: 'var(--palette-brick, #B80C09)',
+                            color: 'var(--accent-primary)',
                             fontSize: '10px',
                             display: 'inline-flex',
                             alignItems: 'center',

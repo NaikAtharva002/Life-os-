@@ -646,6 +646,8 @@ export interface AppSettings {
   activeWorkspaceId?: string;
   workspaces?: UserWorkspace[];
   dashboardWidgets?: {
+    focusTimer?: boolean;
+    todayTasks?: boolean;
     priorities?: boolean;
     tasks?: boolean;
     habits?: boolean;

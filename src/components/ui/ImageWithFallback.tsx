@@ -86,7 +86,7 @@ export const ImageWithFallback: React.FC<ImageWithFallbackProps> = ({
             position: 'absolute',
             inset: 0,
             background:
-              'linear-gradient(180deg, rgba(20, 19, 1, 0.1) 0%, rgba(20, 19, 1, 0.65) 60%, rgba(20, 19, 1, 0.92) 100%)',
+              'linear-gradient(180deg, rgba(9, 9, 11, 0.1) 0%, rgba(9, 9, 11, 0.65) 60%, rgba(9, 9, 11, 0.92) 100%)',
             pointerEvents: 'none',
           }}
         />

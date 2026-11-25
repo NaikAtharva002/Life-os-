@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { todayLocal } from '../lib/dates';
 import {
   X,
@@ -41,14 +41,14 @@ const EMOJI_OPTIONS = [
 ];
 
 const COLOR_OPTIONS = [
-  '#B80C09', // Brick Ember
-  '#6B2B06', // Dark Walnut
-  '#B7B5B3', // Silver
-  '#141301', // Pitch Black
-  '#8F5419', // Warm Amber
-  '#4E632D', // Olive Sage
-  '#2B6CB0', // Ocean Slate
-  '#7C3AED', // Muted Violet
+  '#6366F1', // Electric Indigo
+  '#3B82F6', // Cobalt Blue
+  '#10B981', // Emerald
+  '#F59E0B', // Amber Momentum
+  '#F43F5E', // Rose
+  '#8B5CF6', // Violet
+  '#06B6D4', // Cyan
+  '#64748B', // Slate
 ];
 
 const TRACKING_TYPES: { id: HabitType; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -81,7 +81,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
   const [description, setDescription] = useState(habit?.description || '');
   const [category, setCategory] = useState(habit?.category || 'Productivity');
   const [icon, setIcon] = useState(habit?.icon || '⚡');
-  const [color, setColor] = useState(habit?.color || '#B80C09');
+  const [color, setColor] = useState(habit?.color || '#6366F1');
   const [routineId, setRoutineId] = useState(habit?.routineId || '');
 
   // Tracking
@@ -193,7 +193,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '16px',
-          boxShadow: '0 24px 60px rgba(20, 19, 1, 0.35)',
+          boxShadow: '0 24px 60px rgba(9, 9, 11, 0.35)',
           overflow: 'hidden',
           backgroundColor: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -452,7 +452,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
                             padding: '12px',
                             borderRadius: '10px',
                             border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                            background: isSelected ? 'rgba(184, 12, 9, 0.06)' : 'var(--bg-secondary)',
+                            background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-secondary)',
                             cursor: 'pointer',
                             textAlign: 'left',
                             transition: 'all 0.15s ease',
@@ -519,7 +519,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
 
                 {type === 'negative' && (
                   <div style={{ padding: '16px', borderRadius: '10px', background: 'rgba(78, 99, 45, 0.08)', border: '1px solid rgba(78, 99, 45, 0.25)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#4E632D', fontWeight: 600, fontSize: '0.88rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--status-success)', fontWeight: 600, fontSize: '0.88rem' }}>
                       <Shield size={18} />
                       Non-Judgmental Avoidance Protocol
                     </div>
@@ -549,7 +549,7 @@ export default function HabitModal({ habit, onClose }: HabitModalProps) {
                             padding: '10px 8px',
                             borderRadius: '8px',
                             border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                            background: isSelected ? 'rgba(184, 12, 9, 0.06)' : 'var(--bg-secondary)',
+                            background: isSelected ? 'var(--accent-subtle)' : 'var(--bg-secondary)',
                             cursor: 'pointer',
                             textAlign: 'center',
                             fontSize: '0.82rem',

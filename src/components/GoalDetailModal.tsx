@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { todayLocal } from '../lib/dates';
 import {
   X,
@@ -262,7 +262,7 @@ export default function GoalDetailModal({
   // Status badge styling
   const statusColors: Record<GoalStatus, { bg: string; text: string; border: string }> = {
     'not-started': { bg: 'var(--bg-secondary)', text: 'var(--text-muted)', border: 'var(--border-default)' },
-    'in-progress': { bg: 'rgba(20, 19, 1, 0.08)', text: 'var(--text-primary)', border: 'var(--border-default)' },
+    'in-progress': { bg: 'var(--bg-subtle)', text: 'var(--text-primary)', border: 'var(--border-default)' },
     'on-track': { bg: 'var(--status-success-bg)', text: 'var(--status-success)', border: 'var(--status-success-border)' },
     'at-risk': { bg: 'var(--status-danger-bg)', text: 'var(--status-danger)', border: 'var(--status-danger-border)' },
     'completed': { bg: 'var(--status-success-bg)', text: 'var(--status-success)', border: 'var(--status-success-border)' },
@@ -305,7 +305,7 @@ export default function GoalDetailModal({
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: 'linear-gradient(180deg, rgba(20, 19, 1, 0.4) 0%, rgba(20, 19, 1, 0.85) 100%)',
+                background: 'linear-gradient(180deg, rgba(9, 9, 11, 0.35) 0%, rgba(9, 9, 11, 0.82) 100%)',
               }}
             />
           )}
@@ -320,7 +320,7 @@ export default function GoalDetailModal({
                   textTransform: 'uppercase',
                   padding: '3px 8px',
                   borderRadius: '6px',
-                  background: 'rgba(20, 19, 1, 0.75)',
+                  background: 'rgba(9, 9, 11, 0.72)',
                   color: '#ffffff',
                   border: '1px solid rgba(255, 255, 255, 0.2)',
                   backdropFilter: 'blur(4px)',
@@ -336,7 +336,7 @@ export default function GoalDetailModal({
                   textTransform: 'uppercase',
                   padding: '3px 8px',
                   borderRadius: '6px',
-                  background: goal.priority === 'critical' ? 'var(--status-danger)' : goal.priority === 'high' ? 'var(--status-warning)' : 'rgba(20, 19, 1, 0.75)',
+                  background: goal.priority === 'critical' ? 'var(--status-danger)' : goal.priority === 'high' ? 'var(--status-warning)' : 'rgba(9, 9, 11, 0.72)',
                   color: '#ffffff',
                 }}
               >
@@ -350,7 +350,7 @@ export default function GoalDetailModal({
                 onClick={() => onEditGoal(goal)}
                 className="btn btn-secondary btn-sm"
                 style={{
-                  background: 'rgba(20, 19, 1, 0.75)',
+                  background: 'rgba(9, 9, 11, 0.72)',
                   color: '#ffffff',
                   borderColor: 'rgba(255, 255, 255, 0.2)',
                   backdropFilter: 'blur(4px)',
@@ -365,7 +365,7 @@ export default function GoalDetailModal({
                 type="button"
                 className="btn btn-ghost btn-icon"
                 onClick={onClose}
-                style={{ color: '#ffffff', background: 'rgba(20, 19, 1, 0.6)' }}
+                style={{ color: '#ffffff', background: 'rgba(9, 9, 11, 0.58)' }}
                 aria-label="Close"
               >
                 <X size={16} />

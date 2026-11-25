@@ -1,79 +1,74 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Plus,
   Calendar,
-  Clock,
   Flag,
   Tag,
   Maximize2,
-  Folder,
+  Sparkles,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import type { Priority } from '../types';
+import { parseQuickTaskInput } from '../lib/quickAddParser';
 import { todayLocal, tomorrowLocal } from '../lib/dates';
 
 interface QuickTaskBarProps {
-  onExpandDetails: (initialValues?: { title: string; priority: Priority; dueDate?: string; category?: string; estimatedDuration?: number }) => void;
+  onExpandDetails?: (initialValues?: {
+    title: string;
+    priority: Priority;
+    dueDate?: string;
+    category?: string;
+    estimatedDuration?: number;
+  }) => void;
   defaultCategory?: string;
   defaultGoalId?: string;
+  compact?: boolean;
+  placeholder?: string;
 }
 
-const PRIORITIES: { id: Priority; label: string; color: string }[] = [
-  { id: 'critical', label: 'Critical', color: 'var(--priority-critical, #B80C09)' },
-  { id: 'high', label: 'High', color: 'var(--priority-high, #D97706)' },
-  { id: 'medium', label: 'Medium', color: 'var(--priority-medium, #2563EB)' },
-  { id: 'low', label: 'Low', color: 'var(--priority-low, #6B7280)' },
-];
-
-const DURATIONS = [
-  { label: '15m', value: 15 },
-  { label: '25m (Pomodoro)', value: 25 },
-  { label: '45m', value: 45 },
-  { label: '60m', value: 60 },
-  { label: '90m (Deep Work)', value: 90 },
-];
-
-export default function QuickTaskBar({ onExpandDetails, defaultCategory, defaultGoalId }: QuickTaskBarProps) {
-  const quickAddTask = useStore((s) => s.quickAddTask);
+export default function QuickTaskBar({
+  onExpandDetails,
+  defaultCategory,
+  defaultGoalId,
+  compact = false,
+  placeholder = 'Quick add task (e.g. "OS assignment tomorrow 5pm !high #academics")',
+}: QuickTaskBarProps) {
   const addTask = useStore((s) => s.addTask);
+  const addToast = useStore((s) => s.addToast);
 
-  const [title, setTitle] = useState('');
-  const [priority, setPriority] = useState<Priority>('medium');
-  const [dueDate, setDueDate] = useState<string>('');
+  const [rawInput, setRawInput] = useState('');
+  const [manualPriority, setManualPriority] = useState<Priority | null>(null);
+  const [manualDueDate, setManualDueDate] = useState<string>('');
   const [estimatedDuration, setEstimatedDuration] = useState<number | undefined>(undefined);
-  const [category, setCategory] = useState<string>(defaultCategory || 'General');
-  const [tagInput, setTagInput] = useState<string>('');
-  const [tags, setTags] = useState<string[]>([]);
   const [showOptions, setShowOptions] = useState(false);
 
   const todayStr = todayLocal();
   const tomorrowStr = tomorrowLocal();
 
-  const handleAddTag = () => {
-    if (!tagInput.trim()) return;
-    const clean = tagInput.trim().replace(/^#/, '');
-    if (!tags.includes(clean)) {
-      setTags([...tags, clean]);
-    }
-    setTagInput('');
-  };
+  // Live NLP preview via chrono-node + tag extraction
+  const parsed = useMemo(() => parseQuickTaskInput(rawInput), [rawInput]);
 
-  const handleRemoveTag = (t: string) => {
-    setTags(tags.filter((x) => x !== t));
-  };
+  const effectivePriority: Priority =
+    manualPriority || (rawInput.includes('!') ? parsed.priority : 'medium');
+  const effectiveDueDate = manualDueDate || parsed.dueDate;
+  const effectiveCategory =
+    parsed.category !== 'General' ? parsed.category : defaultCategory || 'General';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!rawInput.trim()) return;
+
+    const cleanTitle = parsed.title || rawInput.trim();
 
     if (defaultGoalId) {
       await addTask({
-        title: title.trim(),
-        priority,
-        category,
-        dueDate: dueDate || undefined,
+        title: cleanTitle,
+        priority: effectivePriority,
+        category: effectiveCategory,
+        dueDate: effectiveDueDate || undefined,
+        dueTime: parsed.dueTime,
         estimatedDuration,
-        tags,
+        tags: [],
         goalId: defaultGoalId,
         status: 'todo',
         subtasks: [],
@@ -81,293 +76,190 @@ export default function QuickTaskBar({ onExpandDetails, defaultCategory, default
         isOverdue: false,
       });
     } else {
-      await quickAddTask(
-        title.trim(),
-        priority,
-        dueDate || undefined,
-        category,
+      await addTask({
+        title: cleanTitle,
+        priority: effectivePriority,
+        category: effectiveCategory,
+        dueDate: effectiveDueDate || undefined,
+        dueTime: parsed.dueTime,
         estimatedDuration,
-        tags
-      );
+        tags: [],
+        status: 'todo',
+        subtasks: [],
+        isCompleted: false,
+        isOverdue: false,
+      });
     }
 
-    // Reset fields
-    setTitle('');
-    setTags([]);
-    setDueDate('');
+    addToast({
+      type: 'success',
+      title: 'Task Added',
+      message: `${cleanTitle}${effectiveDueDate ? ` (${effectiveDueDate})` : ''}`,
+    });
+
+    setRawInput('');
+    setManualPriority(null);
+    setManualDueDate('');
     setEstimatedDuration(undefined);
     setShowOptions(false);
   };
 
+  const hasLiveSignals =
+    rawInput.trim().length > 0 &&
+    (Boolean(effectiveDueDate) ||
+      Boolean(parsed.dueTime) ||
+      effectivePriority !== 'medium' ||
+      effectiveCategory !== 'General');
+
   return (
-    <div
-      style={{
-        background: 'var(--bg-card)',
-        borderRadius: '12px',
-        border: '1px solid var(--border)',
-        boxShadow: 'var(--panel-shadow)',
-        padding: '12px 16px',
-        marginBottom: '18px',
-        transition: 'all 0.15s ease',
-      }}
-    >
+    <div className="quick-capture-bar" style={{ marginBottom: compact ? 0 : '18px' }}>
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <span style={{ color: 'var(--palette-brick, #B80C09)', display: 'flex', alignItems: 'center' }}>
-            <Plus size={18} />
-          </span>
+          <div
+            style={{
+              width: '26px',
+              height: '26px',
+              borderRadius: 'var(--radius-xs)',
+              background: 'var(--accent-subtle)',
+              color: 'var(--accent-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <Plus size={15} />
+          </div>
 
           <input
             type="text"
-            placeholder="Quick task capture... Press Enter to create (e.g. Finish research paper, Pay rent)"
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value);
-              if (e.target.value && !showOptions) setShowOptions(true);
-            }}
-            style={{
-              flex: 1,
-              background: 'transparent',
-              border: 'none',
-              outline: 'none',
-              color: 'var(--text-primary)',
-              fontSize: '13.5px',
-              fontWeight: 500,
-            }}
+            className="quick-capture-input"
+            value={rawInput}
+            onChange={(e) => setRawInput(e.target.value)}
+            onFocus={() => setShowOptions(true)}
+            placeholder={placeholder}
+            aria-label="Quick capture task"
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {onExpandDetails && (
             <button
               type="button"
               onClick={() =>
                 onExpandDetails({
-                  title: title.trim(),
-                  priority,
-                  dueDate: dueDate || undefined,
-                  category,
+                  title: parsed.title || rawInput.trim(),
+                  priority: effectivePriority,
+                  dueDate: effectiveDueDate || undefined,
+                  category: effectiveCategory,
                   estimatedDuration,
                 })
               }
-              className="btn btn-ghost btn-sm"
-              style={{
-                fontSize: '11.5px',
-                color: 'var(--text-secondary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '4px 8px',
-              }}
-              title="Open full detailed task modal"
+              className="btn btn-ghost btn-icon"
+              title="Open full task editor"
+              aria-label="Open full task editor"
             >
-              <Maximize2 size={13} />
-              <span className="hidden sm:inline">Detailed Form</span>
+              <Maximize2 size={14} />
             </button>
+          )}
 
-            <button
-              type="submit"
-              disabled={!title.trim()}
-              className="btn btn-primary btn-sm"
-              style={{
-                padding: '5px 14px',
-                fontSize: '12px',
-                fontWeight: 600,
-              }}
-            >
-              Add Task
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={!rawInput.trim()}
+            className="btn btn-primary btn-sm"
+          >
+            Add
+          </button>
         </div>
 
-        {/* Quick Attribute Chips Bar */}
-        {(showOptions || title) && (
+        {/* Live parsed NLP signals preview */}
+        {hasLiveSignals && (
+          <div className="quick-capture-chips">
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <Sparkles size={11} color="var(--accent-primary)" /> Parsed:
+            </span>
+            {effectiveDueDate && (
+              <span className="badge badge-brick font-tabular">
+                <Calendar size={10} /> {effectiveDueDate}
+                {parsed.dueTime ? ` · ${parsed.dueTime}` : ''}
+              </span>
+            )}
+            <span
+              className={`badge ${
+                effectivePriority === 'critical'
+                  ? 'badge-danger'
+                  : effectivePriority === 'high'
+                  ? 'badge-warning'
+                  : 'badge-silver'
+              }`}
+            >
+              <Flag size={10} /> {effectivePriority}
+            </span>
+            {effectiveCategory !== 'General' && (
+              <span className="badge badge-silver">
+                <Tag size={10} /> {effectiveCategory}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Quick Override Bar when focused */}
+        {showOptions && (
           <div
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
               alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
               gap: '8px',
               marginTop: '10px',
-              paddingTop: '10px',
-              borderTop: '1px solid var(--border-default)',
-              fontSize: '11.5px',
+              paddingTop: '8px',
+              borderTop: '1px solid var(--border-subtle)',
             }}
           >
-            {/* Priority Selector Chip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Flag size={12} color="var(--text-muted)" />
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as Priority)}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '2px 6px',
-                  fontSize: '11px',
-                  fontWeight: 600,
-                }}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Due Date Shortcut Buttons */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Calendar size={12} color="var(--text-muted)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                onClick={() => setDueDate(dueDate === todayStr ? '' : todayStr)}
-                style={{
-                  background: dueDate === todayStr ? 'var(--palette-brick-subtle)' : 'var(--bg-secondary)',
-                  color: dueDate === todayStr ? 'var(--palette-brick)' : 'var(--text-secondary)',
-                  border: `1px solid ${dueDate === todayStr ? 'var(--palette-brick-border)' : 'var(--border)'}`,
-                  borderRadius: '6px',
-                  padding: '2px 7px',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  fontWeight: dueDate === todayStr ? 600 : 500,
-                }}
+                onClick={() => setManualDueDate(manualDueDate === todayStr ? '' : todayStr)}
+                className={`btn btn-sm ${manualDueDate === todayStr ? 'btn-primary' : 'btn-secondary'}`}
               >
-                Today
+                <Calendar size={12} /> Today
               </button>
               <button
                 type="button"
-                onClick={() => setDueDate(dueDate === tomorrowStr ? '' : tomorrowStr)}
-                style={{
-                  background: dueDate === tomorrowStr ? 'var(--palette-brick-subtle)' : 'var(--bg-secondary)',
-                  color: dueDate === tomorrowStr ? 'var(--palette-brick)' : 'var(--text-secondary)',
-                  border: `1px solid ${dueDate === tomorrowStr ? 'var(--palette-brick-border)' : 'var(--border)'}`,
-                  borderRadius: '6px',
-                  padding: '2px 7px',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  fontWeight: dueDate === tomorrowStr ? 600 : 500,
-                }}
+                onClick={() => setManualDueDate(manualDueDate === tomorrowStr ? '' : tomorrowStr)}
+                className={`btn btn-sm ${manualDueDate === tomorrowStr ? 'btn-primary' : 'btn-secondary'}`}
               >
                 Tomorrow
               </button>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '1px 6px',
-                  fontSize: '11px',
-                  width: '110px',
-                }}
-              />
-            </div>
-
-            {/* Estimated Duration Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Clock size={12} color="var(--text-muted)" />
+              <select
+                value={manualPriority || ''}
+                onChange={(e) => setManualPriority((e.target.value as Priority) || null)}
+                className="btn-sm"
+                style={{ padding: '4px 8px', fontSize: '12px' }}
+                aria-label="Override priority"
+              >
+                <option value="">Auto Priority</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
               <select
                 value={estimatedDuration || ''}
                 onChange={(e) => setEstimatedDuration(e.target.value ? Number(e.target.value) : undefined)}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '2px 6px',
-                  fontSize: '11px',
-                }}
+                className="btn-sm"
+                style={{ padding: '4px 8px', fontSize: '12px' }}
+                aria-label="Estimated duration"
               >
-                <option value="">No Duration</option>
-                {DURATIONS.map((d) => (
-                  <option key={d.value} value={d.value}>
-                    {d.label}
-                  </option>
-                ))}
+                <option value="">Duration</option>
+                <option value="15">15m</option>
+                <option value="25">25m Sprint</option>
+                <option value="45">45m</option>
+                <option value="60">60m Deep</option>
               </select>
             </div>
-
-            {/* Category Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Folder size={12} color="var(--text-muted)" />
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '2px 6px',
-                  fontSize: '11px',
-                }}
-              >
-                <option value="General">General</option>
-                <option value="Work">Work</option>
-                <option value="Projects">Projects</option>
-                <option value="Health">Health</option>
-                <option value="Finance">Finance</option>
-                <option value="Academics">Academics</option>
-                <option value="Personal">Personal</option>
-              </select>
-            </div>
-
-            {/* Tag Quick Chip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Tag size={12} color="var(--text-muted)" />
-              <input
-                type="text"
-                placeholder="#tag + Enter"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                style={{
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '6px',
-                  padding: '2px 6px',
-                  fontSize: '11px',
-                  width: '90px',
-                }}
-              />
-            </div>
-
-            {/* Selected Tags list */}
-            {tags.map((t) => (
-              <span
-                key={t}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border)',
-                  padding: '1px 6px',
-                  borderRadius: '10px',
-                  fontSize: '10.5px',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                #{t}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(t)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '12px' }}
-                >
-                  ×
-                </button>
-              </span>
-            ))}
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              Tip: Try <code style={{ fontFamily: 'var(--font-mono)' }}>tomorrow 4pm !high #academics</code>
+            </span>
           </div>
         )}
       </form>

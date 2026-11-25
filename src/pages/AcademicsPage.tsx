@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
 import { todayLocal } from '../lib/dates';
 import {
@@ -59,7 +59,7 @@ export default function AcademicsPage() {
   const [subCredits, setSubCredits] = useState('4');
   const [subProf, setSubProf] = useState('');
   const [subRoom, setSubRoom] = useState('');
-  const [subColor, setSubColor] = useState('#B80C09');
+  const [subColor, setSubColor] = useState('#6366F1');
   const [subTargetAtt, setSubTargetAtt] = useState('75');
 
   const [asgTitle, setAsgTitle] = useState('');
@@ -195,7 +195,7 @@ export default function AcademicsPage() {
             >
               University Command &amp; Scholarship
             </h1>
-            <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255, 255, 255, 0.85)', maxWidth: '520px' }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: 'rgba(255, 255, 255, 0.92)', maxWidth: '560px' }}>
               Attendance safety calculus, assignment pipeline, and examination preparation.
             </p>
           </div>
@@ -204,7 +204,7 @@ export default function AcademicsPage() {
             <button
               onClick={() => setShowAsgModal(true)}
               className="btn btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', background: 'rgba(9, 9, 11, 0.82)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
             >
               <Clock size={15} /> New Assignment
             </button>
@@ -418,7 +418,7 @@ export default function AcademicsPage() {
                   ) : (
                     <>
                       <CheckCircle2 size={13} />
-                      <span>Safe to miss <strong>{safeToBunk}</strong> classes safely.</span>
+                      <span>Safe to miss <strong>{safeToBunk}</strong> {safeToBunk === 1 ? 'class' : 'classes'}.</span>
                     </>
                   )}
                 </div>
@@ -650,11 +650,11 @@ export default function AcademicsPage() {
                   width: '56px',
                   height: '56px',
                   borderRadius: '12px',
-                  background: 'rgba(227, 38, 32, 0.1)',
+                  background: 'var(--accent-subtle)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'var(--accent-primary, #E32620)',
+                  color: 'var(--accent-primary)',
                   marginBottom: '16px',
                 }}
               >
@@ -735,7 +735,7 @@ export default function AcademicsPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {slotsForDay.map((slot) => {
                           const sub = subjects.find((s) => s.id === slot.subjectId);
-                          const slotColor = slot.color || sub?.color || 'var(--accent-primary, #E32620)';
+                          const slotColor = slot.color || sub?.color || 'var(--accent-primary)';
                           const title = slot.subjectName || sub?.name || 'Class';
                           const code = slot.courseCode || sub?.code;
                           const prof = slot.professor || sub?.professor;

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import useStore from '../store/useStore';
 import { todayLocal } from '../lib/dates';
 import {
@@ -31,7 +31,7 @@ export default function FinancePage() {
   const depositSavings = useStore((s) => s.depositSavings);
   const deleteSavingsGoal = useStore((s) => s.deleteSavingsGoal);
 
-  const currency = settings.currencySymbol || '$';
+  const currency = settings.currencySymbol || '₹';
   const todayStr = todayLocal();
   const currentMonthStr = todayStr.substring(0, 7);
 
@@ -221,14 +221,14 @@ export default function FinancePage() {
             <button
               onClick={() => setShowBudgetModal(true)}
               className="btn btn-secondary btn-sm"
-              style={{ background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+              style={{ background: 'rgba(9, 9, 11, 0.82)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
             >
               Set Budget
             </button>
             <button
               onClick={() => setShowSavingsModal(true)}
               className="btn btn-secondary btn-sm"
-              style={{ background: 'rgba(20, 19, 1, 0.85)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
+              style={{ background: 'rgba(9, 9, 11, 0.82)', backdropFilter: 'blur(8px)', color: '#FFFFFF', borderColor: 'var(--border-default)' }}
             >
               <PiggyBank size={13} /> Savings Goal
             </button>
@@ -699,8 +699,8 @@ export default function FinancePage() {
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0,
-                          background: tx.type === 'income' ? 'rgba(78, 99, 45, 0.12)' : 'rgba(184, 12, 9, 0.12)',
-                          color: tx.type === 'income' ? 'var(--status-success)' : 'var(--palette-brick)',
+                          background: tx.type === 'income' ? 'var(--status-success-bg)' : 'var(--status-danger-bg)',
+                          color: tx.type === 'income' ? 'var(--status-success)' : 'var(--status-danger)',
                         }}
                       >
                         {tx.type === 'income' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}

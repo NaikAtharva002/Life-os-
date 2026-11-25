@@ -31,10 +31,9 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
         { key: 'G W', description: 'Jump to Gym & Fitness' },
         { key: 'G A', description: 'Jump to Academics' },
         { key: 'G C', description: 'Jump to Career & Work' },
-        { key: 'G N', description: 'Jump to Obsidian Notes' },
+        { key: 'G N', description: 'Jump to Notes' },
         { key: 'G R', description: 'Jump to Evening Review' },
         { key: 'G S', description: 'Jump to Settings' },
-        { key: 'G P', description: 'Jump to 3-Way Showdown Showcase' },
       ],
     },
     {
@@ -52,12 +51,6 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
       className="modal-overlay"
       style={{
         zIndex: 2100,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        background: 'rgba(20, 19, 1, 0.75)',
-        backdropFilter: 'blur(6px)',
       }}
       onClick={onClose}
     >

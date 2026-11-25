@@ -1,51 +1,69 @@
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, Plus, Search, HelpCircle } from 'lucide-react';
 import useStore from './store/useStore';
+import { pathToViewMeta, viewIdToPath } from './lib/routes';
 import Sidebar from './components/Sidebar';
-import Dashboard from './pages/Dashboard';
-import GoalsPage from './pages/GoalsPage';
-import TasksPage from './pages/TasksPage';
-import HabitsPage from './pages/HabitsPage';
-import FinancePage from './pages/FinancePage';
-import FitnessPage from './pages/FitnessPage';
-import AcademicsPage from './pages/AcademicsPage';
-import CareerPage from './pages/CareerPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import AssistantPage from './pages/AssistantPage';
-import ObsidianPage from './pages/ObsidianPage';
-import EveningReviewPage from './pages/EveningReviewPage';
-import ReviewHistoryPage from './pages/ReviewHistoryPage';
-import SettingsPage from './pages/SettingsPage';
-import FocusModePage from './pages/FocusModePage';
-import DesignSystemPage from './pages/DesignSystemPage';
-import ProductShowcasePage from './pages/ProductShowcasePage';
-import TaskModal from './components/TaskModal';
-import GoalModal from './components/GoalModal';
-import HabitModal from './components/HabitModal';
-import ClassModal from './components/ClassModal';
-import { scheduleEveningReminder, showNotification } from './utils/notifications';
-import { Menu, Plus, Search, Sparkles, HelpCircle } from 'lucide-react';
 import MobileBottomNav from './components/MobileBottomNav';
 import GlobalCommandPalette from './components/GlobalCommandPalette';
 import QuickActionModal from './components/QuickActionModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
-import BreadcrumbNav from './components/BreadcrumbNav';
 import OnboardingModal from './components/OnboardingModal';
 import DatabaseRecoveryScreen from './components/DatabaseRecoveryScreen';
-import { ToastContainer } from './components/ui';
+import ThemeToggle from './components/ThemeToggle';
+import TaskModal from './components/TaskModal';
+import GoalModal from './components/GoalModal';
+import HabitModal from './components/HabitModal';
+import ClassModal from './components/ClassModal';
+import { Skeleton, ToastContainer } from './components/ui';
+import { scheduleEveningReminder, showNotification } from './utils/notifications';
+
+// Primary daily loop views loaded eagerly for zero-flash navigation
+import Dashboard from './pages/Dashboard';
+import TasksPage from './pages/TasksPage';
+import GoalsPage from './pages/GoalsPage';
+import HabitsPage from './pages/HabitsPage';
+import AcademicsPage from './pages/AcademicsPage';
+import SettingsPage from './pages/SettingsPage';
+
+// Secondary & specialized views lazy-loaded via React Router v7 code splitting
+const FinancePage = React.lazy(() => import('./pages/FinancePage'));
+const FitnessPage = React.lazy(() => import('./pages/FitnessPage'));
+const CareerPage = React.lazy(() => import('./pages/CareerPage'));
+const ObsidianPage = React.lazy(() => import('./pages/ObsidianPage'));
+const EveningReviewPage = React.lazy(() => import('./pages/EveningReviewPage'));
+const ReviewHistoryPage = React.lazy(() => import('./pages/ReviewHistoryPage'));
+const FocusModePage = React.lazy(() => import('./pages/FocusModePage'));
+const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'));
+const AssistantPage = React.lazy(() => import('./pages/AssistantPage'));
+const DesignSystemPage = React.lazy(() => import('./pages/DesignSystemPage'));
+
+function PageSkeletonFallback() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingTop: '8px' }}>
+      <Skeleton height="72px" borderRadius="12px" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+        <Skeleton height="110px" borderRadius="12px" />
+        <Skeleton height="110px" borderRadius="12px" />
+        <Skeleton height="110px" borderRadius="12px" />
+      </div>
+      <Skeleton height="260px" borderRadius="16px" />
+    </div>
+  );
+}
 
 export default function App() {
-  const isLoaded = useStore((s) => s.isLoaded);
   const initError = useStore((s) => s.initError);
   const activeView = useStore((s) => s.activeView);
   const setActiveView = useStore((s) => s.setActiveView);
   const settings = useStore((s) => s.settings);
   const markOverdueTasks = useStore((s) => s.markOverdueTasks);
   const initializeFromDB = useStore((s) => s.initializeFromDB);
-  const designVariant = useStore((s) => s.designVariant);
-  const setDesignVariant = useStore((s) => s.setDesignVariant);
-  const comparisonMode = useStore((s) => s.comparisonMode);
 
-  // Persistent sidebar state from localStorage
+  const location = useLocation();
+  const navigate = useNavigate();
+  const lastSyncedPathRef = useRef<string>(location.pathname);
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
       return localStorage.getItem('lifeos_sidebar_collapsed') === 'true';
@@ -58,12 +76,12 @@ export default function App() {
     setSidebarCollapsed(collapsed);
     try {
       localStorage.setItem('lifeos_sidebar_collapsed', String(collapsed));
-    } catch {}
+    } catch {
+      // ignore
+    }
   };
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  // Command palette & quick creation modals
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [quickActionModalOpen, setQuickActionModalOpen] = useState(false);
   const [shortcutsHelpOpen, setShortcutsHelpOpen] = useState(false);
@@ -71,45 +89,68 @@ export default function App() {
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
   const [quickHabitModalOpen, setQuickHabitModalOpen] = useState(false);
   const [quickClassModalOpen, setQuickClassModalOpen] = useState(false);
+
   // 1. Initialize IndexedDB database on startup
   useEffect(() => {
     initializeFromDB();
   }, [initializeFromDB]);
 
-  // 2. Set dark/light theme & design variant
+  // 2. Apply Dark ("Obsidian Studio") / Light ("Paper & Ink") theme
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', settings.theme);
+    document.documentElement.setAttribute('data-theme', settings.theme || 'dark');
   }, [settings.theme]);
 
+  // 3. Synchronize URL -> Store activeView (deep links & browser Back/Forward)
   useEffect(() => {
-    document.documentElement.setAttribute('data-variant', designVariant);
-  }, [designVariant]);
+    if (location.pathname !== lastSyncedPathRef.current) {
+      lastSyncedPathRef.current = location.pathname;
+      const meta = pathToViewMeta(location.pathname);
+      if (meta.id !== activeView) {
+        setActiveView(meta.id);
+      }
+    }
+  }, [location.pathname, activeView, setActiveView]);
 
-  // 3. Hourly overdue task check
+  // 4. Synchronize Store activeView -> URL
+  useEffect(() => {
+    const targetPath = viewIdToPath(activeView);
+    if (targetPath !== location.pathname) {
+      lastSyncedPathRef.current = targetPath;
+      navigate(targetPath);
+    }
+  }, [activeView, location.pathname, navigate]);
+
+  // Ensure initial deep link route is respected on first mount
+  useEffect(() => {
+    const meta = pathToViewMeta(location.pathname);
+    if (meta.id !== 'dashboard' && activeView === 'dashboard') {
+      setActiveView(meta.id);
+    }
+  }, []);
+
+  // 5. Hourly overdue check
   useEffect(() => {
     markOverdueTasks();
     const interval = setInterval(markOverdueTasks, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [markOverdueTasks]);
 
-  // 4. Evening review notification scheduler
+  // 6. Evening review notification scheduler
   useEffect(() => {
     if (!settings.reminder?.enabled || !settings.reminder?.time) return;
 
     const cleanup = scheduleEveningReminder(settings.reminder.time, () => {
       showNotification(
-        '🌙 LIFE OS: Evening Review Time',
-        'Time to complete your evening review, celebrate today’s wins, and set tomorrow’s top 3 priorities.',
-        () => {
-          setActiveView('review');
-        }
+        'Evening Review Time',
+        'Reflect on your wins and plan tomorrow’s top 3 actions.',
+        () => setActiveView('review')
       );
     });
 
     return cleanup;
   }, [settings.reminder?.enabled, settings.reminder?.time, setActiveView]);
 
-  // 5. Global Keyboard Shortcuts (Cmd+K, /, ?, N, Escape, G+Key)
+  // 7. Global Keyboard Shortcuts
   useEffect(() => {
     let lastKey = '';
     let lastKeyTime = 0;
@@ -122,14 +163,12 @@ export default function App() {
         activeEl instanceof HTMLSelectElement ||
         (activeEl as HTMLElement)?.isContentEditable;
 
-      // 1. Command Palette: Cmd+K / Ctrl+K
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setCommandPaletteOpen((prev) => !prev);
         return;
       }
 
-      // 2. Escape: Close open modals
       if (e.key === 'Escape') {
         setCommandPaletteOpen(false);
         setQuickActionModalOpen(false);
@@ -141,38 +180,32 @@ export default function App() {
         return;
       }
 
-      // Universal Quick Create shortcut: Alt+N or Shift+A
       if ((e.altKey && e.key.toLowerCase() === 'n') || (e.shiftKey && e.key.toLowerCase() === 'a')) {
         e.preventDefault();
         setQuickActionModalOpen((prev) => !prev);
         return;
       }
 
-      // Don't intercept single key shortcuts if user is typing in form fields
       if (isInputActive) return;
 
-      // 3. Slash /: Focus Search / Command Palette
       if (e.key === '/') {
         e.preventDefault();
         setCommandPaletteOpen(true);
         return;
       }
 
-      // 4. Question Mark ?: Open Keyboard Shortcuts Guide
       if (e.key === '?') {
         e.preventDefault();
         setShortcutsHelpOpen((prev) => !prev);
         return;
       }
 
-      // 5. N: Quick Task
       if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         setQuickTaskModalOpen(true);
         return;
       }
 
-      // 6. Two-key chord (G then key for navigation)
       const now = Date.now();
       if (e.key.toLowerCase() === 'g') {
         lastKey = 'g';
@@ -194,7 +227,6 @@ export default function App() {
           n: 'obsidian',
           r: 'review',
           s: 'settings',
-          p: 'showcase',
         };
         const targetView = jumpMap[e.key.toLowerCase()];
         if (targetView) {
@@ -208,47 +240,6 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setActiveView]);
 
-  const renderActiveView = () => {
-    switch (activeView) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'goals':
-        return <GoalsPage />;
-      case 'tasks':
-        return <TasksPage />;
-      case 'habits':
-        return <HabitsPage />;
-      case 'finance':
-        return <FinancePage />;
-      case 'fitness':
-        return <FitnessPage />;
-      case 'academics':
-        return <AcademicsPage />;
-      case 'career':
-        return <CareerPage />;
-      case 'analytics':
-        return <AnalyticsPage />;
-      case 'assistant':
-        return <AssistantPage />;
-      case 'focus':
-        return <FocusModePage />;
-      case 'obsidian':
-        return <ObsidianPage />;
-      case 'review':
-        return <EveningReviewPage />;
-      case 'history':
-        return <ReviewHistoryPage />;
-      case 'settings':
-        return <SettingsPage />;
-      case 'design-system':
-        return <DesignSystemPage />;
-      case 'showcase':
-        return <ProductShowcasePage onOpenMatrix={() => {}} />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
   if (initError) {
     return (
       <>
@@ -258,9 +249,10 @@ export default function App() {
     );
   }
 
+  const currentMeta = pathToViewMeta(location.pathname);
+
   return (
     <div className="app">
-      {/* Sidebar Navigation (Section 2.A) */}
       <Sidebar
         collapsed={sidebarCollapsed}
         setCollapsed={handleSetSidebarCollapsed}
@@ -269,222 +261,132 @@ export default function App() {
         onOpenShortcutsHelp={() => setShortcutsHelpOpen(true)}
       />
 
-      {/* Main Workspace Area (Section 2.B & 2.C) */}
-      <main className="main-content">
-        {/* Optional Demo Mode Status Banner */}
+      <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
         {settings.isDemoMode && (
-          <div
-            style={{
-              background: 'var(--palette-walnut-subtle, rgba(107, 43, 6, 0.2))',
-              borderBottom: '1px solid var(--palette-walnut)',
-              color: 'var(--text-primary)',
-              padding: '6px 20px',
-              fontSize: '11.5px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              zIndex: 99,
-            }}
-          >
+          <div className="demo-mode-banner">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 700, color: 'var(--palette-brick)' }}>DEMO MODE:</span>
-              <span>Exploring with sample scenario records. Your real workspace is untouched.</span>
+              <span className="badge badge-warning">DEMO MODE</span>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                Previewing sample scenario data. Your personal data stays isolated.
+              </span>
             </div>
             <button
+              type="button"
               onClick={() => useStore.getState().toggleDemoMode(false)}
               className="btn btn-secondary btn-sm"
-              style={{ fontSize: '11px', padding: '2px 8px' }}
             >
-              Exit Demo Mode
+              Exit Demo
             </button>
           </div>
         )}
 
-        {/* Global Top Toolbar (Single consistent toolbar across all pages) */}
+        {/* Single Unified Topbar */}
         <header className="global-toolbar">
-          {/* Left: Mobile menu toggle + Search Command Palette trigger */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
             <button
-              className="btn btn-ghost btn-sm mobile-only"
+              type="button"
+              className="btn btn-ghost btn-icon mobile-only"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open navigation menu"
             >
               <Menu size={18} />
             </button>
 
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: '14px',
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  letterSpacing: '-0.015em',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {currentMeta.title}
+              </span>
+              <span
+                className="desktop-only"
+                style={{
+                  fontSize: '11.5px',
+                  color: 'var(--text-muted)',
+                  borderLeft: '1px solid var(--border-default)',
+                  paddingLeft: '8px',
+                }}
+              >
+                {currentMeta.section}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
             <button
+              type="button"
               onClick={() => setCommandPaletteOpen(true)}
               className="toolbar-search-btn"
               aria-label="Search and command palette"
             >
               <Search size={13} style={{ flexShrink: 0 }} />
-              <span className="toolbar-search-text">Search records, actions, or jump...</span>
-              <kbd className="desktop-only toolbar-search-kbd">
-                ⌘K
-              </kbd>
+              <span className="toolbar-search-text">Jump or search...</span>
+              <kbd className="desktop-only toolbar-search-kbd">⌘K</kbd>
             </button>
-          </div>
 
-          {/* Right: Quick Actions + Help + AI Assistant */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-            {/* Universal Quick Create Launcher Button */}
             <button
+              type="button"
               onClick={() => setQuickActionModalOpen(true)}
               className="btn btn-primary btn-sm"
-              title="Universal Quick Create (Alt+N)"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '5px 12px',
-                fontWeight: 600,
-              }}
+              title="Quick Create (Alt+N)"
             >
               <Plus size={14} />
-              <span>Create</span>
+              <span className="desktop-only">Quick Add</span>
             </button>
 
-            <button
-              onClick={() => setQuickTaskModalOpen(true)}
-              className="btn btn-secondary btn-sm desktop-only"
-              title="Create new task (N)"
-            >
-              <Plus size={13} /> New Task
-            </button>
-            <button
-              onClick={() => setQuickGoalModalOpen(true)}
-              className="btn btn-secondary btn-sm desktop-only"
-              title="Create new goal"
-            >
-              <Plus size={13} /> New Goal
-            </button>
+            <ThemeToggle />
 
-            {/* Keyboard Shortcuts Help Button */}
             <button
+              type="button"
               onClick={() => setShortcutsHelpOpen(true)}
-              className="btn btn-ghost btn-sm desktop-only"
-              style={{ padding: '6px', color: 'var(--text-muted)' }}
-              title="Keyboard Shortcuts Guide (?)"
-              aria-label="Keyboard Shortcuts Guide"
+              className="btn btn-ghost btn-icon desktop-only"
+              title="Keyboard Shortcuts (?)"
+              aria-label="Keyboard Shortcuts"
             >
               <HelpCircle size={15} />
-            </button>
-
-            <button
-              onClick={() => setActiveView('assistant')}
-              className="btn btn-primary btn-sm"
-              title="Open Astra AI Assistant"
-            >
-              <Sparkles size={13} /> <span className="desktop-only">AI Assistant</span>
             </button>
           </div>
         </header>
 
-        {/* BREADCRUMB CONTEXTUAL NAVIGATION STRIP */}
-        <BreadcrumbNav />
+        <div className="workspace-content">
+          <Suspense fallback={<PageSkeletonFallback />}>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/today" element={<Navigate to="/" replace />} />
+              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/goals" element={<GoalsPage />} />
+              <Route path="/habits" element={<HabitsPage />} />
+              <Route path="/academics" element={<AcademicsPage />} />
+              <Route path="/finance" element={<FinancePage />} />
+              <Route path="/fitness" element={<FitnessPage />} />
+              <Route path="/career" element={<CareerPage />} />
+              <Route path="/notes" element={<ObsidianPage />} />
+              <Route path="/focus" element={<FocusModePage />} />
+              <Route path="/review" element={<EveningReviewPage />} />
+              <Route path="/history" element={<ReviewHistoryPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/assistant" element={<AssistantPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/design-system" element={<DesignSystemPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </div>
 
-        {/* Workspace Body */}
-        {comparisonMode === 'split' ? (
-          <div className="showdown-split-container">
-            {/* Column 1: Antigravity Strategic */}
-            <div className="showdown-column" data-variant="agent">
-              <div className="showdown-column-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '15px' }}>🏛️</span>
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      1. Antigravity Editorial
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      Strategic · Question-Driven Architecture
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setDesignVariant('agent')}
-                  className="btn btn-sm btn-primary"
-                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
-                >
-                  {designVariant === 'agent' ? '✓ Active' : 'Select'}
-                </button>
-              </div>
-              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 180px)', padding: '12px' }}>
-                {renderActiveView()}
-              </div>
-            </div>
-
-            {/* Column 2: Taste-Skill Craft */}
-            <div className="showdown-column" data-variant="taste">
-              <div className="showdown-column-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '15px' }}>✨</span>
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      2. Taste-Skill Craft
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      Tactile Luminescence · Luxury Space
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setDesignVariant('taste')}
-                  className="btn btn-sm btn-primary"
-                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
-                >
-                  {designVariant === 'taste' ? '✓ Active' : 'Select'}
-                </button>
-              </div>
-              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 180px)', padding: '12px' }}>
-                {renderActiveView()}
-              </div>
-            </div>
-
-            {/* Column 3: Impeccable Precision */}
-            <div className="showdown-column" data-variant="impeccable">
-              <div className="showdown-column-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '15px' }}>📐</span>
-                  <div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                      3. Impeccable Precision
-                    </div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                      Rigid 8px Swiss Grid · Radius Harmony
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setDesignVariant('impeccable')}
-                  className="btn btn-sm btn-primary"
-                  style={{ fontSize: '10.5px', padding: '3px 8px' }}
-                >
-                  {designVariant === 'impeccable' ? '✓ Active' : 'Select'}
-                </button>
-              </div>
-              <div style={{ overflowY: 'auto', maxHeight: 'calc(100vh - 180px)', padding: '12px' }}>
-                {renderActiveView()}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="workspace-content" data-variant={designVariant}>
-            {renderActiveView()}
-          </div>
-        )}
-
-        {/* MOBILE BOTTOM NAVIGATION BAR */}
         <MobileBottomNav
           onOpenMenu={() => setMobileMenuOpen(true)}
           onQuickCreate={() => setQuickActionModalOpen(true)}
         />
       </main>
 
-      {/* GLOBAL MODALS */}
       {quickTaskModalOpen && (
-        <TaskModal
-          onClose={() => setQuickTaskModalOpen(false)}
-        />
+        <TaskModal onClose={() => setQuickTaskModalOpen(false)} />
       )}
 
       {quickGoalModalOpen && (
@@ -494,7 +396,6 @@ export default function App() {
         />
       )}
 
-      {/* GLOBAL COMMAND PALETTE 2.0 (⌘K / Ctrl+K / /) */}
       <GlobalCommandPalette
         isOpen={commandPaletteOpen}
         onClose={() => setCommandPaletteOpen(false)}
@@ -502,7 +403,6 @@ export default function App() {
         onOpenQuickGoal={() => setQuickGoalModalOpen(true)}
       />
 
-      {/* QUICK ACTION LAUNCHER MODAL */}
       <QuickActionModal
         isOpen={quickActionModalOpen}
         onClose={() => setQuickActionModalOpen(false)}
@@ -513,9 +413,7 @@ export default function App() {
       />
 
       {quickHabitModalOpen && (
-        <HabitModal
-          onClose={() => setQuickHabitModalOpen(false)}
-        />
+        <HabitModal onClose={() => setQuickHabitModalOpen(false)} />
       )}
 
       {quickClassModalOpen && (
@@ -525,16 +423,12 @@ export default function App() {
         />
       )}
 
-      {/* KEYBOARD SHORTCUTS GUIDE MODAL (?) */}
       <KeyboardShortcutsModal
         isOpen={shortcutsHelpOpen}
         onClose={() => setShortcutsHelpOpen(false)}
       />
 
-      {/* FIRST-TIME GUIDED ONBOARDING WIZARD 2.0 */}
       <OnboardingModal />
-
-      {/* GLOBAL TOAST NOTIFICATION PORTAL */}
       <ToastContainer />
     </div>
   );

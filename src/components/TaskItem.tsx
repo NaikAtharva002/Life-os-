@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   CheckCircle2,
   Circle,
@@ -36,7 +36,7 @@ const PRIORITY_THEME: Record<
 > = {
   critical: {
     label: 'Critical',
-    color: 'var(--priority-critical, #B80C09)',
+    color: 'var(--priority-critical)',
     bg: 'var(--palette-brick-subtle)',
     icon: '🔥',
   },
@@ -63,8 +63,8 @@ const PRIORITY_THEME: Record<
 const STATUS_LABELS: Record<TaskStatus, { label: string; color: string }> = {
   backlog: { label: 'Backlog', color: 'var(--text-muted)' },
   todo: { label: 'To Do', color: 'var(--text-secondary)' },
-  'in-progress': { label: 'In Progress', color: 'var(--palette-brick, #B80C09)' },
-  in_progress: { label: 'In Progress', color: 'var(--palette-brick, #B80C09)' },
+  'in-progress': { label: 'In Progress', color: 'var(--accent-primary)' },
+  in_progress: { label: 'In Progress', color: 'var(--accent-primary)' },
   completed: { label: 'Completed', color: 'var(--status-success, #22C55E)' },
   done: { label: 'Completed', color: 'var(--status-success, #22C55E)' },
   archived: { label: 'Archived', color: 'var(--text-muted)' },
@@ -387,7 +387,7 @@ export default function TaskItem({ task, onEdit, onDelete, showGoal = true }: Ta
                 <span
                   style={{
                     fontSize: '10px',
-                    color: 'var(--palette-brick, #B80C09)',
+                    color: 'var(--accent-primary)',
                     background: 'var(--palette-brick-subtle)',
                     padding: '1px 5px',
                     borderRadius: '4px',
@@ -523,7 +523,7 @@ export default function TaskItem({ task, onEdit, onDelete, showGoal = true }: Ta
                 alignItems: 'center',
                 gap: '4px',
                 fontWeight: 600,
-                color: 'var(--palette-brick, #B80C09)',
+                color: 'var(--accent-primary)',
                 borderColor: 'var(--palette-brick-border)',
               }}
               title="Start focused work sprint with LIFE OS timer"

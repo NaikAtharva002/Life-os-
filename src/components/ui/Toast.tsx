@@ -11,37 +11,43 @@ export const ToastItemView: React.FC<{ toast: ToastItem; onDismiss: (id: string)
   const [progress, setProgress] = useState(100);
 
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || progress <= 0) return;
     const duration = toast.duration || 3500;
     const intervalTime = 50;
     const step = (intervalTime / duration) * 100;
 
     const timer = setInterval(() => {
       setProgress((prev) => {
-        if (prev <= 0) {
+        const next = prev - step;
+        if (next <= 0) {
           clearInterval(timer);
-          onDismiss(toast.id);
           return 0;
         }
-        return prev - step;
+        return next;
       });
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [toast.id, toast.duration, onDismiss, isHovered]);
+  }, [toast.duration, isHovered, progress <= 0]);
+
+  useEffect(() => {
+    if (progress <= 0) {
+      onDismiss(toast.id);
+    }
+  }, [progress, toast.id, onDismiss]);
 
   const icons = {
-    success: <CheckCircle2 size={18} color="var(--palette-brick)" />,
+    success: <CheckCircle2 size={18} color="var(--status-success)" />,
     warning: <AlertTriangle size={18} color="var(--status-warning)" />,
     error: <AlertCircle size={18} color="var(--status-danger)" />,
-    info: <Info size={18} color="var(--palette-walnut)" />,
+    info: <Info size={18} color="var(--accent-primary)" />,
   };
 
   const borderColors = {
-    success: 'var(--palette-brick-border)',
-    warning: 'rgba(143, 84, 25, 0.4)',
-    error: 'rgba(184, 12, 9, 0.4)',
-    info: 'rgba(107, 43, 6, 0.3)',
+    success: 'rgba(16, 185, 129, 0.35)',
+    warning: 'rgba(245, 158, 11, 0.35)',
+    error: 'rgba(244, 63, 94, 0.35)',
+    info: 'var(--accent-border)',
   };
 
   return (
@@ -119,7 +125,7 @@ export const ToastItemView: React.FC<{ toast: ToastItem; onDismiss: (id: string)
           style={{
             height: '100%',
             width: `${progress}%`,
-            background: toast.type === 'success' ? 'var(--palette-brick)' : 'var(--accent-primary)',
+            background: toast.type === 'success' ? 'var(--status-success)' : 'var(--accent-primary)',
             transition: 'width 50ms linear',
           }}
         />

@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  LayoutDashboard,
-  CheckSquare,
-  Repeat,
-  Target,
-  Menu,
-  Plus
-} from 'lucide-react';
+import { Sun, CheckSquare, Repeat, Target, Menu, Plus } from 'lucide-react';
 import useStore from '../store/useStore';
 import { todayLocal } from '../lib/dates';
 
@@ -19,69 +12,81 @@ export default function MobileBottomNav({ onOpenMenu, onQuickCreate }: MobileBot
   const activeView = useStore((s) => s.activeView);
   const setActiveView = useStore((s) => s.setActiveView);
   const tasks = useStore((s) => s.tasks);
-  const goals = useStore((s) => s.goals);
 
   const todayStr = todayLocal();
-  const overdueCount = tasks.filter((t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr))).length;
-  const criticalGoals = goals.filter((g) => !g.isArchived && g.priority === 'critical').length;
+  const overdueCount = tasks.filter(
+    (t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr))
+  ).length;
 
-  const navItems = [
-    { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare, badge: overdueCount > 0 ? overdueCount : undefined },
-    { id: 'habits', label: 'Habits', icon: Repeat },
-    { id: 'goals', label: 'Goals', icon: Target, badge: criticalGoals > 0 ? criticalGoals : undefined },
-  ];
+  const isMoreActive = !['dashboard', 'tasks', 'habits', 'goals'].includes(activeView);
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile Navigation">
       <div className="mobile-bottom-nav-inner">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeView === item.id;
-
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveView(item.id as any)}
-              className={`mobile-bottom-nav-item ${isActive ? 'active' : ''}`}
-              aria-label={item.label}
-              aria-current={isActive ? 'page' : undefined}
-            >
-              <div className="mobile-bottom-nav-icon-wrapper">
-                <Icon size={20} strokeWidth={isActive ? 2.3 : 1.8} />
-                {item.badge !== undefined && (
-                  <span className="mobile-bottom-nav-badge">
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </span>
-                )}
-              </div>
-              <span className="mobile-bottom-nav-label">{item.label}</span>
-            </button>
-          );
-        })}
-
-        {/* Quick Add Action Button */}
         <button
+          type="button"
+          onClick={() => setActiveView('dashboard')}
+          className={`mobile-bottom-nav-item ${activeView === 'dashboard' ? 'active' : ''}`}
+          aria-label="Today"
+          aria-current={activeView === 'dashboard' ? 'page' : undefined}
+        >
+          <div className="mobile-bottom-nav-icon-wrapper">
+            <Sun size={19} strokeWidth={activeView === 'dashboard' ? 2.2 : 1.8} />
+          </div>
+          <span className="mobile-bottom-nav-label">Today</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveView('tasks')}
+          className={`mobile-bottom-nav-item ${activeView === 'tasks' ? 'active' : ''}`}
+          aria-label="Tasks"
+          aria-current={activeView === 'tasks' ? 'page' : undefined}
+        >
+          <div className="mobile-bottom-nav-icon-wrapper">
+            <CheckSquare size={19} strokeWidth={activeView === 'tasks' ? 2.2 : 1.8} />
+            {overdueCount > 0 && (
+              <span className="mobile-bottom-nav-badge">
+                {overdueCount > 9 ? '9+' : overdueCount}
+              </span>
+            )}
+          </div>
+          <span className="mobile-bottom-nav-label">Tasks</span>
+        </button>
+
+        <button
+          type="button"
           onClick={onQuickCreate}
           className="mobile-bottom-nav-quick-add"
-          aria-label="Quick Create Task"
-          title="Create New Task"
+          aria-label="Quick Add"
+          title="Quick Add"
         >
           <Plus size={20} strokeWidth={2.5} />
         </button>
 
-        {/* More / Full Menu Drawer Trigger */}
         <button
-          onClick={onOpenMenu}
-          className={`mobile-bottom-nav-item ${
-            !['dashboard', 'tasks', 'habits', 'goals'].includes(activeView) ? 'active' : ''
-          }`}
-          aria-label="More Navigation"
+          type="button"
+          onClick={() => setActiveView('habits')}
+          className={`mobile-bottom-nav-item ${activeView === 'habits' ? 'active' : ''}`}
+          aria-label="Habits"
+          aria-current={activeView === 'habits' ? 'page' : undefined}
         >
           <div className="mobile-bottom-nav-icon-wrapper">
-            <Menu size={20} strokeWidth={1.8} />
+            <Repeat size={19} strokeWidth={activeView === 'habits' ? 2.2 : 1.8} />
           </div>
-          <span className="mobile-bottom-nav-label">More</span>
+          <span className="mobile-bottom-nav-label">Habits</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          className={`mobile-bottom-nav-item ${isMoreActive ? 'active' : ''}`}
+          aria-label="Student Hub and More"
+        >
+          <div className="mobile-bottom-nav-icon-wrapper">
+            {isMoreActive ? <Target size={19} strokeWidth={2.2} /> : <Menu size={19} strokeWidth={1.8} />}
+          </div>
+          <span className="mobile-bottom-nav-label">Hub</span>
         </button>
       </div>
     </nav>

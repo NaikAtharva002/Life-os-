@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   X,
   Flag,
@@ -39,7 +39,7 @@ interface TaskModalProps {
 }
 
 const PRIORITIES: { id: Priority; label: string; icon: string; color: string; desc: string }[] = [
-  { id: 'critical', label: 'Critical', icon: '🔥', color: 'var(--priority-critical, #B80C09)', desc: 'Must ship today' },
+  { id: 'critical', label: 'Critical', icon: '🔥', color: 'var(--priority-critical)', desc: 'Must ship today' },
   { id: 'high', label: 'High', icon: '⚡', color: 'var(--priority-high, #D97706)', desc: 'Key milestone' },
   { id: 'medium', label: 'Medium', icon: '📌', color: 'var(--priority-medium, #2563EB)', desc: 'Standard task' },
   { id: 'low', label: 'Low', icon: '🌱', color: 'var(--priority-low, #6B7280)', desc: 'Nice to have' },
@@ -48,7 +48,7 @@ const PRIORITIES: { id: Priority; label: string; icon: string; color: string; de
 const STATUS_OPTIONS: { id: TaskStatus; label: string; color: string }[] = [
   { id: 'backlog', label: 'Backlog', color: 'var(--text-muted)' },
   { id: 'todo', label: 'To Do', color: 'var(--text-secondary)' },
-  { id: 'in_progress', label: 'In Progress', color: 'var(--palette-brick, #B80C09)' },
+  { id: 'in_progress', label: 'In Progress', color: 'var(--accent-primary)' },
   { id: 'completed', label: 'Completed', color: 'var(--status-success, #22C55E)' },
   { id: 'archived', label: 'Archived', color: 'var(--text-muted)' },
 ];

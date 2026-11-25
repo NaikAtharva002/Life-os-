@@ -1,38 +1,30 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
-  Target,
   CheckSquare,
   Repeat,
   AlertTriangle,
-  Calendar,
-  ChevronRight,
   GraduationCap,
-  Sparkles,
   ArrowRight,
-  TrendingUp,
-  ShieldCheck,
-  Zap,
   Clock,
   Play,
   Pause,
   RotateCcw,
-  Volume2,
   Check,
   Flame,
   Dumbbell,
-  DollarSign,
-  Sun,
+  Wallet,
   Moon,
   Plus,
   Sliders,
   X,
-  Activity,
+  Calendar,
 } from 'lucide-react';
 import useStore, { isHabitScheduledOnDate } from '../store/useStore';
-import { todayLocal } from '../lib/dates';
-import type { Task, Priority, Goal, Habit } from '../types';
-import { getPhoto } from '../utils/photoAssets';
+import { todayLocal, formatCurrencyINR } from '../lib/dates';
+import type { Task, Priority } from '../types';
 import { Checkbox, EmptyState } from '../components/ui';
+import QuickTaskBar from '../components/QuickTaskBar';
+import TaskModal from '../components/TaskModal';
 
 export default function Dashboard() {
   const goals = useStore((s) => s.goals);
@@ -52,12 +44,19 @@ export default function Dashboard() {
   const updateTask = useStore((s) => s.updateTask);
   const rescheduleTask = useStore((s) => s.rescheduleTask);
   const startTaskFocusSession = useStore((s) => s.startTaskFocusSession);
+  const addToast = useStore((s) => s.addToast);
 
   const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
+  const [taskModalInit, setTaskModalInit] = useState<{
+    title?: string;
+    priority?: Priority;
+    dueDate?: string;
+    category?: string;
+    estimatedDuration?: number;
+  } | null>(null);
 
-  const todayStr = todayLocal();
+  const todayStr = todayLocal(settings.dayStartHour);
 
-  // Greeting & Time of Day
   const currentHour = new Date().getHours();
   const greeting =
     currentHour < 12
@@ -66,37 +65,41 @@ export default function Dashboard() {
       ? 'Good afternoon'
       : 'Good evening';
 
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
+  const todayFormatted = new Date().toLocaleDateString('en-IN', {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
   });
 
-  // Daily Editorial Motivational Quotes
-  const quotes = [
-    { text: "Discipline is the bridge between goals and accomplishment. Anchor your morning in deep, uninterrupted focus.", author: "Jim Rohn" },
-    { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Will Durant" },
-    { text: "Small disciplines repeated with consistency every day lead to great achievements gained slowly over time.", author: "John C. Maxwell" },
-    { text: "Clarity about what matters provides clarity about what does not.", author: "Cal Newport" }
-  ];
-  const dailyQuote = quotes[new Date().getDate() % quotes.length];
-
-  // Focus Timer State (Photographic Timer Widget)
+  // Focus Timer State
+  const [timerDurationMins, setTimerDurationMins] = useState(25);
   const [timerSeconds, setTimerSeconds] = useState(25 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerSessionType, setTimerSessionType] = useState<'deep' | 'short'>('deep');
 
   useEffect(() => {
-    let interval: any = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (isTimerRunning && timerSeconds > 0) {
       interval = setInterval(() => {
         setTimerSeconds((prev) => prev - 1);
       }, 1000);
-    } else if (timerSeconds === 0) {
+    } else if (timerSeconds === 0 && isTimerRunning) {
       setIsTimerRunning(false);
+      addToast({
+        type: 'success',
+        title: 'Focus Block Complete',
+        message: `${timerDurationMins}m deep work session finished.`,
+      });
     }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isTimerRunning, timerSeconds, timerDurationMins, addToast]);
+
+  const selectTimerMode = (mins: number) => {
+    setIsTimerRunning(false);
+    setTimerDurationMins(mins);
+    setTimerSeconds(mins * 60);
+  };
 
   const formatTimer = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -104,83 +107,68 @@ export default function Dashboard() {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  const resetTimer = (durationMinutes = 25) => {
-    setIsTimerRunning(false);
-    setTimerSeconds(durationMinutes * 60);
-  };
+  const timerProgressPct =
+    timerDurationMins > 0
+      ? Math.round(((timerDurationMins * 60 - timerSeconds) / (timerDurationMins * 60)) * 100)
+      : 0;
 
   const priorityOrder: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-  // 1. Strictly scheduled today
-  const todayTasks = useMemo(() => {
-    return tasks
-      .filter((t) => !t.isCompleted && t.dueDate === todayStr)
-      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  }, [tasks, todayStr]);
+  const todayTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => !t.isCompleted && !t.isArchived && t.dueDate === todayStr)
+        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
+    [tasks, todayStr]
+  );
 
-  // 2. Overdue tasks
-  const overdueTasks = useMemo(() => {
-    return tasks
-      .filter((t) => !t.isCompleted && (t.isOverdue || (t.dueDate && t.dueDate < todayStr)))
-      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
-  }, [tasks, todayStr]);
+  const overdueTasks = useMemo(
+    () =>
+      tasks
+        .filter(
+          (t) =>
+            !t.isCompleted &&
+            !t.isArchived &&
+            (t.isOverdue || (t.dueDate && t.dueDate < todayStr))
+        )
+        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
+    [tasks, todayStr]
+  );
 
-  // 3. Completed today
-  const completedTodayCount = useMemo(() => {
-    return tasks.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length;
-  }, [tasks, todayStr]);
+  const completedTodayCount = useMemo(
+    () => tasks.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length,
+    [tasks, todayStr]
+  );
 
-  // Habits today
-  const habitsToday = useMemo(() => {
-    return habits.filter((h) => isHabitScheduledOnDate(h, todayStr));
-  }, [habits, todayStr]);
+  const habitsToday = useMemo(
+    () => habits.filter((h) => isHabitScheduledOnDate(h, todayStr)),
+    [habits, todayStr]
+  );
 
-  const habitsCompletedTodayCount = useMemo(() => {
-    return habitsToday.filter((h) =>
-      habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed)
-    ).length;
-  }, [habitsToday, habitEntries, todayStr]);
+  const habitsCompletedTodayCount = useMemo(
+    () =>
+      habitsToday.filter((h) =>
+        habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed)
+      ).length,
+    [habitsToday, habitEntries, todayStr]
+  );
 
-  // Daily Progress percentage
   const dailyProgress = useMemo(() => {
     const totalItems = todayTasks.length + completedTodayCount + habitsToday.length;
-    if (totalItems === 0) return 100;
+    if (totalItems === 0) return 0;
     const completedItems = completedTodayCount + habitsCompletedTodayCount;
     return Math.round((completedItems / totalItems) * 100);
-  }, [todayTasks, completedTodayCount, habitsToday, habitsCompletedTodayCount]);
+  }, [todayTasks.length, completedTodayCount, habitsToday.length, habitsCompletedTodayCount]);
 
-  // Priority Goals (Active top 3)
-  const priorityGoals = useMemo(() => {
-    return goals
-      .filter((g) => !g.isArchived)
-      .sort((a, b) => (a.priority === 'critical' ? -1 : 1))
-      .slice(0, 3);
-  }, [goals]);
+  const priorityGoals = useMemo(
+    () =>
+      goals
+        .filter((g) => !g.isArchived && g.status !== 'completed')
+        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+        .slice(0, 3),
+    [goals]
+  );
 
-  // Goal photo mapping helper
-  const getGoalPhoto = (category: string, idx: number) => {
-    const cat = category.toLowerCase();
-    if (cat.includes('career') || cat.includes('tech') || cat.includes('code')) return getPhoto('goal-tech').path;
-    if (cat.includes('finance') || cat.includes('wealth')) return getPhoto('goal-finance').path;
-    if (cat.includes('fitness') || cat.includes('health')) return getPhoto('goal-fitness').path;
-    if (cat.includes('academic') || cat.includes('learn')) return getPhoto('goal-academics').path;
-    const fallbacks = [getPhoto('goal-tech').path, getPhoto('goal-finance').path, getPhoto('goal-fitness').path];
-    return fallbacks[idx % fallbacks.length];
-  };
-
-  // Habit photo mapping helper
-  const getHabitPhoto = (name: string, idx: number) => {
-    const n = name.toLowerCase();
-    if (n.includes('read') || n.includes('book')) return getPhoto('habit-reading').path;
-    if (n.includes('sleep') || n.includes('rest')) return getPhoto('habit-sleep').path;
-    if (n.includes('water') || n.includes('hydrat')) return getPhoto('habit-hydration').path;
-    if (n.includes('work') || n.includes('code') || n.includes('study')) return getPhoto('habit-deepwork').path;
-    if (n.includes('gym') || n.includes('workout') || n.includes('run')) return getPhoto('gym-weights').path;
-    const fallbacks = [getPhoto('habit-reading').path, getPhoto('habit-deepwork').path, getPhoto('habit-sleep').path, getPhoto('habit-hydration').path];
-    return fallbacks[idx % fallbacks.length];
-  };
-
-  // Academic attendance safety
   const attendanceAvg = useMemo(() => {
     if (academicSubjects.length === 0) return null;
     const totalClasses = academicSubjects.reduce((acc, s) => acc + s.totalClasses, 0);
@@ -188,31 +176,38 @@ export default function Dashboard() {
     return totalClasses > 0 ? (attended / totalClasses) * 100 : 100.0;
   }, [academicSubjects]);
 
-  // Today's scheduled classes from personal timetable
   const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const todayClasses = useMemo(() => {
-    return timetableSlots
-      .filter((s) => s.dayOfWeek === currentDayOfWeek)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [timetableSlots, currentDayOfWeek]);
+  const todayClasses = useMemo(
+    () =>
+      timetableSlots
+        .filter((s) => s.dayOfWeek === currentDayOfWeek)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [timetableSlots, currentDayOfWeek]
+  );
 
-  const academicAlertSubject = useMemo(() => {
-    return academicSubjects.find(
-      (s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
-    );
-  }, [academicSubjects]);
+  const academicAlertSubject = useMemo(
+    () =>
+      academicSubjects.find(
+        (s) =>
+          s.totalClasses > 0 &&
+          (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
+      ),
+    [academicSubjects]
+  );
 
-  // Cashflow velocity calculation
-  const monthlyExpenses = useMemo(() => {
-    return financeTransactions
-      .filter((t) => t.type === 'expense' && t.date.startsWith(todayStr.slice(0, 7)))
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [financeTransactions, todayStr]);
+  const monthlyExpenses = useMemo(
+    () =>
+      financeTransactions
+        .filter((t) => t.type === 'expense' && t.date.startsWith(todayStr.slice(0, 7)))
+        .reduce((sum, t) => sum + t.amount, 0),
+    [financeTransactions, todayStr]
+  );
 
-  const hasFinanceData = financeTransactions.length > 0;
-  const hasFitnessData = workoutSessions.length > 0;
+  const hasReviewedToday = useMemo(
+    () => eveningReviews.some((r) => r.date === todayStr),
+    [eveningReviews, todayStr]
+  );
 
-  // Widget visibility preferences
   const widgets = {
     focusTimer: true,
     todayTasks: true,
@@ -223,6 +218,7 @@ export default function Dashboard() {
     fitness: true,
     ...settings.dashboardWidgets,
   };
+  const hasLeftColumn = widgets.todayTasks !== false || widgets.habits !== false;
 
   const handleToggleTask = (task: Task) => {
     if (task.isCompleted) {
@@ -232,555 +228,695 @@ export default function Dashboard() {
     }
   };
 
-  const handleRescheduleOverdue = (taskId: string) => {
-    rescheduleTask(taskId, todayStr);
-  };
+  const currencyDisplay =
+    !settings.currencySymbol || settings.currencySymbol === '₹'
+      ? formatCurrencyINR(monthlyExpenses)
+      : `${settings.currencySymbol}${monthlyExpenses.toLocaleString()}`;
+
+  // Circle stroke calculation for clean vector Focus Ring
+  const ringRadius = 56;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringDashOffset =
+    ringCircumference - (timerProgressPct / 100) * ringCircumference;
 
   return (
-    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-      
-      {/* =========================================================================
-          1. LARGE EDITORIAL PHOTOGRAPHIC HERO SECTION (LIFE OS 3.0)
-      ========================================================================= */}
+    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* 1. CLEAN TODAY COMMAND HEADER */}
       <section
-        className="editorial-hero"
         style={{
-          backgroundImage: `url(${getPhoto('dashboard-hero').path})`,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
+          paddingBottom: '4px',
         }}
       >
-        <div className="editorial-hero-scrim" />
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <span className="badge badge-brick font-tabular">{todayFormatted}</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              {todayTasks.length} task{todayTasks.length !== 1 ? 's' : ''} scheduled
+              {habitsToday.length > 0 ? ` · ${habitsToday.length - habitsCompletedTodayCount} habits open` : ''}
+            </span>
+          </div>
+          <h1
+            className="text-display"
+            style={{ color: 'var(--text-primary)', margin: 0 }}
+          >
+            {settings.userName?.trim() ? `${greeting}, ${settings.userName.trim()}` : `${greeting}`}
+          </h1>
+        </div>
 
-        <div className="editorial-hero-content">
-          <div style={{ maxWidth: '640px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '7px 12px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-default)',
+            }}
+          >
+            <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              Daily Cadence
+            </span>
+            <div style={{ width: '72px' }} className="progress-track">
+              <div className="progress-fill" style={{ width: `${dailyProgress}%` }} />
+            </div>
+            <span className="font-tabular" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)' }}>
+              {dailyProgress}%
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowWidgetCustomizer(true)}
+            className="btn btn-secondary btn-sm"
+            aria-label="Customize dashboard widgets"
+          >
+            <Sliders size={13} /> Customize
+          </button>
+        </div>
+      </section>
+
+      {/* 2. NATURAL LANGUAGE QUICK CAPTURE BAR */}
+      <QuickTaskBar
+        compact
+        onExpandDetails={(vals) => setTaskModalInit(vals || {})}
+      />
+
+      {/* 3. FOUR-TILE KPI BENTO STRIP */}
+      <section className="today-kpi-grid">
+        <button
+          type="button"
+          onClick={() => setActiveView('tasks')}
+          className="editorial-stat-card card-interactive"
+          style={{ textAlign: 'left' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="text-label" style={{ color: 'var(--text-muted)' }}>Today Tasks</span>
+            <CheckSquare size={15} color="var(--accent-primary)" />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span className="font-tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {todayTasks.length}
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              open · {completedTodayCount} done
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveView('habits')}
+          className="editorial-stat-card card-interactive"
+          style={{ textAlign: 'left' }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span className="text-label" style={{ color: 'var(--text-muted)' }}>Habits Today</span>
+            <Repeat size={15} color="var(--status-success)" />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <span className="font-tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {habitsCompletedTodayCount}/{habitsToday.length}
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              completed
+            </span>
+          </div>
+        </button>
+
+        {widgets.academics !== false && (
+          <button
+            type="button"
+            onClick={() => setActiveView('academics')}
+            className="editorial-stat-card card-interactive"
+            style={{ textAlign: 'left' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="text-label" style={{ color: 'var(--text-muted)' }}>Academics</span>
+              <GraduationCap
+                size={15}
+                color={academicAlertSubject ? 'var(--status-danger)' : 'var(--status-info)'}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
               <span
+                className="font-tabular"
                 style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: 'var(--palette-brick)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  background: 'rgba(20, 19, 1, 0.85)',
-                  padding: '3px 10px',
-                  borderRadius: '20px',
-                  border: '1px solid var(--palette-brick-border)',
-                  backdropFilter: 'blur(8px)',
+                  fontSize: '24px',
+                  fontWeight: 700,
+                  color:
+                    attendanceAvg !== null && attendanceAvg < 75
+                      ? 'var(--status-danger)'
+                      : 'var(--text-primary)',
                 }}
               >
-                {todayFormatted}
+                {todayClasses.length > 0
+                  ? `${todayClasses.length}`
+                  : attendanceAvg !== null
+                  ? `${attendanceAvg.toFixed(0)}%`
+                  : '—'}
               </span>
-              <span style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'rgba(255, 255, 255, 0.3)' }} />
-              <span style={{ fontSize: '11px', color: 'var(--palette-silver)', fontWeight: 500 }}>
-                Local-First Ecosystem
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {todayClasses.length > 0
+                  ? `class${todayClasses.length !== 1 ? 'es' : ''} today`
+                  : attendanceAvg !== null
+                  ? 'attendance'
+                  : 'no courses yet'}
               </span>
             </div>
+          </button>
+        )}
 
-            <h1
-              className="font-editorial"
-              style={{
-                fontSize: '38px',
-                fontWeight: 500,
-                color: 'var(--text-on-accent)',
-                margin: '0 0 10px 0',
-                letterSpacing: '-0.02em',
-                lineHeight: 1.15,
-                textShadow: '0 2px 10px rgba(0,0,0,0.5)',
-              }}
-            >
-              {settings.userName?.trim() ? `${greeting}, ${settings.userName.trim()}` : `${greeting}, Welcome to LIFE OS`}
-            </h1>
-
-            <p
-              className="font-editorial"
-              style={{
-                fontSize: '16px',
-                fontStyle: 'italic',
-                color: 'var(--text-on-accent)',
-                lineHeight: 1.6,
-                margin: '0 0 16px 0',
-                opacity: 0.95,
-                maxWidth: '560px',
-                textShadow: '0 1px 4px rgba(0,0,0,0.4)',
-              }}
-            >
-              "{dailyQuote.text}"
-              <span style={{ display: 'block', fontSize: '12px', fontStyle: 'normal', color: 'var(--palette-silver)', marginTop: '4px' }}>
-                — {dailyQuote.author}
+        {widgets.finance !== false && (
+          <button
+            type="button"
+            onClick={() => setActiveView('finance')}
+            className="editorial-stat-card card-interactive"
+            style={{ textAlign: 'left' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span className="text-label" style={{ color: 'var(--text-muted)' }}>Month Spend</span>
+              <Wallet size={15} color="var(--accent-secondary)" />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+              <span className="font-tabular" style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {currencyDisplay}
               </span>
-            </p>
+              <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                logged
+              </span>
+            </div>
+          </button>
+        )}
+      </section>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'rgba(20, 19, 1, 0.85)',
-                  padding: '6px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-default)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <CheckSquare size={14} color="var(--accent-primary)" />
-                <span style={{ fontSize: '12.5px', color: 'var(--text-primary)' }}>
-                  <strong className="tabular">{todayTasks.length}</strong> focus action{todayTasks.length !== 1 ? 's' : ''} today
-                </span>
+      {/* 4. EXECUTION GRID: TASKS + HABITS (LEFT) | FOCUS + SCHEDULE + REVIEW (RIGHT) */}
+      <section className={`today-execution-grid${!hasLeftColumn ? ' single-col' : ''}`}>
+        {/* LEFT COLUMN */}
+        {hasLeftColumn && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+          {/* Today's Action Queue */}
+          {widgets.todayTasks !== false && (
+            <div className="editorial-island">
+              <div className="editorial-island-header">
+                <div>
+                  <span className="section-eyebrow">Priority Queue</span>
+                  <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
+                    Today’s Execution
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('tasks')}
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: 'var(--accent-light)' }}
+                >
+                  Open Tasks <ArrowRight size={13} />
+                </button>
               </div>
 
               {overdueTasks.length > 0 && (
                 <div
                   style={{
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--status-danger-bg)',
+                    border: '1px solid rgba(244, 63, 94, 0.25)',
+                    marginBottom: '14px',
                     display: 'flex',
+                    flexWrap: 'wrap',
                     alignItems: 'center',
-                    gap: '8px',
-                    background: 'rgba(184, 12, 9, 0.18)',
-                    padding: '6px 14px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(184, 12, 9, 0.4)',
-                    backdropFilter: 'blur(8px)',
+                    justifyContent: 'space-between',
+                    gap: '10px 12px',
                   }}
                 >
-                  <AlertTriangle size={14} color="var(--status-danger)" />
-                  <span style={{ fontSize: '12.5px', color: 'var(--status-danger)' }}>
-                    <strong className="tabular">{overdueTasks.length}</strong> overdue pending
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 200px', minWidth: 0 }}>
+                    <AlertTriangle size={15} color="var(--status-danger)" style={{ flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--status-danger)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {overdueTasks.length} overdue: {overdueTasks[0].title}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Due {overdueTasks[0].dueDate}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => rescheduleTask(overdueTasks[0].id, todayStr)}
+                    className="btn btn-sm btn-secondary"
+                    style={{ flexShrink: 0 }}
+                  >
+                    Move to Today
+                  </button>
+                </div>
+              )}
+
+              {todayTasks.length === 0 ? (
+                <EmptyState
+                  illustration="tasks"
+                  badge="Clear Slate"
+                  title="Nothing overdue or queued for today."
+                  description="Use the quick capture bar above or jump into Tasks to plan your next sprint."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setTaskModalInit({ dueDate: todayStr })}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <Plus size={14} /> Add Task for Today
+                    </button>
+                  }
+                />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {todayTasks.slice(0, 6).map((t) => (
+                    <div
+                      key={t.id}
+                      className="editorial-triage-row"
+                      style={{ opacity: t.isCompleted ? 0.55 : 1 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                        <Checkbox
+                          size="sm"
+                          checked={t.isCompleted}
+                          onChange={() => handleToggleTask(t)}
+                        />
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div
+                            style={{
+                              fontSize: '13.5px',
+                              fontWeight: 600,
+                              color: t.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
+                              textDecoration: t.isCompleted ? 'line-through' : 'none',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {t.title}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                            <span>{t.category || 'General'}</span>
+                            {t.dueTime && <span className="font-tabular">· {t.dueTime}</span>}
+                            {t.estimatedDuration && (
+                              <span className="font-tabular" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                · <Clock size={10} /> {t.estimatedDuration}m
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                        {!t.isCompleted && (
+                          <button
+                            type="button"
+                            onClick={() => startTaskFocusSession(t.id)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ color: 'var(--accent-light)', padding: '4px 8px' }}
+                            title="Focus on this task"
+                          >
+                            <Play size={11} fill="currentColor" /> Focus
+                          </button>
+                        )}
+                        <span
+                          className={`badge ${
+                            t.priority === 'critical'
+                              ? 'badge-danger'
+                              : t.priority === 'high'
+                              ? 'badge-warning'
+                              : 'badge-silver'
+                          }`}
+                        >
+                          {t.priority}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
-          </div>
-
-          {/* Daily Progress Gauge on Hero */}
-          <div
-            style={{
-              background: 'rgba(20, 19, 1, 0.85)',
-              border: '1px solid var(--border-default)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '20px 24px',
-              backdropFilter: 'blur(12px)',
-              boxShadow: 'var(--shadow-md)',
-              minWidth: '220px',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                Daily Cadence
-              </span>
-              <span className="badge" style={{ background: 'var(--accent-subtle)', color: 'var(--accent-primary)' }}>
-                {dailyProgress}%
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginBottom: '10px' }}>
-              <span className="tabular font-editorial" style={{ fontSize: '36px', fontWeight: 600, color: 'var(--text-on-accent)' }}>
-                {dailyProgress}%
-              </span>
-              <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>completed</span>
-            </div>
-
-            <div style={{ width: '100%', height: '6px', background: 'var(--bg-subtle)', borderRadius: '3px', overflow: 'hidden' }}>
-              <div
-                style={{
-                  width: `${dailyProgress}%`,
-                  height: '100%',
-                  background: 'linear-gradient(90deg, var(--palette-brick), var(--palette-walnut))',
-                  borderRadius: '3px',
-                  transition: 'width 0.4s ease',
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', fontSize: '11px', color: 'var(--text-muted)' }}>
-              <span>Tasks: <strong style={{ color: 'var(--text-primary)' }}>{completedTodayCount}/{todayTasks.length + completedTodayCount}</strong></span>
-              <span>Habits: <strong style={{ color: 'var(--text-primary)' }}>{habitsCompletedTodayCount}/{habitsToday.length}</strong></span>
-            </div>
-
-            <button
-              onClick={() => setShowWidgetCustomizer(true)}
-              style={{
-                width: '100%',
-                marginTop: '12px',
-                padding: '6px 10px',
-                borderRadius: '6px',
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid var(--border-default)',
-                color: 'var(--text-secondary)',
-                fontSize: '11px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <Sliders size={12} />
-              <span>Customize Dashboard</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          2. ASYMMETRIC DUAL ROW: PHOTOGRAPHIC FOCUS TIMER & TODAY'S TRIAGE
-      ========================================================================= */}
-      <section className="dashboard-focus-triage-grid">
-        
-        {/* Left: Large Photographic Focus Timer */}
-        <div
-          className="photo-focus-card dashboard-timer-column"
-          style={{
-            backgroundImage: `url(${getPhoto('dashboard-focus-timer').path})`,
-          }}
-        >
-          <div className="photo-focus-scrim" />
-
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--accent-light)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-primary)' }} />
-                Deep Focus Sanctuary
-              </span>
-              <button
-                onClick={() => setActiveView('focus')}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontSize: '11px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
-              >
-                Enter Fullscreen <ArrowRight size={12} />
-              </button>
-            </div>
-          </div>
-
-          {/* Timer Display */}
-          <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', margin: '20px 0' }}>
-            <div
-              className={`tabular font-editorial ${isTimerRunning ? 'timer-running-pulse' : ''}`}
-              style={{
-                fontSize: '56px',
-                fontWeight: 600,
-                letterSpacing: '-0.02em',
-                color: 'var(--text-on-accent)',
-                textShadow: '0 4px 16px rgba(0,0,0,0.6)',
-                lineHeight: 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {formatTimer(timerSeconds)}
-            </div>
-            <div style={{ fontSize: '12px', color: 'var(--palette-silver)', marginTop: '6px' }}>
-              {isTimerRunning ? 'Pines & Alpine Stream · Focus block active' : 'Ready to start deep work cadence'}
-            </div>
-          </div>
-
-          {/* Timer Controls */}
-          <div
-            style={{
-              position: 'relative',
-              zIndex: 2,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '12px',
-            }}
-          >
-            <button
-              onClick={() => {
-                const nextRunning = !isTimerRunning;
-                setIsTimerRunning(nextRunning);
-                useStore.getState().addToast({
-                  type: 'info',
-                  title: nextRunning ? 'Focus Session Started' : 'Focus Session Paused',
-                  message: nextRunning ? '25 minutes deep work in progress.' : 'Timer paused. Take a breath.',
-                });
-              }}
-              className="btn btn-primary"
-              style={{
-                padding: '8px 20px',
-                borderRadius: '30px',
-                fontSize: '13px',
-                fontWeight: 600,
-                boxShadow: isTimerRunning ? '0 4px 16px rgba(184, 12, 9, 0.45)' : 'var(--shadow-sm)',
-                transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-              }}
-            >
-              {isTimerRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
-              {isTimerRunning ? 'Pause Session' : 'Start Focus (25m)'}
-            </button>
-
-            <button
-              onClick={() => {
-                resetTimer(25);
-                useStore.getState().addToast({
-                  type: 'info',
-                  title: 'Timer Reset',
-                  message: 'Focus session reset to 25:00.',
-                });
-              }}
-              className="btn btn-secondary icon-btn-spin"
-              style={{
-                padding: '8px 12px',
-                borderRadius: '30px',
-                backdropFilter: 'blur(8px)',
-              }}
-              title="Reset Timer"
-              aria-label="Reset Timer"
-            >
-              <RotateCcw size={14} />
-            </button>
-          </div>
-        </div>
-
-        {/* Right: Today's Focus Tasks & Overdue Resolution */}
-        <div className="editorial-island dashboard-triage-column">
-          <div className="editorial-island-header">
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--palette-brick)' }}>
-                  Question 1 · Daily Execution
-                </span>
-              </div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                What should I do today?
-              </h2>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Rule of 3: Top focus actions for maximum leverage
-              </span>
-            </div>
-            <button
-              onClick={() => setActiveView('tasks')}
-              className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--accent-primary)' }}
-            >
-              All Tasks ({todayTasks.length}) <ArrowRight size={13} />
-            </button>
-          </div>
-
-          {/* Overdue Alert Strip (Answers: What am I falling behind on?) */}
-          {overdueTasks.length > 0 && (
-            <div
-              style={{
-                padding: '12px 16px',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--palette-brick-subtle)',
-                border: '1px solid var(--palette-brick-border)',
-                marginBottom: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <AlertTriangle size={16} color="var(--palette-brick)" />
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--palette-brick)' }}>
-                    Falling behind: {overdueTasks[0].title}
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Overdue from {overdueTasks[0].dueDate} · Requires resolution
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => handleRescheduleOverdue(overdueTasks[0].id)}
-                className="btn btn-sm btn-primary"
-                style={{ fontSize: '11.5px', padding: '4px 10px' }}
-              >
-                Do Today
-              </button>
-            </div>
           )}
 
-          {/* Today Tasks List (Top 3) */}
-          {tasks.length === 0 ? (
-            <div style={{ padding: '16px' }}>
-              <EmptyState
-                illustration="tasks"
-                badge="Clean Slate"
-                title="Your day is open."
-                description="Create tasks to organize your day, categorize by life area, and build momentum."
-                action={
-                  <button
-                    onClick={() => setActiveView('tasks')}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Plus size={14} /> Create your first task
-                  </button>
-                }
-                secondaryAction={
-                  <button
-                    onClick={() => setActiveView('focus')}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Clock size={14} /> Start 25m Focus
-                  </button>
-                }
-              />
-            </div>
-          ) : todayTasks.length === 0 && overdueTasks.length === 0 ? (
-            <div style={{ padding: '16px' }}>
-              <EmptyState
-                illustration="tasks"
-                badge="Today All Clear"
-                title="All clear for today!"
-                description="No pending tasks are scheduled for today. Enjoy your evening or plan tomorrow."
-                action={
-                  <button
-                    onClick={() => setActiveView('tasks')}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Plus size={14} /> Schedule a task
-                  </button>
-                }
-              />
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {todayTasks.slice(0, 3).map((t, idx) => (
+          {/* Habit Rhythm Checklist (Zero noisy stock images) */}
+          {widgets.habits !== false && (
+            <div className="editorial-island">
+              <div className="editorial-island-header">
+                <div>
+                  <span className="section-eyebrow">Daily Rituals</span>
+                  <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
+                    Habits Today
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('habits')}
+                  className="btn btn-ghost btn-sm"
+                  style={{ color: 'var(--accent-light)' }}
+                >
+                  All Habits <ArrowRight size={13} />
+                </button>
+              </div>
+
+              {habitsToday.length === 0 ? (
+                <EmptyState
+                  illustration="habits"
+                  badge="Rituals"
+                  title="No habits scheduled today."
+                  description="Anchor consistent daily routines like deep study, workouts, or reading."
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setActiveView('habits')}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <Plus size={14} /> Add Habit
+                    </button>
+                  }
+                />
+              ) : (
                 <div
-                  key={t.id}
-                  className={`editorial-triage-row ${t.isCompleted ? 'completed' : ''}`}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '11px 15px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--border-default)',
-                    transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                    opacity: t.isCompleted ? 0.6 : 1,
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: '10px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div
-                      style={{
-                        width: '20px',
-                        height: '20px',
-                        borderRadius: '50%',
-                        border: '1px solid var(--border-default)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: 'var(--text-muted)',
-                        background: 'var(--bg-subtle)',
-                        flexShrink: 0
-                      }}
-                    >
-                      {idx + 1}
-                    </div>
-                    <Checkbox
-                      size="sm"
-                      checked={t.isCompleted}
-                      onChange={() => handleToggleTask(t)}
-                    />
-                    <div>
+                  {habitsToday.map((h) => {
+                    const isDone = habitEntries.some(
+                      (e) => e.habitId === h.id && e.date === todayStr && e.completed
+                    );
+
+                    return (
                       <div
+                        key={h.id}
                         style={{
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: t.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
-                          textDecoration: t.isCompleted ? 'line-through' : 'none',
-                          transition: 'all 0.18s ease-out',
-                        }}
-                      >
-                        {t.title}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span>{t.category || 'General'}</span>
-                        {t.dueTime && <span>· 🕒 {t.dueTime}</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {t.estimatedDuration && (
-                      <span style={{ fontSize: '10.5px', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                        <Clock size={10} /> {t.estimatedDuration}m
-                      </span>
-                    )}
-
-                    {!t.isCompleted && (
-                      <button
-                        onClick={() => startTaskFocusSession(t.id)}
-                        className="btn btn-ghost"
-                        style={{
-                          padding: '3px 6px',
-                          fontSize: '11px',
-                          color: 'var(--palette-brick, #B80C09)',
-                          display: 'inline-flex',
+                          display: 'flex',
                           alignItems: 'center',
-                          gap: '3px',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                          padding: '12px 14px',
+                          borderRadius: 'var(--radius-md)',
+                          background: isDone ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
+                          border: `1px solid ${isDone ? 'var(--accent-border)' : 'var(--border-default)'}`,
+                          transition: 'all var(--spring-fast)',
                         }}
-                        title="Start focus on this task"
                       >
-                        <Play size={10} fill="currentColor" />
-                        <span className="hidden sm:inline">Focus</span>
-                      </button>
-                    )}
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: 'var(--text-primary)',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {h.name}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: 'var(--accent-secondary)', fontWeight: 600 }} className="font-tabular">
+                              <Flame size={11} /> {h.streak || 0}d
+                            </span>
+                            <span>· {h.category || 'Daily'}</span>
+                          </div>
+                        </div>
 
-                    <span
-                      className="badge"
-                      style={{
-                        background: t.priority === 'critical' ? 'var(--priority-critical-bg)' : t.priority === 'high' ? 'var(--priority-high-bg)' : 'var(--bg-subtle)',
-                        color: t.priority === 'critical' ? 'var(--priority-critical)' : t.priority === 'high' ? 'var(--priority-high)' : 'var(--text-secondary)',
-                      }}
-                    >
-                      {t.priority}
-                    </span>
-                  </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleHabitEntry(h.id, todayStr)}
+                          className="btn-habit-check"
+                          style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '50%',
+                            border: isDone ? 'none' : '1.5px solid var(--border-light)',
+                            background: isDone ? 'var(--accent-primary)' : 'var(--bg-surface)',
+                            color: isDone ? '#FFFFFF' : 'var(--text-muted)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0,
+                          }}
+                          aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
+                        >
+                          <Check size={15} strokeWidth={2.5} />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              )}
             </div>
           )}
         </div>
+        )}
 
+        {/* RIGHT COLUMN */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+          {/* Clean Vector Deep Focus Card */}
+          {widgets.focusTimer !== false && (
+            <div className={`focus-timer-card ${isTimerRunning ? 'active' : ''}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <span className="section-eyebrow">Focus Sprint</span>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('focus')}
+                  className="btn btn-ghost btn-sm"
+                  style={{ padding: '2px 6px', fontSize: '11.5px' }}
+                >
+                  Fullscreen <ArrowRight size={12} />
+                </button>
+              </div>
+
+              {/* Duration selector */}
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
+                {[
+                  { label: '25m Deep', mins: 25 },
+                  { label: '45m Flow', mins: 45 },
+                  { label: '5m Break', mins: 5 },
+                ].map((opt) => (
+                  <button
+                    key={opt.mins}
+                    type="button"
+                    onClick={() => selectTimerMode(opt.mins)}
+                    className={`tab-pill ${timerDurationMins === opt.mins ? 'active' : ''}`}
+                    style={{ flex: 1, justifyContent: 'center', fontSize: '11.5px', padding: '5px 8px' }}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Vector SVG Timer Ring */}
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0 18px' }}>
+                <div style={{ position: 'relative', width: '136px', height: '136px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="136" height="136" style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }}>
+                    <circle
+                      cx="68"
+                      cy="68"
+                      r={ringRadius}
+                      fill="none"
+                      stroke="var(--border-default)"
+                      strokeWidth="6"
+                    />
+                    <circle
+                      cx="68"
+                      cy="68"
+                      r={ringRadius}
+                      fill="none"
+                      stroke="var(--accent-primary)"
+                      strokeWidth="6"
+                      strokeLinecap="round"
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={ringDashOffset}
+                      style={{ transition: 'stroke-dashoffset 0.5s linear' }}
+                    />
+                  </svg>
+                  <div style={{ textAlign: 'center', zIndex: 1 }}>
+                    <div
+                      className="font-tabular"
+                      style={{
+                        fontSize: '30px',
+                        fontWeight: 700,
+                        color: 'var(--text-primary)',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {formatTimer(timerSeconds)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                      {isTimerRunning ? 'In Focus' : 'Ready'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsTimerRunning((r) => !r)}
+                  className="btn btn-primary"
+                  style={{ flex: 1 }}
+                >
+                  {isTimerRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
+                  {isTimerRunning ? 'Pause' : 'Start Focus'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => selectTimerMode(timerDurationMins)}
+                  className="btn btn-secondary btn-icon icon-btn-spin"
+                  title="Reset Timer"
+                  aria-label="Reset Timer"
+                >
+                  <RotateCcw size={15} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Today's Class Schedule */}
+          {widgets.academics !== false && (
+            <div className="editorial-island">
+              <div className="editorial-island-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Calendar size={15} color="var(--status-info)" />
+                  <h3 className="text-heading-sub" style={{ color: 'var(--text-primary)' }}>
+                    Today’s Timetable
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('academics')}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Timetable <ArrowRight size={12} />
+                </button>
+              </div>
+
+              {todayClasses.length === 0 ? (
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>
+                  {academicSubjects.length === 0
+                    ? 'Add your semester courses and weekly timetable inside Academics.'
+                    : 'No classes scheduled for today.'}
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {todayClasses.map((slot) => (
+                    <div
+                      key={slot.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '9px 12px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-subtle)',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {slot.subjectName || slot.courseCode || 'Class'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          Room {slot.room || 'TBA'}
+                        </div>
+                      </div>
+                      <span className="badge badge-silver font-tabular">
+                        {slot.startTime} – {slot.endTime}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Fitness & Evening Review Dual Card */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {widgets.fitness !== false && (
+              <button
+                type="button"
+                onClick={() => setActiveView('fitness')}
+                className="card card-interactive"
+                style={{ textAlign: 'left', padding: '14px 16px' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Dumbbell size={16} color="var(--status-success)" />
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        Fitness Log
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                        {workoutSessions.length > 0
+                          ? `Latest: ${workoutSessions[workoutSessions.length - 1]?.title || 'Workout'}`
+                          : 'No workout sessions logged yet'}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="badge badge-silver font-tabular">{workoutSessions.length}</span>
+                </div>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setActiveView('review')}
+              className="card card-interactive"
+              style={{
+                textAlign: 'left',
+                padding: '14px 16px',
+                borderColor: hasReviewedToday ? 'rgba(16, 185, 129, 0.3)' : 'var(--accent-border)',
+                background: hasReviewedToday ? 'var(--status-success-bg)' : 'var(--accent-subtle)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Moon size={16} color={hasReviewedToday ? 'var(--status-success)' : 'var(--accent-light)'} />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {hasReviewedToday ? 'Evening Shutdown Logged' : 'Evening Review'}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                      {hasReviewedToday
+                        ? 'Reflection saved for today.'
+                        : 'Reflect on wins & set tomorrow’s top 3 priorities.'}
+                    </div>
+                  </div>
+                </div>
+                <ArrowRight size={14} color="var(--text-secondary)" />
+              </div>
+            </button>
+          </div>
+        </div>
       </section>
 
-      {/* =========================================================================
-          3. PHOTOGRAPHIC PRIORITY GOAL THUMBNAILS (LIFE OS 3.0)
-      ========================================================================= */}
+      {/* 5. ACTIVE STRATEGIC GOALS */}
       {widgets.goals !== false && (
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                <span style={{ fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--palette-brick)' }}>
-                  Question 2 · Long-Term Vision
-                </span>
-              </div>
-              <h2 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                What is most important?
+              <span className="section-eyebrow">Horizons</span>
+              <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
+                Active Goals
               </h2>
-              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                Strategic Horizons: Goal architecture & milestone progress
-              </span>
             </div>
             <button
+              type="button"
               onClick={() => setActiveView('goals')}
               className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--accent-primary)' }}
+              style={{ color: 'var(--accent-light)' }}
             >
               Manage Goals <ArrowRight size={13} />
             </button>
@@ -789,93 +925,71 @@ export default function Dashboard() {
           {priorityGoals.length === 0 ? (
             <EmptyState
               illustration="goals"
-              badge="Ambitions & Horizons"
-              title="Give your ambitions a direction."
-              description="Define milestones, track progress percentages, and connect your goals to daily habits."
+              badge="Long-Term Clarity"
+              title="Set your next milestone."
+              description="Define measurable semester, fitness, or career goals and link your daily tasks."
               action={
                 <button
+                  type="button"
                   onClick={() => setActiveView('goals')}
                   className="btn btn-primary btn-sm"
                 >
-                  <Plus size={14} /> Create a goal
+                  <Plus size={14} /> Create Goal
                 </button>
               }
             />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
-              {priorityGoals.map((g, idx) => {
-                const photoUrl = getGoalPhoto(g.category, idx);
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {priorityGoals.map((g) => {
+                const completedMilestones = g.milestones.filter((m) => m.isCompleted).length;
                 return (
-                  <div
+                  <button
                     key={g.id}
-                    className="photo-tile"
+                    type="button"
                     onClick={() => setActiveView('goals')}
+                    className="card card-interactive"
+                    style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}
                   >
-                    <div className="photo-tile-image-wrap">
-                      <img
-                        src={photoUrl}
-                        alt={g.title}
-                        className="photo-tile-img"
-                        loading="lazy"
-                      />
-                      <div className="photo-tile-scrim" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="badge badge-silver">{g.category || 'Personal'}</span>
                       <span
-                        className="badge"
-                        style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          background: 'rgba(20, 19, 1, 0.85)',
-                          color: g.priority === 'critical' ? 'var(--status-danger)' : 'var(--accent-light)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
-                          backdropFilter: 'blur(6px)',
-                        }}
+                        className={`badge ${
+                          g.priority === 'critical'
+                            ? 'badge-danger'
+                            : g.priority === 'high'
+                            ? 'badge-warning'
+                            : 'badge-brick'
+                        }`}
                       >
                         {g.priority}
                       </span>
-                      <span
-                        style={{
-                          position: 'absolute',
-                          bottom: '8px',
-                          left: '14px',
-                          fontSize: '11px',
-                          color: 'var(--accent-light)',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.04em',
-                        }}
-                      >
-                        {g.category}
-                      </span>
                     </div>
 
-                    <div style={{ padding: '16px' }}>
-                      <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+                    <div>
+                      <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
                         {g.title}
                       </h3>
-                      <p style={{ margin: '0 0 12px 0', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5, maxHeight: '36px', overflow: 'hidden' }}>
-                        {g.description || 'Dedicated strategic progression.'}
-                      </p>
+                      {g.description && (
+                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {g.description}
+                        </p>
+                      )}
+                    </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', fontSize: '11.5px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>Overall Progress</span>
-                        <span className="tabular" style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '6px' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>
+                          {completedMilestones}/{g.milestones.length} milestones
+                        </span>
+                        <span className="font-tabular" style={{ fontWeight: 700, color: 'var(--accent-light)' }}>
                           {g.progress}%
                         </span>
                       </div>
-
-                      <div style={{ width: '100%', height: '4px', background: 'var(--border-default)', borderRadius: '2px', overflow: 'hidden' }}>
-                        <div
-                          style={{
-                            width: `${g.progress}%`,
-                            height: '100%',
-                            background: 'var(--accent-primary)',
-                            borderRadius: '2px',
-                          }}
-                        />
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width: `${g.progress}%` }} />
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -883,359 +997,55 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* =========================================================================
-          4. IMAGE-BASED HABIT TRACKER (LIFE OS 3.0)
-      ========================================================================= */}
-      {widgets.habits !== false && (
-        <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-              Habit Rhythm & Daily Consistency
-            </h2>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-              Photographic habit tiles with active streak tracking
-            </span>
-          </div>
-          <button
-            onClick={() => setActiveView('habits')}
-            className="btn btn-ghost btn-sm"
-            style={{ color: 'var(--accent-primary)' }}
-          >
-            Habit Grid <ArrowRight size={13} />
-          </button>
-        </div>
-
-        {habitsToday.length === 0 ? (
-          <EmptyState
-            illustration="habits"
-            badge="Daily Consistency"
-            title="Small actions create lasting change."
-            description="Anchor your daily routine with small disciplines. Build momentum one checkmark at a time."
-            action={
-              <button
-                onClick={() => setActiveView('habits')}
-                className="btn btn-primary btn-sm"
-              >
-                <Plus size={14} /> Build your first habit
-              </button>
-            }
-          />
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-            {habitsToday.map((h, idx) => {
-              const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
-              const photoUrl = getHabitPhoto(h.name, idx);
-
-              return (
-                <div
-                  key={h.id}
-                  className="photo-tile"
-                  style={{
-                    borderColor: isDone ? 'var(--palette-brick-border)' : 'var(--border-default)',
-                  }}
-                >
-                  <div className="photo-tile-image-wrap" style={{ height: '110px' }}>
-                    <img
-                      src={photoUrl}
-                      alt={h.name}
-                      className="photo-tile-img"
-                      loading="lazy"
-                    />
-                    <div className="photo-tile-scrim" />
-                    
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '10px',
-                        left: '10px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        color: 'var(--status-warning)',
-                        background: 'rgba(20, 19, 1, 0.82)',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                        backdropFilter: 'blur(4px)',
-                      }}
-                    >
-                      <Flame size={12} color="var(--palette-brick)" fill="var(--palette-brick)" />
-                      <span className="tabular">{h.streak || 0}d</span> streak
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      padding: '12px 14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                    }}
-                  >
-                    <div>
-                      <h4 style={{ margin: '0 0 2px 0', fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {h.name}
-                      </h4>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        {h.category || 'Daily Habit'}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => toggleHabitEntry(h.id, todayStr)}
-                      className="btn-habit-check"
-                      style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: '50%',
-                        border: isDone ? 'none' : '1.5px solid var(--border-default)',
-                        background: isDone ? 'var(--palette-brick)' : 'var(--bg-elevated)',
-                        color: isDone ? 'var(--text-on-accent)' : 'var(--text-muted)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
-                        boxShadow: isDone ? '0 2px 8px rgba(184, 12, 9, 0.35)' : 'none',
-                        transform: isDone ? 'scale(1.05)' : 'scale(1)',
-                      }}
-                      title={isDone ? 'Completed today' : 'Mark completed'}
-                      aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
-                    >
-                      <Check
-                        size={16}
-                        strokeWidth={2.5}
-                        style={{
-                          animation: isDone ? 'checkboxPop 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
-                        }}
-                      />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-      )}
-
-      {/* =========================================================================
-          5. OPERATIONAL REMINDERS & CROSS-MODULE RADAR (Non-Card Horizontal Strip)
-      ========================================================================= */}
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-        
-        {/* Academic & Timetable Radar */}
-        {widgets.academics !== false && (
-          <div
-            className="editorial-island"
-            style={{ cursor: 'pointer' }}
-            onClick={() => setActiveView('academics')}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Academic & Schedule
-              </span>
-              <GraduationCap size={16} color="var(--accent-primary, #E32620)" />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              {academicSubjects.length === 0 && todayClasses.length === 0 ? (
-                <>
-                  <span style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    No Classes
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>scheduled today</span>
-                </>
-              ) : todayClasses.length > 0 ? (
-                <>
-                  <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {todayClasses.length} {todayClasses.length === 1 ? 'Class' : 'Classes'}
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>today</span>
-                </>
-              ) : (
-                <>
-                  <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: attendanceAvg !== null && attendanceAvg < 75 ? 'var(--status-danger)' : 'var(--text-primary)' }}>
-                    {attendanceAvg !== null ? `${attendanceAvg.toFixed(1)}%` : '100%'}
-                  </span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>attendance margin</span>
-                </>
-              )}
-            </div>
-            <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              {academicSubjects.length === 0 && todayClasses.length === 0
-                ? '+ Add your class schedule & courses'
-                : todayClasses.length > 0
-                ? `Next: ${todayClasses[0].subjectName || todayClasses[0].courseCode || 'Class'} (${todayClasses[0].startTime}) · Room ${todayClasses[0].room}`
-                : academicAlertSubject
-                ? `⚠️ ${academicAlertSubject.name} attendance alert (<${academicAlertSubject.targetAttendancePercentage}%)`
-                : '✓ All enrolled courses safely above threshold'}
-            </p>
-          </div>
-        )}
-
-        {/* Financial Velocity */}
-        {widgets.finance !== false && (
-          <div
-            className="editorial-island"
-            style={{ cursor: 'pointer' }}
-            onClick={() => setActiveView('finance')}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Monthly Cashflow
-              </span>
-              <DollarSign size={16} color="var(--status-warning, #E5AD4B)" />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                ${monthlyExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>spent this month</span>
-            </div>
-            <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              {hasFinanceData
-                ? `${financeTransactions.length} transaction${financeTransactions.length !== 1 ? 's' : ''} tracked this month`
-                : '+ Start tracking your cashflow & budget'}
-            </p>
-          </div>
-        )}
-
-        {/* Physical Conditioning & Fitness */}
-        {widgets.fitness !== false && (
-          <div
-            className="editorial-island"
-            style={{ cursor: 'pointer' }}
-            onClick={() => setActiveView('fitness')}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Physical Conditioning
-              </span>
-              <Dumbbell size={16} color="var(--status-success, #79B879)" />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-              <span className="tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {workoutSessions.length} {workoutSessions.length === 1 ? 'Session' : 'Sessions'}
-              </span>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>logged</span>
-            </div>
-            <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-              {hasFitnessData
-                ? `Latest: ${workoutSessions[workoutSessions.length - 1]?.title || 'Workout session'}`
-                : '+ Add your fitness & workout routine'}
-            </p>
-          </div>
-        )}
-
-        {/* Evening Shutdown & Review (Question 5) */}
-        <div
-          className="editorial-island"
-          style={{ cursor: 'pointer', border: '1px solid var(--palette-brick-border)', background: 'var(--palette-brick-subtle)' }}
-          onClick={() => setActiveView('review')}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--palette-brick)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Question 5 · Daily Reflection
-            </span>
-            <Moon size={16} color="var(--palette-brick)" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-            <span style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Evening Review
-            </span>
-          </div>
-          <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-secondary)' }}>
-            Complete evening shutdown, log gratitude & lock in tomorrow's Rule of 3 →
-          </p>
-        </div>
-
-      </section>
-
-      {/* DASHBOARD WIDGET CUSTOMIZER MODAL */}
+      {/* WIDGET CUSTOMIZER MODAL */}
       {showWidgetCustomizer && (
         <div
+          className="modal-overlay"
           role="dialog"
           aria-modal="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            backdropFilter: 'blur(4px)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
-          }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowWidgetCustomizer(false);
-          }}
+          aria-label="Customize Dashboard Widgets"
+          onClick={() => setShowWidgetCustomizer(false)}
         >
-          <div
-            style={{
-              background: 'var(--bg-card, #241C15)',
-              border: '1px solid var(--border-default, #49382A)',
-              borderRadius: '16px',
-              width: '100%',
-              maxWidth: '460px',
-              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)',
-              overflow: 'hidden',
-              display: 'flex',
-              flexDirection: 'column',
-              color: 'var(--text-primary, #F5F1E9)',
-            }}
-          >
-            <div
-              style={{
-                padding: '16px 20px',
-                borderBottom: '1px solid var(--border-default, #49382A)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: 'var(--bg-elevated, #302419)',
-              }}
-            >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sliders size={18} color="var(--accent-primary, #E32620)" />
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700 }}>Customize Dashboard Widgets</h3>
+                <Sliders size={16} color="var(--accent-primary)" />
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Customize Today View
+                </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowWidgetCustomizer(false)}
-                className="btn btn-ghost"
-                style={{ padding: '4px', color: 'var(--text-muted)' }}
+                className="btn btn-ghost btn-icon"
+                aria-label="Close"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                Choose which modules and sections appear on your personal dashboard overview:
-              </p>
-
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[
-                { key: 'focusTimer', label: 'Photographic Focus Timer', desc: 'Pomodoro timer sanctuary with soundscapes' },
-                { key: 'todayTasks', label: 'Today Action Triage', desc: 'Rule of 3 priority tasks & overdue alerts' },
-                { key: 'goals', label: 'Long-Term Vision Goals', desc: 'Active strategic horizons and progress tiles' },
-                { key: 'habits', label: 'Daily Habit Rituals', desc: 'Checkable habit rhythm cards with streaks' },
-                { key: 'academics', label: 'Academic & Timetable Schedule', desc: 'Class timetable and attendance margin radar' },
-                { key: 'finance', label: 'Financial Velocity', desc: 'Monthly cashflow and expense metrics' },
-                { key: 'fitness', label: 'Physical Conditioning', desc: 'Workout log count and training summary' },
+                { key: 'focusTimer', label: 'Focus Sprint Timer', desc: 'Interactive 25m / 45m / Break timer ring' },
+                { key: 'todayTasks', label: 'Today Action Queue', desc: 'Prioritized tasks and overdue rescue' },
+                { key: 'habits', label: 'Daily Habits', desc: 'Rituals scheduled for today with streak badges' },
+                { key: 'goals', label: 'Active Goals', desc: 'Milestone progress cards' },
+                { key: 'academics', label: 'Academics & Timetable', desc: 'Today’s classes and attendance radar' },
+                { key: 'finance', label: 'Monthly Spend', desc: 'Current month expenditure metric' },
+                { key: 'fitness', label: 'Fitness Summary', desc: 'Workout log summary' },
               ].map((item) => {
-                const isChecked = (widgets as any)[item.key] !== false;
+                const isChecked = (widgets as Record<string, boolean>)[item.key] !== false;
                 return (
                   <label
                     key={item.key}
                     style={{
                       display: 'flex',
-                      alignItems: 'flex-start',
+                      alignItems: 'center',
                       gap: '12px',
                       padding: '10px 12px',
-                      borderRadius: '8px',
-                      background: 'var(--bg-main, #100E0A)',
-                      border: '1px solid var(--border-default, #49382A)',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border-default)',
                       cursor: 'pointer',
                     }}
                   >
@@ -1250,18 +1060,13 @@ export default function Dashboard() {
                           },
                         });
                       }}
-                      style={{
-                        accentColor: 'var(--accent-primary, #E32620)',
-                        width: '16px',
-                        height: '16px',
-                        marginTop: '2px',
-                      }}
+                      style={{ accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
                     />
                     <div>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                         {item.label}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
                         {item.desc}
                       </div>
                     </div>
@@ -1270,19 +1075,30 @@ export default function Dashboard() {
               })}
             </div>
 
-            <div
-              style={{
-                padding: '12px 20px',
-                borderTop: '1px solid var(--border-default, #49382A)',
-                background: 'var(--bg-elevated, #302419)',
-                display: 'flex',
-                justifyContent: 'flex-end',
-              }}
-            >
+            <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
               <button
+                type="button"
+                onClick={() => {
+                  updateSettings({
+                    dashboardWidgets: {
+                      focusTimer: true,
+                      todayTasks: true,
+                      habits: true,
+                      goals: true,
+                      academics: true,
+                      finance: true,
+                      fitness: true,
+                    },
+                  });
+                }}
+                className="btn btn-ghost btn-sm"
+              >
+                Reset to defaults
+              </button>
+              <button
+                type="button"
                 onClick={() => setShowWidgetCustomizer(false)}
                 className="btn btn-primary btn-sm"
-                style={{ fontSize: '12px', padding: '6px 16px' }}
               >
                 Done
               </button>
@@ -1291,6 +1107,12 @@ export default function Dashboard() {
         </div>
       )}
 
+      {taskModalInit && (
+        <TaskModal
+          initialValues={taskModalInit}
+          onClose={() => setTaskModalInit(null)}
+        />
+      )}
     </div>
   );
 }

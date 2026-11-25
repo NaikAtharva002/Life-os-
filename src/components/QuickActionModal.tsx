@@ -55,7 +55,7 @@ export default function QuickActionModal({
       title: 'New Priority Task',
       desc: 'Add a scheduled task with priority rating, category, and subtasks',
       icon: CheckSquare,
-      color: 'var(--accent-primary, #E32620)',
+      color: 'var(--accent-primary)',
       shortcut: 'T',
       onClick: () => {
         onClose();
@@ -67,7 +67,7 @@ export default function QuickActionModal({
       title: 'New Vision Goal',
       desc: 'Set quarterly milestones, custom targets, and category objectives',
       icon: Target,
-      color: '#6B2B06',
+      color: 'var(--accent-secondary)',
       shortcut: 'G',
       onClick: () => {
         onClose();
@@ -79,7 +79,7 @@ export default function QuickActionModal({
       title: 'New Habit Ritual',
       desc: 'Anchor daily disciplines, weekly frequencies, and build active streaks',
       icon: Repeat,
-      color: '#E5AD4B',
+      color: 'var(--status-success)',
       shortcut: 'H',
       onClick: () => {
         onClose();
@@ -95,7 +95,7 @@ export default function QuickActionModal({
       title: 'Add Class / Lecture',
       desc: 'Schedule weekly lectures, timings, classrooms, and course instructor',
       icon: Calendar,
-      color: '#3B82F6',
+      color: 'var(--status-info)',
       shortcut: 'C',
       onClick: () => {
         onClose();
@@ -111,7 +111,7 @@ export default function QuickActionModal({
       title: 'Log Financial Expense',
       desc: 'Record cash outflow, budget allocations, and track spending velocity',
       icon: DollarSign,
-      color: 'var(--status-danger, #E45B52)',
+      color: 'var(--status-danger)',
       shortcut: 'E',
       onClick: () => {
         setActiveView('finance');
@@ -123,7 +123,7 @@ export default function QuickActionModal({
       title: 'Log Workout Session',
       desc: 'Record strength split, sets, reps, weight volume, and athletic notes',
       icon: Dumbbell,
-      color: 'var(--status-success, #79B879)',
+      color: 'var(--status-success)',
       shortcut: 'W',
       onClick: () => {
         setActiveView('fitness');
@@ -132,10 +132,10 @@ export default function QuickActionModal({
     },
     {
       id: 'note',
-      title: 'Draft Obsidian Note',
-      desc: 'Create a new markdown note in your knowledge vault with [[wiki-links]]',
+      title: 'Draft Knowledge Note',
+      desc: 'Create a markdown note in your vault with wiki-links',
       icon: FileText,
-      color: '#8B5CF6',
+      color: 'var(--accent-light)',
       shortcut: 'N',
       onClick: () => {
         saveNote({
@@ -156,9 +156,9 @@ export default function QuickActionModal({
     {
       id: 'focus',
       title: 'Start 25m Focus Session',
-      desc: 'Launch Pomodoro sanctuary with soothing ambient photography',
+      desc: 'Launch deep work Pomodoro sprint timer',
       icon: Compass,
-      color: 'var(--accent-primary, #E32620)',
+      color: 'var(--accent-primary)',
       shortcut: 'F',
       onClick: () => {
         setActiveView('focus');
@@ -170,49 +170,22 @@ export default function QuickActionModal({
   return (
     <div
       className="modal-overlay"
-      style={{
-        zIndex: 2050,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '16px',
-        background: 'rgba(0, 0, 0, 0.75)',
-        backdropFilter: 'blur(4px)',
-      }}
+      style={{ zIndex: 2050 }}
       onClick={onClose}
     >
       <div
-        className="card"
-        style={{
-          width: '100%',
-          maxWidth: '520px',
-          background: 'var(--bg-card, #241C15)',
-          borderRadius: '16px',
-          border: '1px solid var(--border-default, #49382A)',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.6)',
-          overflow: 'hidden',
-          animation: 'modalSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
+        className="modal"
+        style={{ maxWidth: '520px' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '16px 20px',
-            borderBottom: '1px solid var(--border-default, #49382A)',
-            background: 'var(--bg-elevated, #302419)',
-          }}
-        >
+        <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
-                background: 'var(--accent-primary, #E32620)',
+                background: 'var(--accent-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -222,25 +195,23 @@ export default function QuickActionModal({
               <Plus size={18} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: 'var(--text-primary, #F5F1E9)' }}>
-                Universal Quick Create
+              <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                Quick Create
               </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: 'var(--text-muted, #756B61)' }}>
-                Quickly add any core entity to your workspace
+              <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                Add a record to any area of LIFE OS
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="btn btn-ghost"
-            style={{ padding: '6px', color: 'var(--text-muted, #756B61)' }}
+            className="btn btn-ghost btn-icon"
             aria-label="Close launcher"
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* Action Grid List */}
         <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '65vh', overflowY: 'auto' }}>
           {quickActions.map((action) => {
             const Icon = action.icon;
@@ -248,18 +219,7 @@ export default function QuickActionModal({
               <div
                 key={action.id}
                 onClick={action.onClick}
-                className="task-row"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  border: '1px solid var(--border-default, #49382A)',
-                  background: 'var(--bg-elevated, #302419)',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
+                className="editorial-triage-row"
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   <div
@@ -267,8 +227,8 @@ export default function QuickActionModal({
                       width: '34px',
                       height: '34px',
                       borderRadius: '8px',
-                      background: 'var(--bg-main, #100E0A)',
-                      border: '1px solid var(--border-default, #49382A)',
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-default)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -279,50 +239,26 @@ export default function QuickActionModal({
                     <Icon size={16} />
                   </div>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary, #F5F1E9)' }}>
+                    <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
                       {action.title}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted, #756B61)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {action.desc}
                     </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                  <kbd
-                    style={{
-                      fontSize: '10px',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      background: 'var(--bg-main, #100E0A)',
-                      border: '1px solid var(--border-default, #49382A)',
-                      color: 'var(--text-muted, #756B61)',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {action.shortcut}
-                  </kbd>
-                  <ArrowRight size={14} color="var(--text-muted, #756B61)" />
+                  <kbd className="toolbar-search-kbd">{action.shortcut}</kbd>
+                  <ArrowRight size={14} color="var(--text-muted)" />
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            padding: '10px 18px',
-            borderTop: '1px solid var(--border-default, #49382A)',
-            background: 'var(--bg-elevated, #302419)',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '11px',
-            color: 'var(--text-muted, #756B61)',
-          }}
-        >
+        <div className="modal-footer" style={{ justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
           <span>Tip: Press <strong>Alt+N</strong> from anywhere</span>
-          <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ fontSize: '11px' }}>
+          <button onClick={onClose} className="btn btn-secondary btn-sm">
             Close (Esc)
           </button>
         </div>

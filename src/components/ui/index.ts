@@ -12,3 +12,4 @@ export * from './Checkbox';
 export * from './Toast';
 export * from './Skeleton';
 export * from './ImageWithFallback';
+export * from './HabitIcon';

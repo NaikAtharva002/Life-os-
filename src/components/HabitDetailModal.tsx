@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { todayLocal, toLocalDateString } from '../lib/dates';
 import {
   X,
@@ -28,6 +28,7 @@ import useStore, {
   computeHabitStreak,
   computeHabitConsistency,
 } from '../store/useStore';
+import { HabitIcon } from './ui';
 
 interface HabitDetailModalProps {
   habitId: string;
@@ -224,7 +225,7 @@ export default function HabitDetailModal({
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '16px',
-          boxShadow: '0 24px 60px rgba(20, 19, 1, 0.4)',
+          boxShadow: '0 24px 60px rgba(9, 9, 11, 0.35)',
           overflow: 'hidden',
           backgroundColor: 'var(--bg-card)',
           border: '1px solid var(--border)',
@@ -249,16 +250,16 @@ export default function HabitDetailModal({
                 width: '52px',
                 height: '52px',
                 borderRadius: '14px',
-                backgroundColor: habit.color || '#B80C09',
+                backgroundColor: habit.color || '#6366F1',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: '28px',
-                boxShadow: `0 6px 18px ${habit.color || '#B80C09'}40`,
+                boxShadow: `0 6px 18px ${habit.color || '#6366F1'}40`,
                 flexShrink: 0,
               }}
             >
-              {habit.icon || '⚡'}
+              <HabitIcon icon={habit.icon} size={22} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -286,7 +287,7 @@ export default function HabitDetailModal({
                       fontWeight: 600,
                       padding: '2px 8px',
                       borderRadius: '6px',
-                      background: 'rgba(184, 12, 9, 0.1)',
+                      background: 'var(--accent-subtle)',
                       color: 'var(--accent)',
                     }}
                   >
@@ -345,7 +346,7 @@ export default function HabitDetailModal({
         >
           <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
-              <Flame size={13} color="#B80C09" />
+              <Flame size={13} color="var(--accent-secondary)" />
               Current Streak
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
@@ -355,7 +356,7 @@ export default function HabitDetailModal({
 
           <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
-              <Trophy size={13} color="#6B2B06" />
+              <Trophy size={13} color="var(--accent-primary)" />
               Longest Streak
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
@@ -365,7 +366,7 @@ export default function HabitDetailModal({
 
           <div style={{ padding: '8px 12px', borderRadius: '8px', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' }}>
-              <TrendingUp size={13} color="#4E632D" />
+              <TrendingUp size={13} color="var(--status-success)" />
               30-Day Rate
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
@@ -473,7 +474,7 @@ export default function HabitDetailModal({
                       fontSize: '0.72rem',
                       padding: '3px 8px',
                       borderRadius: '6px',
-                      background: isSelectedScheduled ? 'rgba(78, 99, 45, 0.12)' : 'var(--bg-card)',
+                      background: isSelectedScheduled ? 'var(--status-success-bg)' : 'var(--bg-card)',
                       color: isSelectedScheduled ? '#4E632D' : 'var(--text-muted)',
                       fontWeight: 600,
                     }}
@@ -681,7 +682,7 @@ export default function HabitDetailModal({
                     <button
                       type="button"
                       className="btn btn-ghost"
-                      style={{ fontSize: '0.78rem', color: '#8F5419', fontWeight: 600 }}
+                      style={{ fontSize: '0.78rem', color: 'var(--status-warning)', fontWeight: 600 }}
                       onClick={() => setShowSkipInput(true)}
                     >
                       Skip Habit
@@ -776,11 +777,11 @@ export default function HabitDetailModal({
                         borderRadius: '8px',
                         border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
                         background: isCompleted
-                          ? 'rgba(78, 99, 45, 0.15)'
+                          ? 'var(--status-success-bg)'
                           : isSkipped
-                          ? 'rgba(143, 84, 25, 0.15)'
+                          ? 'var(--status-warning-bg)'
                           : isPartial
-                          ? 'rgba(184, 12, 9, 0.08)'
+                          ? 'var(--accent-subtle)'
                           : d.isCurrentMonth
                           ? 'var(--bg-card)'
                           : 'var(--bg-secondary)',
@@ -805,12 +806,12 @@ export default function HabitDetailModal({
 
                       <div style={{ width: '100%', textAlign: 'center' }}>
                         {isCompleted && (
-                          <span style={{ fontSize: '0.7rem', color: '#4E632D', fontWeight: 700 }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--status-success)', fontWeight: 700 }}>
                             ✓ {d.entry?.value ? `${d.entry.value}` : 'Done'}
                           </span>
                         )}
                         {isSkipped && (
-                          <span style={{ fontSize: '0.65rem', color: '#8F5419', fontWeight: 600 }}>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--status-warning)', fontWeight: 600 }}>
                             🛡️ Skip
                           </span>
                         )}
@@ -828,11 +829,11 @@ export default function HabitDetailModal({
               {/* Legend */}
               <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '8px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(78, 99, 45, 0.4)' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(16, 185, 129, 0.35)' }} />
                   Completed
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(143, 84, 25, 0.4)' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: 'rgba(245, 158, 11, 0.35)' }} />
                   Skipped (Preserved)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -872,9 +873,9 @@ export default function HabitDetailModal({
                         const isToday = day.dateStr === todayLocal();
 
                         let cellBg = 'var(--bg-card)';
-                        if (isCompleted) cellBg = habit.color || '#B80C09';
-                        else if (isSkipped) cellBg = '#8F5419';
-                        else if (!day.isScheduled) cellBg = 'rgba(183, 181, 179, 0.15)';
+                        if (isCompleted) cellBg = habit.color || '#6366F1';
+                        else if (isSkipped) cellBg = 'var(--status-warning)';
+                        else if (!day.isScheduled) cellBg = 'var(--bg-subtle)';
 
                         return (
                           <div
@@ -941,19 +942,19 @@ export default function HabitDetailModal({
                   Behavioral Automaticity Milestones
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', fontSize: '0.78rem' }}>
-                  <div style={{ padding: '8px', borderRadius: '6px', background: streakInfo.streak >= 7 ? 'rgba(78, 99, 45, 0.15)' : 'var(--bg-card)' }}>
+                  <div style={{ padding: '8px', borderRadius: '6px', background: streakInfo.streak >= 7 ? 'var(--status-success-bg)' : 'var(--bg-card)' }}>
                     <div style={{ fontWeight: 700, color: streakInfo.streak >= 7 ? '#4E632D' : 'var(--text-secondary)' }}>
                       7-Day Momentum {streakInfo.streak >= 7 ? '✓' : ''}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Initial friction overcome</div>
                   </div>
-                  <div style={{ padding: '8px', borderRadius: '6px', background: streakInfo.streak >= 21 ? 'rgba(78, 99, 45, 0.15)' : 'var(--bg-card)' }}>
+                  <div style={{ padding: '8px', borderRadius: '6px', background: streakInfo.streak >= 21 ? 'var(--status-success-bg)' : 'var(--bg-card)' }}>
                     <div style={{ fontWeight: 700, color: streakInfo.streak >= 21 ? '#4E632D' : 'var(--text-secondary)' }}>
                       21-Day Habituation {streakInfo.streak >= 21 ? '✓' : ''}
                     </div>
                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Neural pathway formation</div>
                   </div>
-                  <div style={{ padding: '8px', borderRadius: '6px', background: streakInfo.streak >= 66 ? 'rgba(78, 99, 45, 0.15)' : 'var(--bg-card)' }}>
+                  <div style={{ padding: '8px', borderRadius: '6px', background: streakInfo.streak >= 66 ? 'var(--status-success-bg)' : 'var(--bg-card)' }}>
                     <div style={{ fontWeight: 700, color: streakInfo.streak >= 66 ? '#4E632D' : 'var(--text-secondary)' }}>
                       66-Day Identity Lock {streakInfo.streak >= 66 ? '✓' : ''}
                     </div>

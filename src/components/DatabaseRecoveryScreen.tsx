@@ -51,8 +51,8 @@ export default function DatabaseRecoveryScreen() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        background: 'var(--bg-app, #121110)',
-        color: 'var(--text-primary, #F5F3EF)',
+        background: 'var(--bg-main, #09090B)',
+        color: 'var(--text-primary, #F4F4F5)',
         padding: '24px',
       }}
     >
@@ -60,11 +60,11 @@ export default function DatabaseRecoveryScreen() {
         style={{
           maxWidth: '520px',
           width: '100%',
-          background: 'var(--bg-surface, #1C1B19)',
-          border: '1px solid var(--status-danger, #B80C09)',
-          borderRadius: '12px',
+          background: 'var(--bg-surface, #111116)',
+          border: '1px solid var(--status-danger, #F43F5E)',
+          borderRadius: '14px',
           padding: '28px',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -73,22 +73,22 @@ export default function DatabaseRecoveryScreen() {
               width: '40px',
               height: '40px',
               borderRadius: '8px',
-              background: 'rgba(184, 12, 9, 0.15)',
+              background: 'var(--status-danger-bg, rgba(244, 63, 94, 0.14))',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--status-danger, #B80C09)',
+              color: 'var(--status-danger, #F43F5E)',
             }}
           >
             <AlertTriangle size={24} />
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Database Initialization Failure</h1>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted, #8F8D88)' }}>LIFE OS 3.0 Recovery Mode</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>LIFE OS 3.0 Recovery Mode</span>
           </div>
         </div>
 
-        <p style={{ fontSize: '13.5px', color: 'var(--text-secondary, #D1CEBD)', lineHeight: 1.5, margin: '0 0 16px 0' }}>
+        <p style={{ fontSize: '13.5px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '0 0 16px 0' }}>
           The local IndexedDB storage encountered an error while starting up. Your stored data has not been modified.
         </p>
 
@@ -96,11 +96,12 @@ export default function DatabaseRecoveryScreen() {
           <div
             style={{
               padding: '10px 14px',
-              background: 'rgba(0, 0, 0, 0.3)',
-              borderRadius: '6px',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-default)',
+              borderRadius: '8px',
               fontSize: '12px',
-              color: 'var(--status-danger, #E32620)',
-              fontFamily: 'monospace',
+              color: 'var(--status-danger, #F43F5E)',
+              fontFamily: 'var(--font-mono)',
               marginBottom: '20px',
               wordBreak: 'break-word',
             }}

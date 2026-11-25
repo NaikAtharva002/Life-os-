@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   CheckSquare,
@@ -7,7 +7,6 @@ import {
   LayoutList,
   Kanban,
   CalendarDays,
-  Sparkles,
   Filter,
   RotateCcw,
   Clock,
@@ -69,10 +68,6 @@ export default function TasksPage() {
   const [recurringFilter, setRecurringFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'priority' | 'date' | 'created' | 'duration' | 'title'>('priority');
-
-  // AI NLP Input
-  const [nlpInput, setNlpInput] = useState('');
-  const [nlpLoading, setNlpLoading] = useState(false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -280,24 +275,6 @@ export default function TasksPage() {
     setIsModalOpen(true);
   };
 
-  const handleNLPTaskSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nlpInput.trim()) return;
-
-    setNlpLoading(true);
-    await addTask({
-      title: nlpInput.trim(),
-      priority: 'medium',
-      category: 'General',
-      dueDate: todayStr,
-      status: 'todo',
-      subtasks: [],
-    });
-
-    setNlpInput('');
-    setNlpLoading(false);
-  };
-
   const handleDelete = (id: string) => {
     deleteTask(id);
   };
@@ -308,7 +285,7 @@ export default function TasksPage() {
       <div className="page-header" style={{ margin: 0 }}>
         <div>
           <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <CheckSquare size={26} color="var(--palette-brick, #B80C09)" />
+            <CheckSquare size={26} color="var(--accent-primary)" />
             Task Management & Priorities 2.0
           </h1>
           <p style={{ margin: '4px 0 0', color: 'var(--text-secondary)', fontSize: '14px' }}>
@@ -436,7 +413,7 @@ export default function TasksPage() {
           }}
           style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
         >
-          <span style={{ color: 'var(--palette-brick, #B80C09)', fontWeight: 600 }}>Due Today:</span>
+          <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>Due Today:</span>
           <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
             {stats.today}
           </span>
@@ -503,47 +480,8 @@ export default function TasksPage() {
         </span>
       </div>
 
-      {/* Quick Task Capture Bar */}
+      {/* Quick Task Capture Bar (with chrono-node NLP parsing) */}
       <QuickTaskBar onExpandDetails={handleExpandQuickTask} />
-
-      {/* Natural Language Task Input (Python NLP Engine Bridge) */}
-      <form
-        onSubmit={handleNLPTaskSubmit}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'var(--bg-surface)',
-          padding: '6px 12px',
-          borderRadius: '10px',
-          border: '1px solid var(--border-default)',
-          boxShadow: 'var(--panel-shadow)',
-        }}
-      >
-        <Sparkles size={14} color="var(--palette-brick, #B80C09)" style={{ flexShrink: 0 }} />
-        <input
-          type="text"
-          placeholder="AI Smart Capture: e.g. 'Submit academic report on Friday at 5pm #academics !critical'"
-          value={nlpInput}
-          onChange={(e) => setNlpInput(e.target.value)}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            fontSize: '12.5px',
-            color: 'var(--text-primary)',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!nlpInput.trim() || nlpLoading}
-          className="btn btn-secondary btn-sm"
-          style={{ fontSize: '11px', height: '26px', padding: '0 10px' }}
-        >
-          {nlpLoading ? 'Parsing...' : '+ Add with AI'}
-        </button>
-      </form>
 
       {/* =========================================================================
           VIEW MODE 1: LIST VIEW
@@ -739,15 +677,16 @@ export default function TasksPage() {
                       background: 'var(--bg-card)',
                       border: '1px solid var(--border-default)',
                       borderRadius: '4px',
-                      padding: '2px 6px',
+                      padding: '2px 8px',
                       fontSize: '11px',
                       color: 'var(--text-primary)',
+                      maxWidth: '220px',
                     }}
                   >
                     <option value="all">All Goals</option>
                     {goals.map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.title.substring(0, 20)}
+                      <option key={g.id} value={g.id} title={g.title}>
+                        {g.title.length > 36 ? `${g.title.slice(0, 35)}…` : g.title}
                       </option>
                     ))}
                   </select>
@@ -787,7 +726,7 @@ export default function TasksPage() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: '4px',
-                    color: 'var(--palette-brick, #B80C09)',
+                    color: 'var(--accent-primary)',
                   }}
                 >
                   <RotateCcw size={11} /> Clear filters

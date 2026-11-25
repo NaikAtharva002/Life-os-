@@ -27,7 +27,6 @@ import type {
   EveningReview,
   ObsidianNote,
   AppSettings,
-  DesignVariant,
   AssistantMessage,
   ReminderSettings,
   ToastItem,
@@ -187,10 +186,6 @@ interface StoreState {
   deleteWorkspace: (workspaceId: string) => Promise<void>;
   loadDemoData: () => Promise<void>;
   purgeSeedData: () => Promise<void>;
-  designVariant: DesignVariant;
-  comparisonMode: 'single' | 'split';
-  setDesignVariant: (variant: DesignVariant) => Promise<void>;
-  setComparisonMode: (mode: 'single' | 'split') => void;
   updateSettings: (updates: Partial<AppSettings>) => Promise<void>;
   updateReminderSettings: (updates: Partial<ReminderSettings>) => Promise<void>;
   setTheme: (theme: 'dark' | 'light') => Promise<void>;
@@ -599,8 +594,6 @@ export function computeHabitConsistency(
 export const useStore = create<StoreState>((set, get) => ({
   isLoaded: false,
   activeView: 'dashboard',
-  designVariant: 'agent',
-  comparisonMode: 'single',
   pinnedViews: (() => {
     try {
       const saved = localStorage.getItem('lifeos_pinned_views');
@@ -718,8 +711,6 @@ export const useStore = create<StoreState>((set, get) => ({
         };
       });
 
-      const loadedVariant = (data.settings?.designVariant as DesignVariant) || 'agent';
-
       // Check onboarding status
       const hasCompleted =
         data.settings?.onboardingCompleted ??
@@ -744,12 +735,10 @@ export const useStore = create<StoreState>((set, get) => ({
         habits: habitsWithEntries,
         workspaces: loadedWorkspaces,
         activeWorkspaceId,
-        designVariant: loadedVariant,
         isLoaded: true,
         initError: null,
         isOnboardingOpen: shouldOpenOnboarding,
       });
-      document.documentElement.setAttribute('data-variant', loadedVariant);
       get().markOverdueTasks();
 
       // Request persistent storage on first run with one-time notice
@@ -2689,17 +2678,6 @@ export const useStore = create<StoreState>((set, get) => ({
     set({ settings: newSettings });
     document.documentElement.setAttribute('data-theme', theme);
     await LifeOSRepository.saveSettings(newSettings);
-  },
-
-  setDesignVariant: async (variant) => {
-    const newSettings = { ...get().settings, designVariant: variant };
-    set({ designVariant: variant, settings: newSettings });
-    document.documentElement.setAttribute('data-variant', variant);
-    await LifeOSRepository.saveSettings(newSettings);
-  },
-
-  setComparisonMode: (mode) => {
-    set({ comparisonMode: mode });
   },
 
   setActiveView: (view) => {

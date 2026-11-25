@@ -24,11 +24,11 @@ export const EmptyStateIllustration: React.FC<EmptyStateIllustrationProps> = ({
   className = '',
   style,
 }) => {
-  const brick = 'var(--palette-brick)';
-  const brickSubtle = 'var(--palette-brick-subtle)';
-  const walnut = 'var(--palette-walnut)';
-  const walnutSubtle = 'rgba(107, 43, 6, 0.12)';
-  const silver = 'var(--palette-silver)';
+  const brick = 'var(--accent-primary)';
+  const brickSubtle = 'var(--accent-subtle)';
+  const walnut = 'var(--accent-secondary)';
+  const walnutSubtle = 'var(--accent-secondary-subtle)';
+  const silver = 'var(--text-muted)';
   const border = 'var(--border-default)';
 
   switch (type) {

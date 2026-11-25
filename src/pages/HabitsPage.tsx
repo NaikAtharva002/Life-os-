@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import {
   Plus,
   Repeat,
@@ -30,7 +30,7 @@ import useStore, {
 } from '../store/useStore';
 import HabitModal from '../components/HabitModal';
 import HabitDetailModal from '../components/HabitDetailModal';
-import { EmptyState } from '../components/ui';
+import { EmptyState, HabitIcon } from '../components/ui';
 import ContextualTipBanner from '../components/ContextualTipBanner';
 import type { Habit, HabitRoutine } from '../types';
 import { getPhoto } from '../utils/photoAssets';
@@ -135,13 +135,13 @@ export default function HabitsPage() {
   const getHeatmapColor = (level: number) => {
     switch (level) {
       case 1:
-        return 'rgba(107, 43, 6, 0.4)';
+        return 'rgba(99, 102, 241, 0.28)';
       case 2:
-        return 'rgba(184, 12, 9, 0.65)';
+        return 'rgba(99, 102, 241, 0.62)';
       case 3:
-        return '#B80C09';
+        return 'var(--accent-primary)';
       default:
-        return 'var(--bg-secondary)';
+        return 'var(--bg-subtle)';
     }
   };
 
@@ -217,7 +217,7 @@ export default function HabitsPage() {
               style={{
                 fontSize: '11px',
                 fontWeight: 700,
-                color: 'var(--accent-light, #ff8c82)',
+                color: 'var(--accent-light)',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 display: 'inline-block',
@@ -250,7 +250,7 @@ export default function HabitsPage() {
                 setEditingHabit(undefined);
                 setIsModalOpen(true);
               }}
-              style={{ padding: '10px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px rgba(184, 12, 9, 0.4)' }}
+              style={{ padding: '10px 20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 14px var(--accent-border)' }}
             >
               <Plus size={16} /> Deploy Habit
             </button>
@@ -312,7 +312,7 @@ export default function HabitsPage() {
           <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Active Streaks
           </div>
-          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#B80C09', marginTop: '2px' }} className="tabular">
+          <div style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--accent-primary)', marginTop: '2px' }} className="tabular">
             🔥 {activeStreaksCount}
           </div>
           <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -488,15 +488,15 @@ export default function HabitsPage() {
                           width: '38px',
                           height: '38px',
                           borderRadius: '10px',
-                          backgroundColor: h.color || '#B80C09',
+                          backgroundColor: h.color || '#6366F1',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontSize: '20px',
-                          boxShadow: `0 3px 10px ${h.color || '#B80C09'}30`,
+                          boxShadow: `0 3px 10px ${h.color || '#6366F1'}30`,
                         }}
                       >
-                        {h.icon || '⚡'}
+                        <HabitIcon icon={h.icon} size={20} color="var(--accent-primary)" />
                       </div>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -517,7 +517,7 @@ export default function HabitsPage() {
                             {h.category}
                           </span>
                           {h.streak > 0 && (
-                            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#B80C09' }}>
+                            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-primary)' }}>
                               🔥 {h.streak}d
                             </span>
                           )}
@@ -667,7 +667,7 @@ export default function HabitsPage() {
                           textTransform: 'uppercase',
                           padding: '2px 6px',
                           borderRadius: '4px',
-                          background: 'rgba(184, 12, 9, 0.1)',
+                          background: 'var(--accent-subtle)',
                           color: 'var(--accent)',
                         }}
                       >
@@ -714,7 +714,9 @@ export default function HabitsPage() {
                               style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
                               onClick={() => setDetailHabitId(h.id)}
                             >
-                              <span>{h.icon || '⚡'}</span>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-primary)' }}>
+                                <HabitIcon icon={h.icon} size={15} />
+                              </span>
                               <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{h.name}</span>
                             </div>
 
@@ -752,10 +754,10 @@ export default function HabitsPage() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
               <span>Low</span>
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(107, 43, 6, 0.4)' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(184, 12, 9, 0.65)' }} />
-              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: '#B80C09' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(99, 102, 241, 0.28)' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'rgba(99, 102, 241, 0.62)' }} />
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: 'var(--accent-primary)' }} />
               <span>High</span>
             </div>
           </div>
@@ -810,7 +812,9 @@ export default function HabitsPage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>{h.icon || '⚡'}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-primary)' }}>
+                        <HabitIcon icon={h.icon} size={15} />
+                      </span>
                       <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{h.name}</span>
                     </div>
                     <span style={{ fontSize: '0.85rem', fontWeight: 800, color: c30.rate >= 80 ? '#4E632D' : 'var(--accent)' }}>
@@ -883,7 +887,7 @@ export default function HabitsPage() {
                     style={{
                       borderRadius: '14px',
                       overflow: 'hidden',
-                      border: isDone ? '1px solid rgba(184, 12, 9, 0.4)' : '1px solid var(--border)',
+                      border: isDone ? '1px solid var(--accent-border)' : '1px solid var(--border)',
                       boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
                       background: 'var(--bg-card)',
                       display: 'flex',
@@ -901,7 +905,7 @@ export default function HabitsPage() {
                         loading="lazy"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
-                      <div className="photo-tile-scrim" style={{ background: 'linear-gradient(180deg, rgba(20,19,1,0.2) 0%, rgba(20,19,1,0.85) 100%)' }} />
+                      <div className="photo-tile-scrim" style={{ background: 'linear-gradient(180deg, rgba(9,9,11,0.2) 0%, rgba(9,9,11,0.85) 100%)' }} />
 
                       {/* Streak Flame Badge */}
                       <div
@@ -915,14 +919,14 @@ export default function HabitsPage() {
                           fontSize: '11px',
                           fontWeight: 700,
                           color: '#fff',
-                          background: 'rgba(20, 19, 1, 0.85)',
+                          background: 'rgba(9, 9, 11, 0.82)',
                           padding: '4px 10px',
                           borderRadius: '12px',
                           backdropFilter: 'blur(6px)',
-                          border: '1px solid rgba(184, 12, 9, 0.35)',
+                          border: '1px solid var(--accent-border)',
                         }}
                       >
-                        <Flame size={13} color="#B80C09" fill="#B80C09" />
+                        <Flame size={13} color="var(--accent-secondary)" fill="var(--accent-secondary)" />
                         <span className="tabular">{h.streak || 0}d streak</span>
                       </div>
 
@@ -937,7 +941,7 @@ export default function HabitsPage() {
                             setIsModalOpen(true);
                           }}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: '4px 8px', background: 'rgba(20, 19, 1, 0.8)', color: '#fff' }}
+                          style={{ padding: '4px 8px', background: 'rgba(9, 9, 11, 0.78)', color: '#fff' }}
                           title="Edit Habit"
                         >
                           <Edit2 size={12} />
@@ -947,7 +951,7 @@ export default function HabitsPage() {
                             if (window.confirm(`Delete habit "${h.name}"?`)) deleteHabit(h.id);
                           }}
                           className="btn btn-secondary btn-sm"
-                          style={{ padding: '4px 8px', background: 'rgba(20, 19, 1, 0.8)', color: 'var(--accent)' }}
+                          style={{ padding: '4px 8px', background: 'rgba(9, 9, 11, 0.78)', color: 'var(--accent)' }}
                           title="Delete Habit"
                         >
                           <Trash2 size={12} />
@@ -955,9 +959,11 @@ export default function HabitsPage() {
                       </div>
 
                       {/* Title inside scrim */}
-                      <div style={{ position: 'absolute', bottom: '12px', left: '14px', right: '14px' }}>
+                      <div style={{ position: 'absolute', bottom: '12px', left: '14px', right: '14px', zIndex: 3 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '18px' }}>{h.icon || '⚡'}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', color: '#ffffff' }}>
+                            <HabitIcon icon={h.icon} size={18} color="#ffffff" />
+                          </span>
                           <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', margin: 0, textShadow: '0 1px 3px rgba(0,0,0,0.6)' }}>
                             {h.name}
                           </h3>
@@ -1057,7 +1063,9 @@ export default function HabitsPage() {
                   >
                     <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-primary)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{h.icon || '⚡'}</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--accent-primary)' }}>
+                          <HabitIcon icon={h.icon} size={15} />
+                        </span>
                         <span>{h.name}</span>
                       </div>
                     </td>
@@ -1066,7 +1074,7 @@ export default function HabitsPage() {
                       {h.scheduleType ? h.scheduleType.toUpperCase() : 'DAILY'}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span className="tabular" style={{ color: '#B80C09', fontWeight: 700 }}>🔥 {h.streak || 0}d</span>
+                      <span className="tabular" style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>🔥 {h.streak || 0}d</span>
                     </td>
                     <td style={{ padding: '12px 16px' }} className="tabular">{h.longestStreak || 0}d</td>
                     <td style={{ padding: '12px 16px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>

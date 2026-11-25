@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -616,7 +616,7 @@ export default function GoalsPage() {
                           textTransform: 'uppercase',
                           padding: '3px 8px',
                           borderRadius: '6px',
-                          background: 'rgba(20, 19, 1, 0.85)',
+                          background: 'rgba(9, 9, 11, 0.82)',
                           color: '#ffffff',
                           border: '1px solid rgba(255, 255, 255, 0.2)',
                           backdropFilter: 'blur(4px)',
@@ -632,7 +632,7 @@ export default function GoalsPage() {
                             fontWeight: 600,
                             padding: '3px 8px',
                             borderRadius: '6px',
-                            background: 'rgba(20, 19, 1, 0.75)',
+                            background: 'rgba(9, 9, 11, 0.72)',
                             color: 'var(--accent-light)',
                             backdropFilter: 'blur(4px)',
                           }}
@@ -662,7 +662,7 @@ export default function GoalsPage() {
                     <button
                       onClick={(e) => handleEdit(g, e)}
                       className="btn btn-secondary btn-sm"
-                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.85)', color: '#FFFFFF', backdropFilter: 'blur(6px)' }}
+                      style={{ padding: '3px 6px', background: 'rgba(9, 9, 11, 0.82)', color: '#FFFFFF', backdropFilter: 'blur(6px)' }}
                       title="Edit Goal"
                     >
                       <Edit2 size={12} />
@@ -670,7 +670,7 @@ export default function GoalsPage() {
                     <button
                       onClick={(e) => handleDelete(g.id, e)}
                       className="btn btn-secondary btn-sm"
-                      style={{ padding: '3px 6px', background: 'rgba(20, 19, 1, 0.85)', color: 'var(--status-danger)', backdropFilter: 'blur(6px)' }}
+                      style={{ padding: '3px 6px', background: 'rgba(9, 9, 11, 0.82)', color: 'var(--status-danger)', backdropFilter: 'blur(6px)' }}
                       title="Delete Goal"
                     >
                       <Trash2 size={12} />

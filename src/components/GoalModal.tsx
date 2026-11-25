@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { todayLocal } from '../lib/dates';
 import {
   X,
@@ -924,7 +924,7 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
                             overflow: 'hidden',
                             cursor: 'pointer',
                             border: isSelected ? '2px solid var(--palette-brick)' : '1px solid var(--border-default)',
-                            boxShadow: isSelected ? '0 2px 8px rgba(184, 12, 9, 0.3)' : 'none',
+                            boxShadow: isSelected ? '0 2px 8px var(--accent-border)' : 'none',
                           }}
                         >
                           <img
@@ -936,7 +936,7 @@ export default function GoalModal({ isOpen = true, goal, editingGoal, onClose }:
                             style={{
                               position: 'absolute',
                               inset: 0,
-                              background: 'linear-gradient(180deg, transparent 20%, rgba(20, 19, 1, 0.85) 100%)',
+                              background: 'linear-gradient(180deg, transparent 20%, rgba(9, 9, 11, 0.82) 100%)',
                               display: 'flex',
                               alignItems: 'flex-end',
                               padding: '4px 6px',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   Play,
   Pause,
@@ -126,7 +126,7 @@ export default function FocusModePage() {
         style={{
           position: 'absolute',
           inset: 0,
-          background: 'radial-gradient(ellipse at center, rgba(20, 19, 1, 0.50) 0%, rgba(20, 19, 1, 0.92) 100%)',
+          background: 'radial-gradient(ellipse at center, rgba(9, 9, 11, 0.50) 0%, rgba(9, 9, 11, 0.92) 100%)',
           backdropFilter: 'blur(3px)',
         }}
       />
@@ -137,7 +137,7 @@ export default function FocusModePage() {
           onClick={() => setActiveView('dashboard')}
           className="btn btn-secondary"
           style={{
-            background: 'rgba(20, 19, 1, 0.85)',
+            background: 'rgba(9, 9, 11, 0.82)',
             backdropFilter: 'blur(8px)',
             color: '#f4f6f4',
             border: '1px solid var(--border-default)',
@@ -153,7 +153,7 @@ export default function FocusModePage() {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(20, 19, 1, 0.85)',
+            background: 'rgba(9, 9, 11, 0.82)',
             padding: '4px',
             borderRadius: '24px',
             border: '1px solid var(--border-default)',
@@ -203,7 +203,7 @@ export default function FocusModePage() {
             gap: '8px',
             padding: '6px 16px',
             borderRadius: '30px',
-            background: 'rgba(20, 19, 1, 0.85)',
+            background: 'rgba(9, 9, 11, 0.82)',
             border: '1px solid var(--palette-brick-border)',
             backdropFilter: 'blur(10px)',
             marginBottom: '20px',
@@ -244,7 +244,7 @@ export default function FocusModePage() {
               onClick={() => selectDuration(preset.mins)}
               style={{
                 border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: sessionMinutes === preset.mins ? 'var(--palette-brick-subtle)' : 'rgba(20, 19, 1, 0.65)',
+                background: sessionMinutes === preset.mins ? 'var(--palette-brick-subtle)' : 'rgba(9, 9, 11, 0.62)',
                 color: sessionMinutes === preset.mins ? 'var(--palette-brick)' : '#cbd5e1',
                 padding: '5px 14px',
                 borderRadius: '20px',
@@ -281,7 +281,7 @@ export default function FocusModePage() {
             style={{
               padding: '12px',
               borderRadius: '50%',
-              background: 'rgba(20, 19, 1, 0.85)',
+              background: 'rgba(9, 9, 11, 0.82)',
               border: '1px solid var(--border-default)',
               color: '#ffffff',
             }}

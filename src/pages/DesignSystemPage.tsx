@@ -39,8 +39,6 @@ export default function DesignSystemPage() {
   const settings = useStore((s) => s.settings);
   const setTheme = useStore((s) => s.setTheme);
   const setActiveView = useStore((s) => s.setActiveView);
-  const designVariant = useStore((s) => s.designVariant);
-  const setDesignVariant = useStore((s) => s.setDesignVariant);
   const addToast = useStore((s) => s.addToast);
 
   const [activeTab, setActiveTab] = useState<'tokens' | 'components' | 'patterns'>('tokens');
@@ -54,22 +52,22 @@ export default function DesignSystemPage() {
   const [progressVal, setProgressVal] = useState(68);
 
   const brandColors = [
-    { name: 'Brick Ember', hex: '#B80C09', role: 'Primary action, key emphasis, active indicators', token: '--palette-brick' },
-    { name: 'Dark Walnut', hex: '#6B2B06', role: 'Secondary accent, dark elevated cards, borders', token: '--palette-walnut' },
-    { name: 'Alabaster Grey', hex: '#E5E7E6', role: 'Light mode canvas, dark text contrast', token: '--palette-alabaster' },
-    { name: 'Silver', hex: '#B7B5B3', role: 'Secondary text, borders, dividers, subtle chrome', token: '--palette-silver' },
-    { name: 'Pitch Black', hex: '#141301', role: 'Dark mode canvas, light text contrast', token: '--palette-pitch' },
+    { name: 'Electric Indigo', hex: '#6366F1', role: 'Primary action, focus states, active navigation', token: '--accent-primary' },
+    { name: 'Amber Momentum', hex: '#F59E0B', role: 'Streaks, velocity highlights, warning accents', token: '--accent-secondary' },
+    { name: 'Obsidian Zinc', hex: '#09090B', role: 'Dark mode canvas, primary ink on light theme', token: '--bg-main' },
+    { name: 'Paper Ivory', hex: '#F8F9FB', role: 'Light mode canvas, crisp soft surface contrast', token: '--bg-surface' },
+    { name: 'Neutral Slate', hex: '#71717A', role: 'Secondary metadata, borders, subtle chrome', token: '--text-muted' },
   ];
 
   const semanticStatuses = [
-    { name: 'Success (Olive/Sage)', token: '--status-success', bgToken: '--status-success-bg', hex: '#4E632D' },
-    { name: 'Warning (Amber)', token: '--status-warning', bgToken: '--status-warning-bg', hex: '#8F5419' },
-    { name: 'Danger (Brick Ember)', token: '--status-danger', bgToken: '--status-danger-bg', hex: '#B80C09' },
-    { name: 'Info (Walnut)', token: '--status-info', bgToken: '--status-info-bg', hex: '#6B2B06' },
+    { name: 'Success (Emerald)', token: '--status-success', bgToken: '--status-success-bg', hex: '#10B981' },
+    { name: 'Warning (Amber)', token: '--status-warning', bgToken: '--status-warning-bg', hex: '#F59E0B' },
+    { name: 'Danger (Rose)', token: '--status-danger', bgToken: '--status-danger-bg', hex: '#F43F5E' },
+    { name: 'Info (Sky)', token: '--status-info', bgToken: '--status-info-bg', hex: '#38BDF8' },
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
       {/* Header Banner */}
       <div
         style={{
@@ -84,31 +82,14 @@ export default function DesignSystemPage() {
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '2px 8px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--palette-brick-subtle)',
-                color: 'var(--palette-brick)',
-                fontSize: '11px',
-                fontWeight: 700,
-                letterSpacing: '0.05em',
-                textTransform: 'uppercase',
-                border: '1px solid var(--palette-brick-border)'
-              }}
-            >
-              Developer Diagnostics
-            </span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Internal Component Gallery</span>
+            <span className="badge badge-brick">Obsidian Studio &amp; Paper Ivory</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Internal Token Gallery</span>
           </div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
-            LIFE OS Design System 2.0
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px 0' }}>
+            LIFE OS Design System 3.0
           </h1>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)' }}>
-            Single source of truth for design tokens, typography scale, spacing grids, and standardized UI components.
+            Unified Swiss Linear design tokens, self-hosted Plus Jakarta Sans + JetBrains Mono typography, and zero-noise UI primitives.
           </p>
         </div>
 
@@ -118,84 +99,15 @@ export default function DesignSystemPage() {
             size="sm"
             onClick={() => setTheme(settings.theme === 'dark' ? 'light' : 'dark')}
           >
-            Toggle {settings.theme === 'dark' ? 'Light Mode ☀️' : 'Dark Mode 🌙'}
+            Toggle {settings.theme === 'dark' ? 'Paper Light' : 'Obsidian Dark'}
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setActiveView('dashboard')}
           >
-            Return to Dashboard
+            Back to Today
           </Button>
-        </div>
-      </div>
-
-      {/* 3-Variant Live Showdown Banner inside Design System Gallery */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 18px',
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--bg-surface)',
-          border: '1px solid var(--border-default)',
-          flexWrap: 'wrap',
-          gap: '12px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sparkles size={16} color="var(--palette-brick)" />
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-              Active Design Language:{' '}
-              <span style={{ color: 'var(--palette-brick)', fontWeight: 700 }}>
-                {designVariant === 'agent'
-                  ? '1. Antigravity Editorial'
-                  : designVariant === 'taste'
-                  ? '2. Taste-Skill Craft'
-                  : '3. Impeccable Precision'}
-              </span>
-            </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Switching morphs all buttons, cards, typography, radii, and micro-interactions in real-time.
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            gap: '6px',
-            background: 'var(--bg-elevated)',
-            padding: '3px',
-            borderRadius: '10px',
-            border: '1px solid var(--border-default)'
-          }}
-        >
-          {[
-            { id: 'agent', label: '1. Antigravity', icon: '🏛️' },
-            { id: 'taste', label: '2. Taste-Skill', icon: '✨' },
-            { id: 'impeccable', label: '3. Impeccable', icon: '📐' }
-          ].map((v) => (
-            <button
-              key={v.id}
-              onClick={() => setDesignVariant(v.id as any)}
-              className="btn btn-sm"
-              style={{
-                fontSize: '11px',
-                padding: '4px 10px',
-                background: designVariant === v.id ? 'var(--palette-brick)' : 'transparent',
-                color: designVariant === v.id ? '#ffffff' : 'var(--text-secondary)',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: designVariant === v.id ? 700 : 500,
-                cursor: 'pointer'
-              }}
-            >
-              <span>{v.icon}</span> {v.label}
-            </button>
-          ))}
         </div>
       </div>
 

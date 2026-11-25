@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,7 +20,7 @@ interface TaskCalendarViewProps {
 }
 
 const PRIORITY_COLORS: Record<Priority, string> = {
-  critical: 'var(--priority-critical, #B80C09)',
+  critical: 'var(--priority-critical)',
   high: 'var(--priority-high, #D97706)',
   medium: 'var(--priority-medium, #2563EB)',
   low: 'var(--priority-low, #6B7280)',

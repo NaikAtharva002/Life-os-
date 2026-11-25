@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   Calendar,
@@ -22,13 +22,13 @@ interface ClassModalProps {
 }
 
 const COLOR_PRESETS = [
-  { label: 'Crimson', hex: '#E32620' },
-  { label: 'Walnut', hex: '#6B2B06' },
-  { label: 'Emerald', hex: '#79B879' },
-  { label: 'Amber', hex: '#E5AD4B' },
+  { label: 'Indigo', hex: '#6366F1' },
   { label: 'Cobalt', hex: '#3B82F6' },
-  { label: 'Amethyst', hex: '#8B5CF6' },
-  { label: 'Charcoal', hex: '#756B61' },
+  { label: 'Emerald', hex: '#10B981' },
+  { label: 'Amber', hex: '#F59E0B' },
+  { label: 'Rose', hex: '#F43F5E' },
+  { label: 'Violet', hex: '#8B5CF6' },
+  { label: 'Slate', hex: '#64748B' },
 ];
 
 const DAYS = [
@@ -62,7 +62,7 @@ export default function ClassModal({
   const [dayOfWeek, setDayOfWeek] = useState<number>(defaultDay);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:30');
-  const [color, setColor] = useState('#E32620');
+  const [color, setColor] = useState('#6366F1');
   const [recurring, setRecurring] = useState(true);
 
   // Sync state on edit or open
@@ -77,7 +77,7 @@ export default function ClassModal({
       setDayOfWeek(editingSlot.dayOfWeek);
       setStartTime(editingSlot.startTime);
       setEndTime(editingSlot.endTime);
-      setColor(editingSlot.color || existingSub?.color || '#E32620');
+      setColor(editingSlot.color || existingSub?.color || '#6366F1');
       setRecurring(editingSlot.recurring !== false);
     } else {
       setSelectedSubjectId('');
@@ -88,7 +88,7 @@ export default function ClassModal({
       setDayOfWeek(defaultDay);
       setStartTime('09:00');
       setEndTime('10:30');
-      setColor('#E32620');
+      setColor('#6366F1');
       setRecurring(true);
     }
   }, [editingSlot, defaultDay, isOpen, subjects]);
@@ -169,8 +169,8 @@ export default function ClassModal({
     >
       <div
         style={{
-          background: 'var(--bg-card, #241C15)',
-          border: '1px solid var(--border-default, #49382A)',
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border-default)',
           borderRadius: '16px',
           width: '100%',
           maxWidth: '540px',
@@ -179,18 +179,18 @@ export default function ClassModal({
           boxShadow: '0 24px 48px rgba(0, 0, 0, 0.6)',
           display: 'flex',
           flexDirection: 'column',
-          color: 'var(--text-primary, #F5F1E9)',
+          color: 'var(--text-primary)',
         }}
       >
         {/* Header */}
         <div
           style={{
             padding: '20px 24px',
-            borderBottom: '1px solid var(--border-default, #49382A)',
+            borderBottom: '1px solid var(--border-default)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'var(--bg-elevated, #302419)',
+            background: 'var(--bg-elevated)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -199,7 +199,7 @@ export default function ClassModal({
                 width: '36px',
                 height: '36px',
                 borderRadius: '8px',
-                background: 'var(--accent-primary, #E32620)',
+                background: 'var(--accent-primary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -212,7 +212,7 @@ export default function ClassModal({
               <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, letterSpacing: '-0.02em' }}>
                 {editingSlot ? 'Edit Class Schedule' : 'Add Class / Lecture'}
               </h2>
-              <p style={{ fontSize: '12px', color: 'var(--text-muted, #756B61)', margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
                 Set your recurring academic timetable slot
               </p>
             </div>
@@ -223,7 +223,7 @@ export default function ClassModal({
             style={{
               background: 'transparent',
               border: 'none',
-              color: 'var(--text-muted, #756B61)',
+              color: 'var(--text-muted)',
               cursor: 'pointer',
               padding: '6px',
               borderRadius: '6px',
@@ -239,7 +239,7 @@ export default function ClassModal({
           {/* Link to existing registered subject if any */}
           {subjects.length > 0 && (
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Link to Enrolled Subject (Optional)
               </label>
               <select
@@ -249,9 +249,9 @@ export default function ClassModal({
                   width: '100%',
                   padding: '10px 12px',
                   borderRadius: '8px',
-                  background: 'var(--bg-main, #100E0A)',
-                  border: '1px solid var(--border-default, #49382A)',
-                  color: 'var(--text-primary, #F5F1E9)',
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-primary)',
                   fontSize: '14px',
                 }}
               >
@@ -268,7 +268,7 @@ export default function ClassModal({
           {/* Subject Name & Course Code */}
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Subject / Class Name *
               </label>
               <div style={{ position: 'relative' }}>
@@ -282,9 +282,9 @@ export default function ClassModal({
                     width: '100%',
                     padding: '10px 12px 10px 36px',
                     borderRadius: '8px',
-                    background: 'var(--bg-main, #100E0A)',
-                    border: '1px solid var(--border-default, #49382A)',
-                    color: 'var(--text-primary, #F5F1E9)',
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
                     fontSize: '14px',
                   }}
                 />
@@ -295,14 +295,14 @@ export default function ClassModal({
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: 'var(--text-muted, #756B61)',
+                    color: 'var(--text-muted)',
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Code
               </label>
               <input
@@ -314,9 +314,9 @@ export default function ClassModal({
                   width: '100%',
                   padding: '10px 12px',
                   borderRadius: '8px',
-                  background: 'var(--bg-main, #100E0A)',
-                  border: '1px solid var(--border-default, #49382A)',
-                  color: 'var(--text-primary, #F5F1E9)',
+                  background: 'var(--bg-main)',
+                  border: '1px solid var(--border-default)',
+                  color: 'var(--text-primary)',
                   fontSize: '14px',
                 }}
               />
@@ -325,7 +325,7 @@ export default function ClassModal({
 
           {/* Day of Week Selector */}
           <div>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '8px' }}>
+            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
               Day of Week *
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px' }}>
@@ -340,12 +340,12 @@ export default function ClassModal({
                       padding: '8px 2px',
                       borderRadius: '8px',
                       border: isSelected
-                        ? '1px solid var(--accent-primary, #E32620)'
-                        : '1px solid var(--border-default, #49382A)',
+                        ? '1px solid var(--accent-primary)'
+                        : '1px solid var(--border-default)',
                       background: isSelected
-                        ? 'var(--accent-primary, #E32620)'
-                        : 'var(--bg-main, #100E0A)',
-                      color: isSelected ? '#FFFFFF' : 'var(--text-secondary, #A69B8E)',
+                        ? 'var(--accent-primary)'
+                        : 'var(--bg-main)',
+                      color: isSelected ? '#FFFFFF' : 'var(--text-secondary)',
                       fontSize: '12px',
                       fontWeight: isSelected ? 700 : 500,
                       cursor: 'pointer',
@@ -363,7 +363,7 @@ export default function ClassModal({
           {/* Time Start & End */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Start Time *
               </label>
               <div style={{ position: 'relative' }}>
@@ -376,9 +376,9 @@ export default function ClassModal({
                     width: '100%',
                     padding: '10px 12px 10px 36px',
                     borderRadius: '8px',
-                    background: 'var(--bg-main, #100E0A)',
-                    border: '1px solid var(--border-default, #49382A)',
-                    color: 'var(--text-primary, #F5F1E9)',
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
                     fontSize: '14px',
                   }}
                 />
@@ -389,14 +389,14 @@ export default function ClassModal({
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: 'var(--text-muted, #756B61)',
+                    color: 'var(--text-muted)',
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 End Time *
               </label>
               <div style={{ position: 'relative' }}>
@@ -409,9 +409,9 @@ export default function ClassModal({
                     width: '100%',
                     padding: '10px 12px 10px 36px',
                     borderRadius: '8px',
-                    background: 'var(--bg-main, #100E0A)',
-                    border: '1px solid var(--border-default, #49382A)',
-                    color: 'var(--text-primary, #F5F1E9)',
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
                     fontSize: '14px',
                   }}
                 />
@@ -422,7 +422,7 @@ export default function ClassModal({
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: 'var(--text-muted, #756B61)',
+                    color: 'var(--text-muted)',
                   }}
                 />
               </div>
@@ -435,19 +435,19 @@ export default function ClassModal({
               style={{
                 padding: '12px 14px',
                 borderRadius: '8px',
-                background: 'rgba(229, 173, 75, 0.12)',
-                border: '1px solid var(--status-warning, #E5AD4B)',
+                background: 'var(--status-warning-bg)',
+                border: '1px solid var(--status-warning)',
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '10px',
               }}
             >
-              <AlertTriangle size={18} style={{ color: 'var(--status-warning, #E5AD4B)', flexShrink: 0, marginTop: '2px' }} />
+              <AlertTriangle size={18} style={{ color: 'var(--status-warning)', flexShrink: 0, marginTop: '2px' }} />
               <div>
-                <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--status-warning, #E5AD4B)' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--status-warning)' }}>
                   Schedule Overlap Detected
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary, #A69B8E)', marginTop: '2px' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
                   This slot overlaps with{' '}
                   <strong>
                     {conflicts.map((c) => c.subjectName || c.courseCode || 'Another Class').join(', ')}
@@ -461,7 +461,7 @@ export default function ClassModal({
           {/* Professor & Room / Link */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Professor / Lecturer
               </label>
               <div style={{ position: 'relative' }}>
@@ -474,9 +474,9 @@ export default function ClassModal({
                     width: '100%',
                     padding: '10px 12px 10px 36px',
                     borderRadius: '8px',
-                    background: 'var(--bg-main, #100E0A)',
-                    border: '1px solid var(--border-default, #49382A)',
-                    color: 'var(--text-primary, #F5F1E9)',
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
                     fontSize: '14px',
                   }}
                 />
@@ -487,14 +487,14 @@ export default function ClassModal({
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: 'var(--text-muted, #756B61)',
+                    color: 'var(--text-muted)',
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Room / Hall / Zoom Link
               </label>
               <div style={{ position: 'relative' }}>
@@ -507,9 +507,9 @@ export default function ClassModal({
                     width: '100%',
                     padding: '10px 12px 10px 36px',
                     borderRadius: '8px',
-                    background: 'var(--bg-main, #100E0A)',
-                    border: '1px solid var(--border-default, #49382A)',
-                    color: 'var(--text-primary, #F5F1E9)',
+                    background: 'var(--bg-main)',
+                    border: '1px solid var(--border-default)',
+                    color: 'var(--text-primary)',
                     fontSize: '14px',
                   }}
                 />
@@ -520,7 +520,7 @@ export default function ClassModal({
                     left: '12px',
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    color: 'var(--text-muted, #756B61)',
+                    color: 'var(--text-muted)',
                   }}
                 />
               </div>
@@ -530,7 +530,7 @@ export default function ClassModal({
           {/* Color Tag & Recurring Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary, #A69B8E)', display: 'block', marginBottom: '6px' }}>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>
                 Color Indicator
               </label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -548,7 +548,7 @@ export default function ClassModal({
                         borderRadius: '50%',
                         background: p.hex,
                         border: isCur ? '2px solid #FFFFFF' : '2px solid transparent',
-                        boxShadow: isCur ? '0 0 0 2px var(--accent-primary, #E32620)' : 'none',
+                        boxShadow: isCur ? '0 0 0 2px var(--accent-primary)' : 'none',
                         cursor: 'pointer',
                         padding: 0,
                       }}
@@ -558,12 +558,12 @@ export default function ClassModal({
               </div>
             </div>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-secondary, #A69B8E)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text-secondary)' }}>
               <input
                 type="checkbox"
                 checked={recurring}
                 onChange={(e) => setRecurring(e.target.checked)}
-                style={{ accentColor: 'var(--accent-primary, #E32620)', width: '16px', height: '16px' }}
+                style={{ accentColor: 'var(--accent-primary)', width: '16px', height: '16px' }}
               />
               <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <Repeat size={14} /> Weekly Recurring Class
@@ -578,7 +578,7 @@ export default function ClassModal({
               justifyContent: 'flex-end',
               gap: '12px',
               paddingTop: '16px',
-              borderTop: '1px solid var(--border-default, #49382A)',
+              borderTop: '1px solid var(--border-default)',
             }}
           >
             <button
@@ -587,9 +587,9 @@ export default function ClassModal({
               style={{
                 padding: '10px 18px',
                 borderRadius: '8px',
-                background: 'var(--bg-elevated, #302419)',
-                border: '1px solid var(--border-default, #49382A)',
-                color: 'var(--text-secondary, #A69B8E)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-default)',
+                color: 'var(--text-secondary)',
                 fontWeight: 600,
                 fontSize: '13px',
                 cursor: 'pointer',
@@ -602,7 +602,7 @@ export default function ClassModal({
               style={{
                 padding: '10px 22px',
                 borderRadius: '8px',
-                background: 'var(--accent-primary, #E32620)',
+                background: 'var(--accent-primary)',
                 border: 'none',
                 color: '#FFFFFF',
                 fontWeight: 600,
@@ -611,7 +611,7 @@ export default function ClassModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 2px 8px rgba(227, 38, 32, 0.4)',
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.35)',
               }}
             >
               <Check size={16} />
