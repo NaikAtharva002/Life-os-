@@ -41,6 +41,7 @@ import {
   ConnectNodesModal,
   CustomNodeModal,
 } from '../components/universe/UniverseModals';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 const GRAPH_MODES: Array<{ id: UniverseGraphMode; label: string }> = [
   { id: 'full', label: 'Full Universe' },
@@ -172,8 +173,20 @@ export default function KnowledgeUniversePage() {
     ]
   );
 
-  const effectiveGoalId = focusGoalId || goals[0]?.id || '';
-  const effectiveProjectId = focusProjectId || careerProjects[0]?.id || '';
+  const effectiveGoalId =
+    focusGoalId && goals.some((g) => g.id === focusGoalId) ? focusGoalId : goals[0]?.id || '';
+  const effectiveProjectId =
+    focusProjectId && careerProjects.some((p) => p.id === focusProjectId)
+      ? focusProjectId
+      : careerProjects[0]?.id || '';
+
+  const handleSelectNode = useCallback((id: string | null) => {
+    setSelectedNodeId(id);
+  }, []);
+
+  const handleHoverNode = useCallback((node: UniverseNode | null) => {
+    setHoveredNode((prev) => (prev?.id === node?.id ? prev : node));
+  }, []);
 
   const projectedGraph = useMemo(
     () =>
@@ -274,18 +287,25 @@ export default function KnowledgeUniversePage() {
       }}
     >
       {/* Interactive d3-force Canvas */}
-      <UniverseCanvas
-        ref={canvasRef}
-        nodes={projectedGraph.nodes}
-        edges={projectedGraph.edges}
-        theme={settings.theme}
-        preferences={prefs}
-        selectedNodeId={selectedNodeId}
-        searchQuery={searchQuery}
-        onSelectNode={(id) => setSelectedNodeId(id)}
-        onOpenRecord={handleOpenModule}
-        onHoverNode={setHoveredNode}
-      />
+      <ErrorBoundary
+        compact
+        title="Knowledge Universe Canvas Recovery"
+        resetKey={`${prefs.activeMode}:${projectedGraph.nodes.length}`}
+        onNavigateHome={() => setActiveView('dashboard')}
+      >
+        <UniverseCanvas
+          ref={canvasRef}
+          nodes={projectedGraph.nodes}
+          edges={projectedGraph.edges}
+          theme={settings.theme}
+          preferences={prefs}
+          selectedNodeId={selectedNodeId}
+          searchQuery={searchQuery}
+          onSelectNode={handleSelectNode}
+          onOpenRecord={handleOpenModule}
+          onHoverNode={handleHoverNode}
+        />
+      </ErrorBoundary>
 
       {/* TOP FLOATING STUDIO HUD */}
       <div className="universe-top-hud">
@@ -779,13 +799,13 @@ export default function KnowledgeUniversePage() {
             {hoveredNode.subtitle ? ` — ${hoveredNode.subtitle}` : ''}
           </span>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            {projectedGraph.availableCategories.slice(0, 6).map((catId) => {
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'nowrap', overflow: 'hidden' }}>
+            {projectedGraph.availableCategories.slice(0, 5).map((catId) => {
               const meta = UNIVERSE_CATEGORIES.find((c) => c.id === catId);
               if (!meta) return null;
               const col = settings.theme === 'dark' ? meta.color : meta.lightColor;
               return (
-                <span key={catId} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                <span key={catId} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'var(--text-secondary)', flexShrink: 0 }}>
                   <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: col }} />
                   {meta.label}
                 </span>

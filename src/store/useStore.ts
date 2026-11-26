@@ -62,6 +62,8 @@ export const DEFAULT_GRAPH_PREFERENCES: GraphPreferences = {
   activeMode: 'full',
 };
 
+let inFlightInitialize: Promise<void> | null = null;
+
 interface StoreState {
   isLoaded: boolean;
   activeView: string;
@@ -726,79 +728,89 @@ export const useStore = create<StoreState>((set, get) => ({
   setInitError: (err) => set({ initError: err }),
 
   initializeFromDB: async () => {
-    try {
-      const data = await LifeOSRepository.initialize();
-
-      // Attach habitEntries to habit objects and recalculate streak & total completions
-      const habitsWithEntries = data.habits.map((h) => {
-        const hEntries = data.habitEntries.filter((e) => e.habitId === h.id);
-        const streakInfo = computeHabitStreak(h, hEntries);
-        return {
-          ...h,
-          streak: streakInfo.streak,
-          longestStreak: Math.max(h.longestStreak || 0, streakInfo.longestStreak),
-          totalCompletions: streakInfo.totalCompletions,
-          entries: hEntries,
-        };
-      });
-
-      // Check onboarding status
-      const hasCompleted =
-        data.settings?.onboardingCompleted ??
-        (localStorage.getItem('lifeos_onboarding_completed') === 'true');
-      const shouldOpenOnboarding = !hasCompleted;
-
-      const loadedWorkspaces = data.settings?.workspaces?.length
-        ? data.settings.workspaces
-        : [
-            {
-              id: 'workspace-default',
-              name: 'Personal Space',
-              isDefault: true,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            },
-          ];
-      const activeWorkspaceId = data.settings?.activeWorkspaceId || 'workspace-default';
-
-      set({
-        ...data,
-        habits: habitsWithEntries,
-        workspaces: loadedWorkspaces,
-        activeWorkspaceId,
-        isLoaded: true,
-        initError: null,
-        isOnboardingOpen: shouldOpenOnboarding,
-      });
-      get().markOverdueTasks();
-
-      // Request persistent storage on first run with one-time notice
-      if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
-        navigator.storage.persisted().then((isPersisted) => {
-          if (!isPersisted) {
-            navigator.storage.persist().then((granted) => {
-              if (granted && !localStorage.getItem('lifeos_persist_notified')) {
-                get().addToast({
-                  type: 'success',
-                  title: 'Persistent Storage Granted',
-                  message: 'Your browser has granted permanent local storage for LIFE OS records.',
-                });
-                localStorage.setItem('lifeos_persist_notified', 'true');
-              }
-            }).catch(() => {});
-          }
-        }).catch(() => {});
-      }
-    } catch (err) {
-      console.error('[LifeOS Store] Failed to initialize from IndexedDB:', err);
-      const errMsg = err instanceof Error ? err.message : 'Database initialization failed';
-      set({ isLoaded: true, initError: errMsg });
-      get().addToast({
-        type: 'error',
-        title: 'Database Load Error',
-        message: 'Could not load your local records from IndexedDB.',
-      });
+    if (inFlightInitialize) {
+      return inFlightInitialize;
     }
+
+    inFlightInitialize = (async () => {
+      try {
+        const data = await LifeOSRepository.initialize();
+
+        // Attach habitEntries to habit objects and recalculate streak & total completions
+        const habitsWithEntries = data.habits.map((h) => {
+          const hEntries = data.habitEntries.filter((e) => e.habitId === h.id);
+          const streakInfo = computeHabitStreak(h, hEntries);
+          return {
+            ...h,
+            streak: streakInfo.streak,
+            longestStreak: Math.max(h.longestStreak || 0, streakInfo.longestStreak),
+            totalCompletions: streakInfo.totalCompletions,
+            entries: hEntries,
+          };
+        });
+
+        // Check onboarding status
+        const hasCompleted =
+          data.settings?.onboardingCompleted ??
+          (localStorage.getItem('lifeos_onboarding_completed') === 'true');
+        const shouldOpenOnboarding = !hasCompleted;
+
+        const loadedWorkspaces = data.settings?.workspaces?.length
+          ? data.settings.workspaces
+          : [
+              {
+                id: 'workspace-default',
+                name: 'Personal Space',
+                isDefault: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ];
+        const activeWorkspaceId = data.settings?.activeWorkspaceId || 'workspace-default';
+
+        set({
+          ...data,
+          habits: habitsWithEntries,
+          workspaces: loadedWorkspaces,
+          activeWorkspaceId,
+          isLoaded: true,
+          initError: null,
+          isOnboardingOpen: shouldOpenOnboarding,
+        });
+        get().markOverdueTasks();
+
+        // Request persistent storage on first run with one-time notice
+        if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
+          navigator.storage.persisted().then((isPersisted) => {
+            if (!isPersisted) {
+              navigator.storage.persist().then((granted) => {
+                if (granted && !localStorage.getItem('lifeos_persist_notified')) {
+                  get().addToast({
+                    type: 'success',
+                    title: 'Persistent Storage Granted',
+                    message: 'Your browser has granted permanent local storage for LIFE OS records.',
+                  });
+                  localStorage.setItem('lifeos_persist_notified', 'true');
+                }
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+        }
+      } catch (err) {
+        console.error('[LifeOS Store] Failed to initialize from IndexedDB:', err);
+        const errMsg = err instanceof Error ? err.message : 'Database initialization failed';
+        set({ isLoaded: true, initError: errMsg });
+        get().addToast({
+          type: 'error',
+          title: 'Database Load Error',
+          message: 'Could not load your local records from IndexedDB.',
+        });
+      } finally {
+        inFlightInitialize = null;
+      }
+    })();
+
+    return inFlightInitialize;
   },
 
   // ----------------------------------------------------

@@ -468,7 +468,9 @@ html, body {
   left: 14px;
   bottom: 14px;
   z-index: 20;
-  max-width: calc(50vw - 170px);
+  max-width: calc(50% - 125px);
+  overflow: hidden;
+  white-space: nowrap;
   padding: 6px 12px;
   border-radius: var(--radius-md);
   background: var(--bg-topbar);

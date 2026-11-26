@@ -94,6 +94,17 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
     const themeRef = useRef<'dark' | 'light'>(theme);
     const sizeRef = useRef<{ width: number; height: number }>({ width: 960, height: 640 });
     const rafIdRef = useRef<number | null>(null);
+    const onSelectNodeRef = useRef(onSelectNode);
+    const onOpenRecordRef = useRef(onOpenRecord);
+    const onHoverNodeRef = useRef(onHoverNode);
+    const cameraInitializedRef = useRef(false);
+    const userMovedCameraRef = useRef(false);
+    const hasAutoFittedRef = useRef(false);
+    const fitTickCounterRef = useRef(0);
+    const prevTopologyRef = useRef<{ topoSig: string; physicsSig: string }>({
+      topoSig: '',
+      physicsSig: '',
+    });
     const dragStateRef = useRef<{
       mode: 'none' | 'node' | 'pan' | 'pinch';
       nodeId?: string;
@@ -123,12 +134,16 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
     searchQueryRef.current = searchQuery;
     prefsRef.current = preferences;
     themeRef.current = theme;
+    onSelectNodeRef.current = onSelectNode;
+    onOpenRecordRef.current = onOpenRecord;
+    onHoverNodeRef.current = onHoverNode;
 
     const screenToWorld = (sx: number, sy: number) => {
       const t = transformRef.current;
+      const safeK = Number.isFinite(t.k) && t.k > 0.05 ? t.k : 1;
       return {
-        x: (sx - t.x) / t.k,
-        y: (sy - t.y) / t.k,
+        x: (sx - (Number.isFinite(t.x) ? t.x : 0)) / safeK,
+        y: (sy - (Number.isFinite(t.y) ? t.y : 0)) / safeK,
       };
     };
 
@@ -139,9 +154,11 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
       const { x: wx, y: wy } = screenToWorld(sx, sy);
       const prefs = prefsRef.current;
       const list = simNodesRef.current;
+      const safeK = Number.isFinite(transformRef.current.k) ? transformRef.current.k : 1;
       for (let i = list.length - 1; i >= 0; i--) {
         const n = list[i];
-        const hitRadius = getNodeRadius(n, prefs) + 7 / Math.max(0.5, transformRef.current.k);
+        if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) continue;
+        const hitRadius = getNodeRadius(n, prefs) + 7 / Math.max(0.5, safeK);
         const dx = wx - n.x;
         const dy = wy - n.y;
         if (dx * dx + dy * dy <= hitRadius * hitRadius) {
@@ -472,8 +489,7 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
       }
     };
 
-    const fitCameraToNodes = (animateStep = false) => {
-      void animateStep;
+    const fitCameraToNodes = () => {
       const list = simNodesRef.current;
       const { width, height } = sizeRef.current;
       if (!list.length) return;
@@ -482,10 +498,16 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         minY = Infinity,
         maxY = -Infinity;
       for (const n of list) {
+        if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) continue;
         minX = Math.min(minX, n.x);
         maxX = Math.max(maxX, n.x);
         minY = Math.min(minY, n.y);
         maxY = Math.max(maxY, n.y);
+      }
+      if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+        transformRef.current = { x: width / 2, y: height / 2, k: 1 };
+        scheduleRender();
+        return;
       }
       const spanX = Math.max(160, maxX - minX + 120);
       const spanY = Math.max(140, maxY - minY + 120);
@@ -502,10 +524,12 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
 
     useImperativeHandle(ref, () => ({
       zoomIn: () => {
+        userMovedCameraRef.current = true;
         const { width, height } = sizeRef.current;
         const t = transformRef.current;
-        const nextK = Math.min(3.5, t.k * 1.25);
-        const factor = nextK / t.k;
+        const safeK = Number.isFinite(t.k) && t.k > 0.05 ? t.k : 1;
+        const nextK = Math.min(3.5, safeK * 1.25);
+        const factor = nextK / safeK;
         transformRef.current = {
           x: width / 2 - (width / 2 - t.x) * factor,
           y: height / 2 - (height / 2 - t.y) * factor,
@@ -514,10 +538,12 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         scheduleRender();
       },
       zoomOut: () => {
+        userMovedCameraRef.current = true;
         const { width, height } = sizeRef.current;
         const t = transformRef.current;
-        const nextK = Math.max(0.2, t.k * 0.8);
-        const factor = nextK / t.k;
+        const safeK = Number.isFinite(t.k) && t.k > 0.05 ? t.k : 1;
+        const nextK = Math.max(0.2, safeK * 0.8);
+        const factor = nextK / safeK;
         transformRef.current = {
           x: width / 2 - (width / 2 - t.x) * factor,
           y: height / 2 - (height / 2 - t.y) * factor,
@@ -526,10 +552,13 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         scheduleRender();
       },
       centerOnMe: () => {
+        userMovedCameraRef.current = true;
         const meNode = simNodesRef.current.find((n) => n.id === 'me');
         const { width, height } = sizeRef.current;
-        const target = meNode || { x: 0, y: 0 };
-        const k = Math.max(0.85, Math.min(1.2, transformRef.current.k));
+        const target =
+          meNode && Number.isFinite(meNode.x) && Number.isFinite(meNode.y) ? meNode : { x: 0, y: 0 };
+        const safeK = Number.isFinite(transformRef.current.k) ? transformRef.current.k : 1;
+        const k = Math.max(0.85, Math.min(1.2, safeK));
         transformRef.current = {
           x: width / 2 - target.x * k,
           y: height / 2 - target.y * k,
@@ -537,8 +566,14 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         };
         scheduleRender();
       },
-      fitToScreen: () => fitCameraToNodes(true),
+      fitToScreen: () => {
+        userMovedCameraRef.current = true;
+        fitCameraToNodes();
+      },
       resetLayout: () => {
+        userMovedCameraRef.current = false;
+        hasAutoFittedRef.current = false;
+        fitTickCounterRef.current = 0;
         const sim = simulationRef.current;
         for (const n of simNodesRef.current) {
           if (n.id === 'me') {
@@ -554,13 +589,13 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         const { width, height } = sizeRef.current;
         transformRef.current = { x: width / 2, y: height / 2, k: 1 };
         if (sim) {
-          sim.alpha(0.9).restart();
+          sim.alpha(0.85).restart();
         }
         scheduleRender();
       },
     }));
 
-    // Track container resize cleanly
+    // Track container resize cleanly without overriding manual pans near origin
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
@@ -571,7 +606,8 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         const w = Math.max(280, Math.round(rect.width));
         const h = Math.max(320, Math.round(rect.height));
         sizeRef.current = { width: w, height: h };
-        if (transformRef.current.x === 0 && transformRef.current.y === 0) {
+        if (!cameraInitializedRef.current) {
+          cameraInitializedRef.current = true;
           transformRef.current = { x: w / 2, y: h / 2, k: 1 };
         } else {
           transformRef.current.x += (w - prevW) / 2;
@@ -585,26 +621,122 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
       return () => observer.disconnect();
     }, []);
 
-    // Build / update d3-force simulation whenever nodes/edges/physics change
+    // Stop simulation & cancel pending frames on unmount
     useEffect(() => {
+      return () => {
+        simulationRef.current?.stop();
+        if (rafIdRef.current !== null) {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+      };
+    }, []);
+
+    // Build / update d3-force simulation only when topology or physics sliders actually change
+    useEffect(() => {
+      const nodeIdSet = new Set(nodes.map((n) => n.id));
+      const validEdges = edges.filter((e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target));
+      const topoSig = [
+        ...nodes.map((n) => n.id).sort(),
+        '::',
+        ...validEdges.map((e) => `${e.id}:${e.source}->${e.target}`).sort(),
+      ].join('|');
+      const physicsSig = `${preferences.linkDistance}|${preferences.repulsionStrength}|${preferences.nodeSizeScale}|${preferences.animationsEnabled}|${preferences.reducedMotion}`;
+
+      const prevState = prevTopologyRef.current;
+      if (
+        prevState.topoSig === topoSig &&
+        prevState.physicsSig === physicsSig &&
+        simNodesRef.current.length === nodes.length
+      ) {
+        const incomingById = new Map(nodes.map((n) => [n.id, n]));
+        for (const simNode of simNodesRef.current) {
+          const updated = incomingById.get(simNode.id);
+          if (updated) {
+            simNode.title = updated.title;
+            simNode.subtitle = updated.subtitle;
+            simNode.description = updated.description;
+            simNode.category = updated.category;
+            simNode.kind = updated.kind;
+            simNode.tier = updated.tier;
+            simNode.baseRadius = updated.baseRadius;
+            simNode.status = updated.status;
+            simNode.progress = updated.progress;
+            simNode.isCompleted = updated.isCompleted;
+            simNode.isArchived = updated.isArchived;
+            simNode.isOverdue = updated.isOverdue;
+            simNode.isCustom = updated.isCustom;
+            simNode.entityType = updated.entityType;
+            simNode.entityId = updated.entityId;
+            simNode.route = updated.route;
+            simNode.tags = updated.tags;
+            simNode.createdAt = updated.createdAt;
+            simNode.meta = updated.meta;
+          }
+        }
+        const edgeById = new Map(validEdges.map((e) => [e.id, e]));
+        for (const simLink of simLinksRef.current) {
+          const updatedEdge = edgeById.get(simLink.id);
+          if (updatedEdge) {
+            simLink.label = updatedEdge.label;
+            simLink.relationType = updatedEdge.relationType;
+            simLink.isCustom = updatedEdge.isCustom;
+            simLink.directional = updatedEdge.directional;
+          }
+        }
+        scheduleRender();
+        return;
+      }
+
+      prevTopologyRef.current = { topoSig, physicsSig };
+
       const prevMap = new Map(simNodesRef.current.map((n) => [n.id, n]));
+      const neighborPosMap = new Map<string, { x: number; y: number }>();
+      for (const e of validEdges) {
+        const prevSrc = prevMap.get(e.source);
+        const prevTgt = prevMap.get(e.target);
+        if (prevSrc && !prevTgt && !neighborPosMap.has(e.target)) {
+          neighborPosMap.set(e.target, { x: prevSrc.x, y: prevSrc.y });
+        } else if (prevTgt && !prevSrc && !neighborPosMap.has(e.source)) {
+          neighborPosMap.set(e.source, { x: prevTgt.x, y: prevTgt.y });
+        }
+      }
+
+      let reusedCount = 0;
       const simNodes: SimNode[] = nodes.map((node, idx) => {
         const prev = prevMap.get(node.id);
+        if (prev) reusedCount++;
         const angle = (idx / Math.max(1, nodes.length)) * Math.PI * 2;
         const ring = node.id === 'me' ? 0 : node.tier === 'category' ? 110 : 210 + (idx % 5) * 28;
+        const anchor = !prev ? neighborPosMap.get(node.id) : undefined;
+        const initX = prev
+          ? Number.isFinite(prev.x)
+            ? prev.x
+            : 0
+          : anchor
+          ? anchor.x + Math.cos(angle) * 38
+          : Math.cos(angle) * ring;
+        const initY = prev
+          ? Number.isFinite(prev.y)
+            ? prev.y
+            : 0
+          : anchor
+          ? anchor.y + Math.sin(angle) * 38
+          : Math.sin(angle) * ring;
+
         return {
           ...node,
-          x: prev ? prev.x : Math.cos(angle) * ring,
-          y: prev ? prev.y : Math.sin(angle) * ring,
-          vx: prev ? prev.vx : 0,
-          vy: prev ? prev.vy : 0,
+          x: initX,
+          y: initY,
+          vx: prev && Number.isFinite(prev.vx) ? prev.vx * 0.5 : 0,
+          vy: prev && Number.isFinite(prev.vy) ? prev.vy * 0.5 : 0,
           fx: node.id === 'me' ? 0 : prev?.fx,
           fy: node.id === 'me' ? 0 : prev?.fy,
           appear: prev ? prev.appear : preferences.animationsEnabled && !preferences.reducedMotion ? 0.05 : 1,
         };
       });
 
-      const simLinks: SimLink[] = edges.map((e) => ({
+      const simLinks: SimLink[] = validEdges.map((e) => ({
         id: e.id,
         source: e.source,
         target: e.target,
@@ -628,8 +760,8 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
             .id((d) => d.id)
             .distance((l) => {
               const tgt = l.target as SimNode;
-              if (tgt.id === 'me') return preferences.linkDistance * 1.15;
-              if (tgt.tier === 'category') return preferences.linkDistance * 0.92;
+              if (tgt?.id === 'me') return preferences.linkDistance * 1.15;
+              if (tgt?.tier === 'category') return preferences.linkDistance * 0.92;
               return preferences.linkDistance * 0.85;
             })
             .strength((l) => (l.isCustom ? 0.55 : 0.72))
@@ -653,33 +785,74 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         .force('center', forceCenter(0, 0).strength(0.08))
         .force('x', forceX<SimNode>(0).strength(0.03))
         .force('y', forceY<SimNode>(0).strength(0.03))
-        .alphaDecay(0.032)
+        .velocityDecay(0.42)
+        .alphaDecay(0.036)
         .alphaMin(0.008);
 
       simulationRef.current = sim;
 
+      const reuseRatio = reusedCount / Math.max(1, simNodes.length);
+      const isIncrementalUpdate = reuseRatio >= 0.6 && simNodes.length > 1;
+      if (!isIncrementalUpdate && prevState.topoSig && !userMovedCameraRef.current) {
+        hasAutoFittedRef.current = false;
+      }
+
+      const sanitizeTickNodes = () => {
+        for (const n of simNodes) {
+          if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) {
+            n.x = 0;
+            n.y = 0;
+            n.vx = 0;
+            n.vy = 0;
+          }
+        }
+      };
+
       if (preferences.reducedMotion || !preferences.animationsEnabled) {
         sim.stop();
         sim.tick(90);
+        sanitizeTickNodes();
         for (const n of simNodes) n.appear = 1;
-        scheduleRender();
+        if (!hasAutoFittedRef.current && !userMovedCameraRef.current && simNodes.length > 1) {
+          hasAutoFittedRef.current = true;
+          fitCameraToNodes();
+        } else {
+          scheduleRender();
+        }
       } else {
+        fitTickCounterRef.current = 0;
         sim.on('tick', () => {
+          fitTickCounterRef.current++;
+          sanitizeTickNodes();
+          if (
+            !hasAutoFittedRef.current &&
+            !userMovedCameraRef.current &&
+            simNodes.length > 1 &&
+            fitTickCounterRef.current === 18
+          ) {
+            hasAutoFittedRef.current = true;
+            fitCameraToNodes();
+            return;
+          }
           scheduleRender();
         });
         sim.on('end', () => {
+          sanitizeTickNodes();
+          if (!hasAutoFittedRef.current && !userMovedCameraRef.current && simNodes.length > 1) {
+            hasAutoFittedRef.current = true;
+            fitCameraToNodes();
+            return;
+          }
           scheduleRender();
         });
-        sim.alpha(Math.max(0.45, sim.alpha())).restart();
+        const targetAlpha =
+          prevState.topoSig === topoSig
+            ? 0.35
+            : isIncrementalUpdate
+            ? 0.22
+            : 0.65;
+        sim.alpha(Math.max(targetAlpha, sim.alpha())).restart();
       }
-
-      return () => {
-        sim.stop();
-        if (rafIdRef.current !== null) {
-          cancelAnimationFrame(rafIdRef.current);
-          rafIdRef.current = null;
-        }
-      };
     }, [
       nodes,
       edges,
@@ -695,20 +868,47 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
       scheduleRender();
     }, [selectedNodeId, searchQuery, preferences.labelVisibility, theme]);
 
-    // Pointer + Wheel + Pinch-Touch handlers
+    // Pointer + Wheel + Pinch-Touch handlers bound once via stable callback refs
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
 
+      const cancelActiveInteraction = () => {
+        const drag = dragStateRef.current;
+        if (drag.mode === 'node' && drag.nodeId) {
+          const node = simNodesRef.current.find((n) => n.id === drag.nodeId);
+          if (node && node.id !== 'me') {
+            node.fx = null;
+            node.fy = null;
+          }
+          simulationRef.current?.alphaTarget(0);
+        }
+        dragStateRef.current = {
+          mode: 'none',
+          startX: 0,
+          startY: 0,
+          startTx: transformRef.current.x,
+          startTy: transformRef.current.y,
+          moved: false,
+        };
+        if (hoveredNodeIdRef.current !== null) {
+          hoveredNodeIdRef.current = null;
+          onHoverNodeRef.current?.(null);
+          scheduleRender();
+        }
+      };
+
       const handleWheel = (e: WheelEvent) => {
         e.preventDefault();
+        userMovedCameraRef.current = true;
         const rect = canvas.getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
         const t = transformRef.current;
+        const safeK = Number.isFinite(t.k) && t.k > 0.05 ? t.k : 1;
         const zoomFactor = Math.exp(-e.deltaY * 0.0014);
-        const nextK = Math.max(0.2, Math.min(3.5, t.k * zoomFactor));
-        const ratio = nextK / t.k;
+        const nextK = Math.max(0.2, Math.min(3.5, safeK * zoomFactor));
+        const ratio = nextK / safeK;
         transformRef.current = {
           x: sx - (sx - t.x) * ratio,
           y: sy - (sy - t.y) * ratio,
@@ -749,10 +949,20 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
       };
 
       const handleMouseMove = (e: MouseEvent) => {
+        const drag = dragStateRef.current;
+        if (drag.mode === 'none' && e.target !== canvas) {
+          if (hoveredNodeIdRef.current !== null) {
+            hoveredNodeIdRef.current = null;
+            canvas.style.cursor = 'grab';
+            onHoverNodeRef.current?.(null);
+            scheduleRender();
+          }
+          return;
+        }
+
         const rect = canvas.getBoundingClientRect();
         const sx = e.clientX - rect.left;
         const sy = e.clientY - rect.top;
-        const drag = dragStateRef.current;
 
         if (drag.mode === 'node' && drag.nodeId) {
           const distMoved = Math.hypot(sx - drag.startX, sy - drag.startY);
@@ -772,7 +982,10 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         if (drag.mode === 'pan') {
           const dx = sx - drag.startX;
           const dy = sy - drag.startY;
-          if (Math.hypot(dx, dy) > 3) drag.moved = true;
+          if (Math.hypot(dx, dy) > 3) {
+            drag.moved = true;
+            userMovedCameraRef.current = true;
+          }
           transformRef.current.x = drag.startTx + dx;
           transformRef.current.y = drag.startTy + dy;
           scheduleRender();
@@ -784,7 +997,7 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         if (hoveredNodeIdRef.current !== nextHover) {
           hoveredNodeIdRef.current = nextHover;
           canvas.style.cursor = hit ? 'pointer' : 'grab';
-          onHoverNode?.(hit || null);
+          onHoverNodeRef.current?.(hit || null);
           scheduleRender();
         }
       };
@@ -809,17 +1022,17 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
                 lastTapRef.current.nodeId === node.id &&
                 now - lastTapRef.current.time < 340
               ) {
-                onOpenRecord(node);
+                onOpenRecordRef.current(node);
                 lastTapRef.current = { time: 0, nodeId: null };
               } else {
-                onSelectNode(node.id);
+                onSelectNodeRef.current(node.id);
                 lastTapRef.current = { time: now, nodeId: node.id };
               }
             }
           }
-        } else if (drag.mode === 'pan' && !drag.moved) {
+        } else if (drag.mode === 'pan' && !drag.moved && e.target === canvas) {
           const hit = findNodeAt(sx, sy);
-          onSelectNode(hit ? hit.id : null);
+          onSelectNodeRef.current(hit ? hit.id : null);
         }
 
         dragStateRef.current = {
@@ -832,9 +1045,18 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         };
       };
 
+      const handleMouseLeave = () => {
+        if (dragStateRef.current.mode === 'none' && hoveredNodeIdRef.current !== null) {
+          hoveredNodeIdRef.current = null;
+          onHoverNodeRef.current?.(null);
+          scheduleRender();
+        }
+      };
+
       const handleTouchStart = (e: TouchEvent) => {
         if (e.touches.length === 2) {
           e.preventDefault();
+          userMovedCameraRef.current = true;
           const rect = canvas.getBoundingClientRect();
           const x1 = e.touches[0].clientX - rect.left;
           const y1 = e.touches[0].clientY - rect.top;
@@ -891,6 +1113,7 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
         const drag = dragStateRef.current;
         if (e.touches.length === 2 && drag.mode === 'pinch') {
           e.preventDefault();
+          userMovedCameraRef.current = true;
           const rect = canvas.getBoundingClientRect();
           const x1 = e.touches[0].clientX - rect.left;
           const y1 = e.touches[0].clientY - rect.top;
@@ -900,11 +1123,12 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
           const midX = (x1 + x2) / 2;
           const midY = (y1 + y2) / 2;
           const baseDist = Math.max(10, drag.pinchStartDist || dist);
-          const nextK = Math.max(
-            0.2,
-            Math.min(3.5, (drag.pinchStartScale || 1) * (dist / baseDist))
-          );
-          const ratio = nextK / (drag.pinchStartScale || 1);
+          const startScale =
+            Number.isFinite(drag.pinchStartScale) && (drag.pinchStartScale || 0) > 0.05
+              ? drag.pinchStartScale!
+              : 1;
+          const nextK = Math.max(0.2, Math.min(3.5, startScale * (dist / baseDist)));
+          const ratio = nextK / startScale;
           const anchorX = drag.pinchMidX ?? midX;
           const anchorY = drag.pinchMidY ?? midY;
           transformRef.current = {
@@ -935,7 +1159,10 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
           } else if (drag.mode === 'pan') {
             const dx = sx - drag.startX;
             const dy = sy - drag.startY;
-            if (Math.hypot(dx, dy) > 6) drag.moved = true;
+            if (Math.hypot(dx, dy) > 6) {
+              drag.moved = true;
+              userMovedCameraRef.current = true;
+            }
             transformRef.current.x = drag.startTx + dx;
             transformRef.current.y = drag.startTy + dy;
             scheduleRender();
@@ -959,16 +1186,16 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
                 lastTapRef.current.nodeId === node.id &&
                 now - lastTapRef.current.time < 340
               ) {
-                onOpenRecord(node);
+                onOpenRecordRef.current(node);
                 lastTapRef.current = { time: 0, nodeId: null };
               } else {
-                onSelectNode(node.id);
+                onSelectNodeRef.current(node.id);
                 lastTapRef.current = { time: now, nodeId: node.id };
               }
             }
           }
         } else if (drag.mode === 'pan' && !drag.moved && e.touches.length === 0) {
-          onSelectNode(null);
+          onSelectNodeRef.current(null);
         }
 
         if (e.touches.length === 0) {
@@ -985,22 +1212,28 @@ export const UniverseCanvas = forwardRef<UniverseCanvasHandle, UniverseCanvasPro
 
       canvas.addEventListener('wheel', handleWheel, { passive: false });
       canvas.addEventListener('mousedown', handleMouseDown);
+      canvas.addEventListener('mouseleave', handleMouseLeave);
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('blur', cancelActiveInteraction);
       canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
       canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
       canvas.addEventListener('touchend', handleTouchEnd);
+      canvas.addEventListener('touchcancel', cancelActiveInteraction);
 
       return () => {
         canvas.removeEventListener('wheel', handleWheel);
         canvas.removeEventListener('mousedown', handleMouseDown);
+        canvas.removeEventListener('mouseleave', handleMouseLeave);
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('blur', cancelActiveInteraction);
         canvas.removeEventListener('touchstart', handleTouchStart);
         canvas.removeEventListener('touchmove', handleTouchMove);
         canvas.removeEventListener('touchend', handleTouchEnd);
+        canvas.removeEventListener('touchcancel', cancelActiveInteraction);
       };
-    }, [onOpenRecord, onSelectNode, onHoverNode]);
+    }, []);
 
     return (
       <div

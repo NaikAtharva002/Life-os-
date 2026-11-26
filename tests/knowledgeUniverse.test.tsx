@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { db } from '../src/db';
 import { LifeOSRepository } from '../src/db/repository';
 import useStore, { DEFAULT_GRAPH_PREFERENCES } from '../src/store/useStore';
@@ -10,6 +11,9 @@ import {
   type UniverseSourceData,
 } from '../src/lib/knowledgeGraph';
 import KnowledgeUniversePage from '../src/pages/KnowledgeUniversePage';
+import { UniverseCanvas } from '../src/components/universe/UniverseCanvas';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import App from '../src/App';
 
 global.ResizeObserver = class ResizeObserver {
   observe() {}
@@ -356,6 +360,113 @@ describe('Knowledge Universe 2.0 & INR Currency Suite', () => {
       expect(useStore.getState().graphNodes.some((n) => n.title === 'AI Research Journal')).toBe(true);
       expect(screen.queryByText('Your universe starts here.')).not.toBeInTheDocument();
       expect(screen.getByRole('complementary', { name: 'Node Information Panel' })).toBeInTheDocument();
+    });
+  });
+
+  it('ignores dangling edges in UniverseCanvas without crashing and survives metadata updates', () => {
+    const baseNodes = [
+      {
+        id: 'me',
+        title: 'Me',
+        category: 'personal' as const,
+        kind: 'core',
+        tier: 'core' as const,
+        baseRadius: 20,
+      },
+      {
+        id: 'node-1',
+        title: 'Initial Title',
+        category: 'knowledge' as const,
+        kind: 'note',
+        tier: 'record' as const,
+        baseRadius: 8,
+      },
+    ];
+    const edgesWithDangling = [
+      {
+        id: 'valid-edge',
+        source: 'me',
+        target: 'node-1',
+        relationType: 'related_to' as const,
+        label: 'Related to',
+      },
+      {
+        id: 'dangling-edge',
+        source: 'me',
+        target: 'missing-node-id',
+        relationType: 'depends_on' as const,
+        label: 'Depends on',
+      },
+    ];
+
+    const { rerender } = render(
+      <UniverseCanvas
+        nodes={baseNodes}
+        edges={edgesWithDangling}
+        theme="dark"
+        preferences={{ ...DEFAULT_GRAPH_PREFERENCES, reducedMotion: true }}
+        selectedNodeId={null}
+        searchQuery=""
+        onSelectNode={() => {}}
+        onOpenRecord={() => {}}
+      />
+    );
+
+    expect(screen.getByLabelText('Knowledge Universe Interactive Graph Canvas')).toBeInTheDocument();
+
+    // Update node metadata without changing topology
+    rerender(
+      <UniverseCanvas
+        nodes={[{ ...baseNodes[0] }, { ...baseNodes[1], title: 'Updated Title' }]}
+        edges={edgesWithDangling}
+        theme="dark"
+        preferences={{ ...DEFAULT_GRAPH_PREFERENCES, reducedMotion: true }}
+        selectedNodeId="node-1"
+        searchQuery=""
+        onSelectNode={() => {}}
+        onOpenRecord={() => {}}
+      />
+    );
+
+    expect(screen.getByLabelText('Knowledge Universe Interactive Graph Canvas')).toBeInTheDocument();
+  });
+
+  it('recovers cleanly through ErrorBoundary on transient render failures', () => {
+    let shouldThrow = true;
+    const FaultyChild = () => {
+      if (shouldThrow) throw new Error('Synthetic canvas fault');
+      return <div>Recovered Canvas Content</div>;
+    };
+
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(
+      <ErrorBoundary title="Knowledge Universe Canvas Recovery">
+        <FaultyChild />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Knowledge Universe Canvas Recovery');
+    expect(screen.getByRole('alert')).toHaveTextContent('Synthetic canvas fault');
+
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole('button', { name: /Retry View/i }));
+    expect(screen.getByText('Recovered Canvas Content')).toBeInTheDocument();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('preserves direct /universe deep link under React StrictMode on initial mount', async () => {
+    useStore.setState({ activeView: 'dashboard', isLoaded: false, initError: null });
+    render(
+      <React.StrictMode>
+        <MemoryRouter initialEntries={['/universe']}>
+          <App />
+        </MemoryRouter>
+      </React.StrictMode>
+    );
+
+    await waitFor(() => {
+      expect(useStore.getState().activeView).toBe('universe');
+      expect(screen.getByLabelText('Knowledge Universe Interactive Graph Canvas')).toBeInTheDocument();
     });
   });
 });

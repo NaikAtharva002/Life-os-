@@ -67,6 +67,7 @@
 ## 6. Files Created & Modified
 
 **New Files:**
+- [src/components/ErrorBoundary.tsx](src/components/ErrorBoundary.tsx)
 - [src/lib/knowledgeGraph.ts](src/lib/knowledgeGraph.ts)
 - [src/components/universe/UniverseCanvas.tsx](src/components/universe/UniverseCanvas.tsx)
 - [src/components/universe/UniverseNodeInspector.tsx](src/components/universe/UniverseNodeInspector.tsx)
@@ -79,16 +80,22 @@
 - [src/types/index.ts](src/types/index.ts), [src/db/index.ts](src/db/index.ts), [src/db/repository.ts](src/db/repository.ts), [src/db/seedData.ts](src/db/seedData.ts), [src/lib/backupSchema.ts](src/lib/backupSchema.ts), [src/store/useStore.ts](src/store/useStore.ts)
 - [src/lib/routes.ts](src/lib/routes.ts), [src/components/Sidebar.tsx](src/components/Sidebar.tsx), [src/components/GlobalCommandPalette.tsx](src/components/GlobalCommandPalette.tsx), [src/App.tsx](src/App.tsx), [src/index.css](src/index.css)
 - [src/pages/AnalyticsPage.tsx](src/pages/AnalyticsPage.tsx), [src/pages/AssistantPage.tsx](src/pages/AssistantPage.tsx), [src/pages/CareerPage.tsx](src/pages/CareerPage.tsx), [src/pages/DesignSystemPage.tsx](src/pages/DesignSystemPage.tsx)
-- [tests/routes.test.ts](tests/routes.test.ts), [tests/setup.ts](tests/setup.ts)
+- [tests/routes.test.ts](tests/routes.test.ts), [tests/resilience.test.ts](tests/resilience.test.ts), [tests/setup.ts](tests/setup.ts)
 
 ---
 
-## 7. Verification Summary
+## 7. Stability Hardening & Verification Summary
 
+- **Runtime, Routing & Physics Stability:**
+  - Added reusable [src/components/ErrorBoundary.tsx](src/components/ErrorBoundary.tsx) around app routes in [src/App.tsx](src/App.tsx) and `<UniverseCanvas />` in [src/pages/KnowledgeUniversePage.tsx](src/pages/KnowledgeUniversePage.tsx).
+  - Rewrote URL `<->` store sync in [src/App.tsx](src/App.tsx) (`didInitRouteRef`, `prevPathRef`, `prevViewRef`) so direct deep links (`/universe`) under `React.StrictMode` and Browser Back/Forward settle cleanly without bouncing back.
+  - Deduplicated concurrent `React.StrictMode` `initializeFromDB()` startup calls in [src/store/useStore.ts](src/store/useStore.ts).
+  - Hardened [src/components/universe/UniverseCanvas.tsx](src/components/universe/UniverseCanvas.tsx): filters dangling edges before `forceLink`, diffs topology signatures to prevent spurious `d3-force` restarts on node selection/metadata updates, stabilizes listeners via callback refs + `mouseleave` / `touchcancel` / `blur` cleanup, prevents canvas hover bleed under HUD buttons, clamps non-finite coordinates, and performs a single initial auto-fit without overriding manual camera controls.
+  - Updated `.universe-bottom-legend` (`max-width: calc(50% - 125px); overflow: hidden; white-space: nowrap;`) so the domain legend never collides with the centered camera HUD.
 - **ESLint (`npm run lint`):** Passed (`exit 0`) after final edit.
-- **TypeScript + Production Bundle (`npm run build` / `tsc && vite build`):** Passed (`exit 0`, `2650 modules transformed`, `KnowledgeUniversePage` chunk `84.83 kB`, `gzip: 24.21 kB`).
+- **TypeScript + Production Bundle (`npm run build` / `tsc && vite build`):** Passed (`exit 0`, `2651 modules transformed`, built in `5.32s`, `KnowledgeUniversePage` chunk `88.78 kB`, `gzip: 25.27 kB`).
 - **Automated Test Suite (`npx vitest run --pool=threads --maxWorkers=1 --no-isolate`):**
-  - **8 test files passed (8), 39 tests passed (39)** in `14.74s` (including 6 new tests in [tests/knowledgeUniverse.test.tsx](tests/knowledgeUniverse.test.tsx) and `/universe` route mapping in [tests/routes.test.ts](tests/routes.test.ts)).
+  - **8 test files passed (8), 43 tests passed (43)** in `28.14s` (including 9 tests in [tests/knowledgeUniverse.test.tsx](tests/knowledgeUniverse.test.tsx), 4 in [tests/resilience.test.ts](tests/resilience.test.ts), and 2 in [tests/routes.test.ts](tests/routes.test.ts)).
 - **Live Browser Verification Status:**
-  - Verified pre-restart on `http://localhost:5173/` (`0` console/page errors) across Dashboard (`₹0` INR), Obsidian Dark (`1440×900`, `/universe`), and Paper Light INR search (`₹` returned `6 nodes · 5 links` with INR goals; `$` returned only `Me`).
-  - Final flex-height fix for the Demo Banner + mobile `390×844` Add Node / Inspector live visual check was applied right before a Hub window disconnection (`webview_browser` became unavailable after server restart); post-fix correctness was verified via `lint`, `tsc && vite build`, and the full 39-test Vitest run.
+  - Verified on `http://localhost:5173/universe` at `1280×800` with Showcase Demo Data (`0` console/page errors, `92 nodes · 95 links`, unclipped `Graph Camera Controls`, `Academic` / `Career` / Search filters, Inspector open/close, and Back/Forward history traversal).
+  - Follow-up browser verification for the final `App.tsx` deep-link mount fix and `.universe-bottom-legend` width tweak could not run due to `webview_browser` AUIT bridge timeouts; both fixes are covered by `tests/knowledgeUniverse.test.tsx` (`preserves direct /universe deep link under React StrictMode on initial mount`) and production `vite build`.

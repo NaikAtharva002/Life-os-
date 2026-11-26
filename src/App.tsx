@@ -10,6 +10,7 @@ import QuickActionModal from './components/QuickActionModal';
 import KeyboardShortcutsModal from './components/KeyboardShortcutsModal';
 import OnboardingModal from './components/OnboardingModal';
 import DatabaseRecoveryScreen from './components/DatabaseRecoveryScreen';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import ThemeToggle from './components/ThemeToggle';
 import TaskModal from './components/TaskModal';
 import GoalModal from './components/GoalModal';
@@ -63,7 +64,9 @@ export default function App() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const lastSyncedPathRef = useRef<string>(location.pathname);
+  const prevPathRef = useRef<string>(location.pathname);
+  const prevViewRef = useRef<string>(activeView);
+  const didInitRouteRef = useRef(false);
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     try {
@@ -101,33 +104,37 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', settings.theme || 'dark');
   }, [settings.theme]);
 
-  // 3. Synchronize URL -> Store activeView (deep links & browser Back/Forward)
+  // 3. Synchronize URL <-> Store activeView safely under StrictMode & browser Back/Forward
   useEffect(() => {
-    if (location.pathname !== lastSyncedPathRef.current) {
-      lastSyncedPathRef.current = location.pathname;
+    const pathChanged = location.pathname !== prevPathRef.current;
+    const viewChanged = activeView !== prevViewRef.current;
+    prevPathRef.current = location.pathname;
+    prevViewRef.current = activeView;
+
+    if (!didInitRouteRef.current) {
+      didInitRouteRef.current = true;
+      const initialMeta = pathToViewMeta(location.pathname);
+      if (initialMeta.id !== activeView) {
+        setActiveView(initialMeta.id);
+      }
+      return;
+    }
+
+    if (pathChanged) {
       const meta = pathToViewMeta(location.pathname);
       if (meta.id !== activeView) {
         setActiveView(meta.id);
       }
+      return;
     }
-  }, [location.pathname, activeView, setActiveView]);
 
-  // 4. Synchronize Store activeView -> URL
-  useEffect(() => {
-    const targetPath = viewIdToPath(activeView);
-    if (targetPath !== location.pathname) {
-      lastSyncedPathRef.current = targetPath;
-      navigate(targetPath);
+    if (viewChanged) {
+      const targetPath = viewIdToPath(activeView);
+      if (targetPath !== location.pathname) {
+        navigate(targetPath);
+      }
     }
-  }, [activeView, location.pathname, navigate]);
-
-  // Ensure initial deep link route is respected on first mount
-  useEffect(() => {
-    const meta = pathToViewMeta(location.pathname);
-    if (meta.id !== 'dashboard' && activeView === 'dashboard') {
-      setActiveView(meta.id);
-    }
-  }, []);
+  }, [location.pathname, activeView, setActiveView, navigate]);
 
   // 5. Hourly overdue check
   useEffect(() => {
@@ -358,29 +365,35 @@ export default function App() {
         </header>
 
         <div className={`workspace-content ${isFullCanvas ? 'workspace-content-full' : ''}`}>
-          <Suspense fallback={<PageSkeletonFallback />}>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/today" element={<Navigate to="/" replace />} />
-              <Route path="/tasks" element={<TasksPage />} />
-              <Route path="/goals" element={<GoalsPage />} />
-              <Route path="/habits" element={<HabitsPage />} />
-              <Route path="/academics" element={<AcademicsPage />} />
-              <Route path="/finance" element={<FinancePage />} />
-              <Route path="/fitness" element={<FitnessPage />} />
-              <Route path="/career" element={<CareerPage />} />
-              <Route path="/notes" element={<ObsidianPage />} />
-              <Route path="/focus" element={<FocusModePage />} />
-              <Route path="/review" element={<EveningReviewPage />} />
-              <Route path="/history" element={<ReviewHistoryPage />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/universe" element={<KnowledgeUniversePage />} />
-              <Route path="/assistant" element={<AssistantPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/design-system" element={<DesignSystemPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
+          <ErrorBoundary
+            resetKey={location.pathname}
+            title="Workspace View Recovery"
+            onNavigateHome={() => setActiveView('dashboard')}
+          >
+            <Suspense fallback={<PageSkeletonFallback />}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/today" element={<Navigate to="/" replace />} />
+                <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/goals" element={<GoalsPage />} />
+                <Route path="/habits" element={<HabitsPage />} />
+                <Route path="/academics" element={<AcademicsPage />} />
+                <Route path="/finance" element={<FinancePage />} />
+                <Route path="/fitness" element={<FitnessPage />} />
+                <Route path="/career" element={<CareerPage />} />
+                <Route path="/notes" element={<ObsidianPage />} />
+                <Route path="/focus" element={<FocusModePage />} />
+                <Route path="/review" element={<EveningReviewPage />} />
+                <Route path="/history" element={<ReviewHistoryPage />} />
+                <Route path="/analytics" element={<AnalyticsPage />} />
+                <Route path="/universe" element={<KnowledgeUniversePage />} />
+                <Route path="/assistant" element={<AssistantPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/design-system" element={<DesignSystemPage />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </div>
 
         <MobileBottomNav

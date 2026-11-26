@@ -57,4 +57,17 @@ describe('Store Resilience & Rollback', () => {
     expect(useStore.getState().initError).toBe('Corrupted Schema');
     expect(useStore.getState().isLoaded).toBe(true);
   });
+
+  it('deduplicates concurrent StrictMode initializeFromDB calls into a single repository init', async () => {
+    const spy = vi.spyOn(LifeOSRepository, 'initialize');
+
+    await Promise.all([
+      useStore.getState().initializeFromDB(),
+      useStore.getState().initializeFromDB(),
+    ]);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    expect(useStore.getState().isLoaded).toBe(true);
+    expect(useStore.getState().initError).toBeNull();
+  });
 });
