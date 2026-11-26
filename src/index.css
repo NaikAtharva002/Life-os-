@@ -333,9 +333,15 @@ html, body {
   margin-left: var(--sidebar-collapsed);
 }
 
+.main-content.main-content-full {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 /* Single Unified Topbar */
 .global-toolbar {
   height: var(--toolbar-height);
+  flex-shrink: 0;
   background: var(--bg-topbar);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -359,8 +365,140 @@ html, body {
   margin: 0 auto;
 }
 
+.workspace-content.workspace-content-full {
+  padding: 0;
+  max-width: none;
+  margin: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =============================================================================
+   KNOWLEDGE UNIVERSE 2.0 HUD & INSPECTOR
+   ============================================================================= */
+.universe-top-hud {
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  right: 14px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.universe-hud-row,
+.universe-modes-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.universe-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-topbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-sm);
+}
+
+.universe-search-wrap {
+  flex: 1 1 200px;
+  max-width: 300px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-topbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+}
+
+.universe-modes-row {
+  background: var(--bg-topbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.universe-popover {
+  position: absolute;
+  top: 104px;
+  right: 14px;
+  width: 310px;
+  max-width: calc(100vw - 28px);
+  max-height: calc(100% - 170px);
+  overflow-y: auto;
+  z-index: 30;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-xl);
+}
+
+.universe-inspector {
+  position: absolute;
+  top: 104px;
+  right: 14px;
+  bottom: 66px;
+  width: 340px;
+  max-width: calc(100vw - 28px);
+  z-index: 25;
+}
+
+.universe-bottom-legend {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 20;
+  max-width: calc(50vw - 170px);
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg-topbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  pointer-events: none;
+}
+
+.universe-camera-hud {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--bg-topbar);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-default);
+  box-shadow: var(--shadow-md);
+}
+
 /* Demo Status Banner */
 .demo-mode-banner {
+  flex-shrink: 0;
   background: var(--accent-secondary-subtle);
   border-bottom: 1px solid rgba(245, 158, 11, 0.25);
   color: var(--text-primary);
@@ -385,7 +523,7 @@ html, body {
   display: flex;
   flex-direction: column;
   z-index: var(--z-sidebar);
-  transition: width var(--spring-fast), transform var(--spring-smooth), background var(--spring-fast);
+  transition: width var(--spring-fast), transform var(--spring-smooth);
 }
 
 .sidebar.collapsed {
@@ -456,7 +594,7 @@ html, body {
   background: transparent;
   width: 100%;
   text-align: left;
-  transition: all var(--spring-fast);
+  transition: background var(--spring-fast), border-color var(--spring-fast);
 }
 
 .sidebar.collapsed .sidebar-nav-item {
@@ -1780,8 +1918,62 @@ section.desktop-only {
     padding-bottom: calc(74px + env(safe-area-inset-bottom, 12px)) !important;
   }
 
+  .main-content.main-content-full {
+    height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 58px !important;
+  }
+
   .workspace-content {
     padding: var(--space-4) var(--space-3) !important;
+  }
+
+  .workspace-content.workspace-content-full {
+    padding: 0 !important;
+  }
+
+  .universe-top-hud {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .universe-brand-pill {
+    display: none;
+  }
+
+  .universe-search-wrap {
+    max-width: 100%;
+    flex: 1 1 100%;
+  }
+
+  .universe-popover {
+    top: 122px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-width: none;
+  }
+
+  .universe-inspector {
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 62px;
+    width: auto;
+    max-width: none;
+    max-height: 46vh;
+  }
+
+  .universe-bottom-legend {
+    display: none;
+  }
+
+  .universe-camera-hud {
+    left: auto;
+    right: 8px;
+    bottom: 10px;
+    transform: none;
   }
 
   .sidebar {

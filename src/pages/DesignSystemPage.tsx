@@ -298,7 +298,7 @@ export default function DesignSystemPage() {
               </div>
               <div style={{ paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
                 <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--accent-primary)' }} className="tabular">
-                  $14,890.50 · 25:00 · 84.6% · 1,420 kg
+                  ₹14,890.50 · 25:00 · 84.6% · 1,420 kg
                 </div>
                 <code style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                   .font-tabular / .tabular — JetBrains Mono with tnum and cv05 features enabled
@@ -689,7 +689,7 @@ export default function DesignSystemPage() {
                     <td style={{ fontWeight: 600 }}>Monthly Runway Buffer</td>
                     <td>Finance</td>
                     <td><Badge variant="walnut">Healthy</Badge></td>
-                    <td style={{ textAlign: 'right' }} className="tabular">+$2,450.00</td>
+                    <td style={{ textAlign: 'right' }} className="tabular">+₹2,450.00</td>
                     <td style={{ textAlign: 'right' }} className="tabular">4.8 mos</td>
                   </tr>
                 </tbody>

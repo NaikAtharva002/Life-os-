@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const backupSchema = z.object({
-  version: z.union([z.literal(1), z.literal(2)]),
+  version: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   exportedAt: z.string().optional(),
   appVersion: z.string().optional(),
   goals: z.array(z.record(z.string(), z.any())).default([]),
@@ -27,6 +27,8 @@ export const backupSchema = z.object({
   careerDocuments: z.array(z.record(z.string(), z.any())).default([]),
   eveningReviews: z.array(z.record(z.string(), z.any())).default([]),
   obsidianNotes: z.array(z.record(z.string(), z.any())).default([]),
+  graphNodes: z.array(z.record(z.string(), z.any())).default([]),
+  graphEdges: z.array(z.record(z.string(), z.any())).default([]),
   settings: z.record(z.string(), z.any()).optional(),
 });
 

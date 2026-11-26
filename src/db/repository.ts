@@ -26,6 +26,8 @@ import type {
   CareerDocument,
   EveningReview,
   ObsidianNote,
+  CustomGraphNode,
+  CustomGraphEdge,
   AppSettings,
 } from '../types';
 
@@ -57,6 +59,8 @@ export class LifeOSRepository {
     careerDocuments: CareerDocument[];
     eveningReviews: EveningReview[];
     obsidianNotes: ObsidianNote[];
+    graphNodes: CustomGraphNode[];
+    graphEdges: CustomGraphEdge[];
     settings: AppSettings;
   }> {
     const isInitialized = await db.appMeta.get('initialized');
@@ -118,6 +122,8 @@ export class LifeOSRepository {
         careerDocuments: [],
         eveningReviews: [],
         obsidianNotes: [],
+        graphNodes: [],
+        graphEdges: [],
         settings: defaultSettings,
       };
     }
@@ -147,6 +153,8 @@ export class LifeOSRepository {
       careerDocuments,
       eveningReviews,
       obsidianNotes,
+      graphNodes,
+      graphEdges,
       savedSettings,
     ] = await Promise.all([
       db.goals.toArray(),
@@ -172,6 +180,8 @@ export class LifeOSRepository {
       db.careerDocuments.toArray(),
       db.eveningReviews.toArray(),
       db.obsidianNotes.toArray(),
+      db.graphNodes.toArray(),
+      db.graphEdges.toArray(),
       db.appMeta.get('settings'),
     ]);
 
@@ -179,8 +189,19 @@ export class LifeOSRepository {
       items.filter((item) => !item.deletedAt);
 
     const mergedSettings: AppSettings = savedSettings?.value
-      ? { ...defaultSettings, ...savedSettings.value }
+      ? {
+          ...defaultSettings,
+          ...savedSettings.value,
+          currencySymbol:
+            !savedSettings.value.currencySymbol || savedSettings.value.currencySymbol === '$'
+              ? '₹'
+              : savedSettings.value.currencySymbol,
+        }
       : defaultSettings;
+
+    if (savedSettings?.value?.currencySymbol === '$') {
+      await db.appMeta.put({ key: 'settings', value: mergedSettings });
+    }
 
     return {
       goals: active(goals),
@@ -206,6 +227,8 @@ export class LifeOSRepository {
       careerDocuments: active(careerDocuments),
       eveningReviews: active(eveningReviews),
       obsidianNotes: active(obsidianNotes),
+      graphNodes: active(graphNodes),
+      graphEdges: active(graphEdges),
       settings: mergedSettings,
     };
   }
@@ -378,6 +401,30 @@ export class LifeOSRepository {
     await db.obsidianNotes.delete(id);
   }
 
+  // --- KNOWLEDGE UNIVERSE GRAPH ---
+  static async saveGraphNode(node: CustomGraphNode) {
+    node.updatedAt = node.updatedAt || new Date().toISOString();
+    await db.graphNodes.put(node);
+  }
+  static async deleteGraphNode(id: string) {
+    await db.transaction('rw', [db.graphNodes, db.graphEdges], async () => {
+      await db.graphNodes.delete(id);
+      const edges = await db.graphEdges.toArray();
+      for (const e of edges) {
+        if (e.sourceId === id || e.targetId === id) {
+          await db.graphEdges.delete(e.id);
+        }
+      }
+    });
+  }
+  static async saveGraphEdge(edge: CustomGraphEdge) {
+    edge.updatedAt = edge.updatedAt || new Date().toISOString();
+    await db.graphEdges.put(edge);
+  }
+  static async deleteGraphEdge(id: string) {
+    await db.graphEdges.delete(id);
+  }
+
   // --- SETTINGS ---
   static async saveSettings(settings: AppSettings) {
     await db.appMeta.put({ key: 'settings', value: settings });
@@ -413,6 +460,8 @@ export class LifeOSRepository {
       careerDocuments: await db.careerDocuments.toArray(),
       eveningReviews: await db.eveningReviews.toArray(),
       obsidianNotes: await db.obsidianNotes.toArray(),
+      graphNodes: await db.graphNodes.toArray(),
+      graphEdges: await db.graphEdges.toArray(),
       settings: settingsRecord?.value ?? settingsRecord,
     };
     return JSON.stringify(data, null, 2);
@@ -463,6 +512,8 @@ export class LifeOSRepository {
           db.careerDocuments,
           db.eveningReviews,
           db.obsidianNotes,
+          db.graphNodes,
+          db.graphEdges,
           db.appMeta,
         ],
         async () => {
@@ -489,6 +540,8 @@ export class LifeOSRepository {
           await db.careerDocuments.clear();
           await db.eveningReviews.clear();
           await db.obsidianNotes.clear();
+          await db.graphNodes.clear();
+          await db.graphEdges.clear();
 
           if (data.goals.length) await db.goals.bulkAdd(sanitizeRecords(data.goals));
           if (data.tasks.length) await db.tasks.bulkAdd(sanitizeRecords(data.tasks));
@@ -518,6 +571,8 @@ export class LifeOSRepository {
           if (data.careerDocuments.length) await db.careerDocuments.bulkAdd(sanitizeRecords(data.careerDocuments));
           if (data.eveningReviews.length) await db.eveningReviews.bulkAdd(sanitizeRecords(data.eveningReviews));
           if (data.obsidianNotes.length) await db.obsidianNotes.bulkAdd(sanitizeRecords(data.obsidianNotes));
+          if (data.graphNodes?.length) await db.graphNodes.bulkAdd(sanitizeRecords(data.graphNodes));
+          if (data.graphEdges?.length) await db.graphEdges.bulkAdd(sanitizeRecords(data.graphEdges));
 
           if (data.settings) {
             await db.appMeta.put({ key: 'settings', value: data.settings });
@@ -560,6 +615,8 @@ export class LifeOSRepository {
         db.careerDocuments,
         db.eveningReviews,
         db.obsidianNotes,
+        db.graphNodes,
+        db.graphEdges,
       ],
       async () => {
         await db.goals.clear();
@@ -585,6 +642,8 @@ export class LifeOSRepository {
         await db.careerDocuments.clear();
         await db.eveningReviews.clear();
         await db.obsidianNotes.clear();
+        await db.graphNodes.clear();
+        await db.graphEdges.clear();
       }
     );
   }
@@ -633,6 +692,8 @@ export class LifeOSRepository {
         db.careerDocuments,
         db.eveningReviews,
         db.obsidianNotes,
+        db.graphNodes,
+        db.graphEdges,
         db.appMeta,
       ],
       async () => {
@@ -676,6 +737,8 @@ export class LifeOSRepository {
         await purgeTable(db.careerDocuments);
         await purgeTable(db.eveningReviews);
         await purgeTable(db.obsidianNotes);
+        await purgeTable(db.graphNodes);
+        await purgeTable(db.graphEdges);
 
         const currSettings = (await db.appMeta.get('settings'))?.value || {};
         await db.appMeta.put({
@@ -734,6 +797,8 @@ export class LifeOSRepository {
         db.careerDocuments,
         db.eveningReviews,
         db.obsidianNotes,
+        db.graphNodes,
+        db.graphEdges,
         db.appMeta,
       ],
       async () => {

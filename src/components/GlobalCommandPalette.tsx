@@ -19,6 +19,7 @@ import {
   BarChart3,
   Download,
   Palette,
+  Orbit,
   X,
 } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -98,6 +99,7 @@ export default function GlobalCommandPalette({
     { id: 'fitness', label: 'Fitness & Conditioning', shortcut: 'G W', icon: Dumbbell },
     { id: 'career', label: 'Career & Projects', shortcut: 'G C', icon: Briefcase },
     { id: 'obsidian', label: 'Knowledge Notes', shortcut: 'G N', icon: FileText },
+    { id: 'universe', label: 'Knowledge Universe', shortcut: 'G U', icon: Orbit },
     { id: 'focus', label: 'Deep Focus Timer', icon: Compass },
     { id: 'review', label: 'Evening Review', shortcut: 'G R', icon: Moon },
     { id: 'history', label: 'Review Archive', icon: History },

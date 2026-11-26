@@ -44,7 +44,23 @@ import type {
   HabitScheduleType,
   HabitRoutine,
   UserWorkspace,
+  CustomGraphNode,
+  CustomGraphEdge,
+  GraphPreferences,
 } from '../types';
+
+export const DEFAULT_GRAPH_PREFERENCES: GraphPreferences = {
+  nodeSizeScale: 1,
+  linkDistance: 92,
+  repulsionStrength: 220,
+  labelVisibility: 'auto',
+  hiddenCategories: [],
+  showCompleted: true,
+  showArchived: false,
+  animationsEnabled: true,
+  reducedMotion: false,
+  activeMode: 'full',
+};
 
 interface StoreState {
   isLoaded: boolean;
@@ -167,10 +183,22 @@ interface StoreState {
   eveningReviews: EveningReview[];
   saveEveningReview: (review: Omit<EveningReview, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => Promise<void>;
 
-  // 9. Obsidian Notes
+  // 9. Obsidian Notes & Knowledge Universe
   obsidianNotes: ObsidianNote[];
   saveNote: (note: Omit<ObsidianNote, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
+  graphNodes: CustomGraphNode[];
+  graphEdges: CustomGraphEdge[];
+  saveGraphNode: (
+    node: Omit<CustomGraphNode, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  ) => Promise<CustomGraphNode>;
+  deleteGraphNode: (id: string) => Promise<void>;
+  addGraphEdge: (
+    edge: Omit<CustomGraphEdge, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  ) => Promise<CustomGraphEdge>;
+  deleteGraphEdge: (id: string) => Promise<void>;
+  updateGraphPreferences: (updates: Partial<GraphPreferences>) => Promise<void>;
+  resetGraphPreferences: () => Promise<void>;
 
   // 10. AI Assistant
   assistantMessages: AssistantMessage[];
@@ -642,6 +670,8 @@ export const useStore = create<StoreState>((set, get) => ({
   careerDocuments: [],
   eveningReviews: [],
   obsidianNotes: [],
+  graphNodes: [],
+  graphEdges: [],
   assistantMessages: [
     {
       id: 'msg-init',
@@ -667,7 +697,7 @@ export const useStore = create<StoreState>((set, get) => ({
   settings: {
     theme: 'dark',
     userName: '',
-    currencySymbol: '$',
+    currencySymbol: '₹',
     reminder: {
       enabled: false,
       time: '21:30',
@@ -680,6 +710,7 @@ export const useStore = create<StoreState>((set, get) => ({
     dismissedTips: [],
     isDemoMode: false,
     activeWorkspaceId: 'workspace-default',
+    graphPreferences: DEFAULT_GRAPH_PREFERENCES,
     workspaces: [
       {
         id: 'workspace-default',
@@ -2626,8 +2657,99 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   deleteNote: async (id) => {
-    set((s) => ({ obsidianNotes: s.obsidianNotes.filter((n) => n.id !== id) }));
+    set((s) => ({
+      obsidianNotes: s.obsidianNotes.filter((n) => n.id !== id),
+      graphEdges: s.graphEdges.filter((e) => e.sourceId !== `note:${id}` && e.targetId !== `note:${id}`),
+    }));
     await LifeOSRepository.deleteNote(id);
+  },
+
+  // ----------------------------------------------------
+  // KNOWLEDGE UNIVERSE GRAPH
+  // ----------------------------------------------------
+  saveGraphNode: async (nodeData) => {
+    const now = new Date().toISOString();
+    const existing = nodeData.id ? get().graphNodes.find((n) => n.id === nodeData.id) : undefined;
+    const node: CustomGraphNode = {
+      ...nodeData,
+      id: nodeData.id || `custom:${uuidv4()}`,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+      deletedAt: null,
+      isDemo: existing?.isDemo ?? false,
+    };
+    set((s) => ({
+      graphNodes: [node, ...s.graphNodes.filter((n) => n.id !== node.id)],
+    }));
+    await LifeOSRepository.saveGraphNode(node);
+
+    // Connect related nodes if specified on new node creation
+    if (node.relatedNodeIds && node.relatedNodeIds.length > 0 && !existing) {
+      for (const targetId of node.relatedNodeIds) {
+        if (targetId && targetId !== node.id) {
+          await get().addGraphEdge({
+            sourceId: node.id,
+            targetId,
+            relationType: 'related_to',
+          });
+        }
+      }
+    }
+
+    return node;
+  },
+
+  deleteGraphNode: async (id) => {
+    set((s) => ({
+      graphNodes: s.graphNodes.filter((n) => n.id !== id),
+      graphEdges: s.graphEdges.filter((e) => e.sourceId !== id && e.targetId !== id),
+    }));
+    await LifeOSRepository.deleteGraphNode(id);
+  },
+
+  addGraphEdge: async (edgeData) => {
+    const existing = get().graphEdges.find(
+      (e) =>
+        e.sourceId === edgeData.sourceId &&
+        e.targetId === edgeData.targetId &&
+        e.relationType === edgeData.relationType
+    );
+    if (existing) return existing;
+
+    const now = new Date().toISOString();
+    const edge: CustomGraphEdge = {
+      ...edgeData,
+      id: edgeData.id || `edge:${uuidv4()}`,
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+      isDemo: false,
+    };
+    set((s) => ({
+      graphEdges: [edge, ...s.graphEdges],
+    }));
+    await LifeOSRepository.saveGraphEdge(edge);
+    return edge;
+  },
+
+  deleteGraphEdge: async (id) => {
+    set((s) => ({
+      graphEdges: s.graphEdges.filter((e) => e.id !== id),
+    }));
+    await LifeOSRepository.deleteGraphEdge(id);
+  },
+
+  updateGraphPreferences: async (updates) => {
+    const currentPrefs = get().settings.graphPreferences || DEFAULT_GRAPH_PREFERENCES;
+    await get().updateSettings({
+      graphPreferences: { ...currentPrefs, ...updates },
+    });
+  },
+
+  resetGraphPreferences: async () => {
+    await get().updateSettings({
+      graphPreferences: { ...DEFAULT_GRAPH_PREFERENCES },
+    });
   },
 
   // ----------------------------------------------------
@@ -2821,6 +2943,8 @@ export const useStore = create<StoreState>((set, get) => ({
       careerProjects: [],
       careerApplications: [],
       obsidianNotes: [],
+      graphNodes: [],
+      graphEdges: [],
       isOnboardingOpen: true,
       activeView: 'dashboard',
     });

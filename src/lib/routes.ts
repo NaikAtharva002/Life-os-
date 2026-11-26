@@ -19,6 +19,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   { id: 'review', path: '/review', title: 'Evening Review', section: 'Cadence' },
   { id: 'history', path: '/history', title: 'Review Archive', section: 'Cadence' },
   { id: 'analytics', path: '/analytics', title: 'Analytics', section: 'Cadence' },
+  { id: 'universe', path: '/universe', title: 'Knowledge Universe', section: 'Cadence' },
   { id: 'assistant', path: '/assistant', title: 'Planner Helper', section: 'Cadence' },
   { id: 'settings', path: '/settings', title: 'Settings', section: 'System' },
   { id: 'design-system', path: '/design-system', title: 'Design Tokens', section: 'System' },

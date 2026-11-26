@@ -11,6 +11,7 @@ describe('Router & Navigation Metadata', () => {
 
   it('normalizes /today to dashboard and unknown routes to Today fallback', () => {
     expect(pathToViewMeta('/today').id).toBe('dashboard');
+    expect(pathToViewMeta('/universe').id).toBe('universe');
     expect(pathToViewMeta('/nonexistent-route').id).toBe('dashboard');
     expect(viewIdToPath('unknown-view')).toBe('/');
   });

@@ -24,6 +24,8 @@ import type {
   CareerDocument,
   EveningReview,
   ObsidianNote,
+  CustomGraphNode,
+  CustomGraphEdge,
 } from '../types';
 
 export class LifeOSDatabase extends Dexie {
@@ -51,6 +53,8 @@ export class LifeOSDatabase extends Dexie {
   careerDocuments!: Table<CareerDocument, string>;
   eveningReviews!: Table<EveningReview, string>;
   obsidianNotes!: Table<ObsidianNote, string>;
+  graphNodes!: Table<CustomGraphNode, string>;
+  graphEdges!: Table<CustomGraphEdge, string>;
   appMeta!: Table<{ key: string; value: any }, string>;
 
   constructor() {
@@ -153,6 +157,36 @@ export class LifeOSDatabase extends Dexie {
           )
         );
       });
+
+    this.version(3).stores({
+      goals: 'id, priority, type, category, targetDate, isArchived, isDemo, deletedAt, updatedAt',
+      tasks: 'id, priority, category, status, dueDate, isCompleted, isOverdue, goalId, academicSubjectId, careerProjectId, isDemo, deletedAt, updatedAt',
+      habits: 'id, category, frequency, isDemo, deletedAt, updatedAt',
+      habitEntries: 'id, habitId, date, [habitId+date], isDemo, deletedAt, updatedAt',
+      financeTransactions: 'id, type, category, date, paymentMethod, isDemo, deletedAt, updatedAt',
+      financeBudgets: 'id, category, month, isDemo, deletedAt, updatedAt',
+      savingsGoals: 'id, isReached, targetDate, isDemo, deletedAt, updatedAt',
+      workoutSessions: 'id, date, splitType, isDemo, deletedAt, updatedAt',
+      exercises: 'id, category, name, isDemo, deletedAt, updatedAt',
+      bodyMetrics: 'id, date, isDemo, deletedAt, updatedAt',
+      fitnessGoals: 'id, isAchieved, isDemo, deletedAt, updatedAt',
+      academicSemesters: 'id, isCurrent, year, isDemo, deletedAt, updatedAt',
+      academicSubjects: 'id, semesterId, code, isDemo, deletedAt, updatedAt',
+      attendanceRecords: 'id, subjectId, date, [subjectId+date], isDemo, deletedAt, updatedAt',
+      academicAssignments: 'id, subjectId, dueDate, isSubmitted, isDemo, deletedAt, updatedAt',
+      academicExams: 'id, subjectId, examDate, isDemo, deletedAt, updatedAt',
+      timetableSlots: 'id, subjectId, dayOfWeek, isDemo, deletedAt, updatedAt',
+      careerGoals: 'id, status, isDemo, deletedAt, updatedAt',
+      careerSkills: 'id, category, proficiency, isDemo, deletedAt, updatedAt',
+      careerProjects: 'id, status, featured, isDemo, deletedAt, updatedAt',
+      careerApplications: 'id, stage, company, isDemo, deletedAt, updatedAt',
+      careerDocuments: 'id, type, isDemo, deletedAt, updatedAt',
+      eveningReviews: 'id, date, isDemo, deletedAt, updatedAt',
+      obsidianNotes: 'id, folder, title, updatedAt, isDemo, deletedAt',
+      graphNodes: 'id, category, kind, isDemo, deletedAt, updatedAt',
+      graphEdges: 'id, sourceId, targetId, relationType, isDemo, deletedAt, updatedAt',
+      appMeta: 'key',
+    });
   }
 }
 

@@ -37,7 +37,7 @@ export default function AssistantPage() {
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   const todayStr = todayLocal();
-  const currency = settings.currencySymbol || '$';
+  const currency = settings.currencySymbol || '₹';
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });

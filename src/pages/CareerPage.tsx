@@ -634,7 +634,7 @@ export default function CareerPage() {
                 <label className="label">Compensation / Package</label>
                 <input
                   type="text"
-                  placeholder="e.g. $150,000 + Equity"
+                  placeholder="e.g. ₹18,00,000 + Equity"
                   value={appSalary}
                   onChange={(e) => setAppSalary(e.target.value)}
                   className="input"

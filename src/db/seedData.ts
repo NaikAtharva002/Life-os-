@@ -100,7 +100,7 @@ export function getInitialSeedData() {
     },
     {
       id: 'g-4',
-      title: 'Build $10,000 Emergency Liquidity Reserve',
+      title: 'Build ₹8,50,000 Emergency Liquidity Reserve',
       description: 'Maintain 6 months of living expenses in high-yield liquid treasury fund.',
       priority: 'medium',
       type: 'long-term',
@@ -108,9 +108,9 @@ export function getInitialSeedData() {
       targetDate: daysFromNow(180),
       progress: 68,
       milestones: [
-        { id: 'm-11', title: 'Reach $5,000 baseline reserve', isCompleted: true },
-        { id: 'm-12', title: 'Automate $600 monthly transfer to high-yield reserve', isCompleted: true },
-        { id: 'm-13', title: 'Reach $10,000 full safety cushion', isCompleted: false, dueDate: daysFromNow(180) },
+        { id: 'm-11', title: 'Reach ₹4,25,000 baseline reserve', isCompleted: true },
+        { id: 'm-12', title: 'Automate ₹50,000 monthly transfer to high-yield reserve', isCompleted: true },
+        { id: 'm-13', title: 'Reach ₹8,50,000 full safety cushion', isCompleted: false, dueDate: daysFromNow(180) },
       ],
       createdAt: daysAgo(60),
       updatedAt: daysAgo(5),
@@ -180,7 +180,7 @@ export function getInitialSeedData() {
     {
       id: 't-4',
       title: 'Audit Monthly Recurring SaaS Subscriptions',
-      description: 'Cancel unused cloud instances and tools to keep tech spending under $100 budget.',
+      description: 'Cancel unused cloud instances and tools to keep tech spending under ₹8,000 budget.',
       priority: 'medium',
       category: 'Wealth & Finance',
       status: 'done',
@@ -691,8 +691,8 @@ export function getInitialSeedData() {
       stage: 'interview',
       appliedDate: daysAgo(14),
       nextFollowUpDate: daysFromNow(2),
-      location: 'Remote / SF',
-      salaryExpectation: '$165,000 + Equity',
+      location: 'Remote / Bengaluru',
+      salaryExpectation: '₹24,00,000 + Equity',
       notes: 'Completed technical interview on state synchronization. Next stage: Architecture discussion with CTO.',
     },
     {
@@ -702,8 +702,8 @@ export function getInitialSeedData() {
       stage: 'oa',
       appliedDate: daysAgo(7),
       nextFollowUpDate: daysFromNow(3),
-      location: 'Seattle / Remote',
-      salaryExpectation: '$68/hr',
+      location: 'Bengaluru / Remote',
+      salaryExpectation: '₹4,500/hr',
       notes: 'Online assessment received. Focus on algorithms and concurrency.',
     },
     {
@@ -713,7 +713,7 @@ export function getInitialSeedData() {
       stage: 'applied',
       appliedDate: daysAgo(3),
       location: 'Remote',
-      salaryExpectation: '$140,000 + Equity',
+      salaryExpectation: '₹18,00,000 + Equity',
       notes: 'Submitted portfolio featuring open-source tools.',
     },
   ];
@@ -806,11 +806,11 @@ Never carry more than 3 critical priorities into a single day. Multitasking is t
   const settings: AppSettings = {
     theme: 'dark',
     userName: 'Atharva',
-    currencySymbol: '$',
+    currencySymbol: '₹',
     reminder: {
       enabled: true,
       time: '21:30',
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
     },
   };
 

@@ -29,7 +29,7 @@ export default function AnalyticsPage() {
   const careerApplications = useStore((s) => s.careerApplications);
   const settings = useStore((s) => s.settings);
 
-  const currency = settings.currencySymbol || '$';
+  const currency = settings.currencySymbol || '₹';
   const todayStr = todayLocal();
 
   // 1. Productivity Index Calculation (Composite 0-100)

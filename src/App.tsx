@@ -35,6 +35,7 @@ const EveningReviewPage = React.lazy(() => import('./pages/EveningReviewPage'));
 const ReviewHistoryPage = React.lazy(() => import('./pages/ReviewHistoryPage'));
 const FocusModePage = React.lazy(() => import('./pages/FocusModePage'));
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'));
+const KnowledgeUniversePage = React.lazy(() => import('./pages/KnowledgeUniversePage'));
 const AssistantPage = React.lazy(() => import('./pages/AssistantPage'));
 const DesignSystemPage = React.lazy(() => import('./pages/DesignSystemPage'));
 
@@ -225,6 +226,7 @@ export default function App() {
           a: 'academics',
           c: 'career',
           n: 'obsidian',
+          u: 'universe',
           r: 'review',
           s: 'settings',
         };
@@ -250,6 +252,7 @@ export default function App() {
   }
 
   const currentMeta = pathToViewMeta(location.pathname);
+  const isFullCanvas = currentMeta.id === 'universe';
 
   return (
     <div className="app">
@@ -261,7 +264,7 @@ export default function App() {
         onOpenShortcutsHelp={() => setShortcutsHelpOpen(true)}
       />
 
-      <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <main className={`main-content ${sidebarCollapsed ? 'sidebar-collapsed' : ''} ${isFullCanvas ? 'main-content-full' : ''}`}>
         {settings.isDemoMode && (
           <div className="demo-mode-banner">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -354,7 +357,7 @@ export default function App() {
           </div>
         </header>
 
-        <div className="workspace-content">
+        <div className={`workspace-content ${isFullCanvas ? 'workspace-content-full' : ''}`}>
           <Suspense fallback={<PageSkeletonFallback />}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
@@ -371,6 +374,7 @@ export default function App() {
               <Route path="/review" element={<EveningReviewPage />} />
               <Route path="/history" element={<ReviewHistoryPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/universe" element={<KnowledgeUniversePage />} />
               <Route path="/assistant" element={<AssistantPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/design-system" element={<DesignSystemPage />} />

@@ -645,6 +645,7 @@ export interface AppSettings {
   isDemoMode?: boolean;
   activeWorkspaceId?: string;
   workspaces?: UserWorkspace[];
+  graphPreferences?: GraphPreferences;
   dashboardWidgets?: {
     focusTimer?: boolean;
     todayTasks?: boolean;
@@ -668,4 +669,96 @@ export interface ToastItem {
   title: string;
   message?: string;
   duration?: number;
+}
+
+// ==========================================
+// 13. KNOWLEDGE UNIVERSE 2.0
+// ==========================================
+export type UniverseCategory =
+  | 'personal'
+  | 'goals'
+  | 'academics'
+  | 'career'
+  | 'habits-fitness'
+  | 'business'
+  | 'knowledge'
+  | 'technology'
+  | 'finance';
+
+export type UniverseRelationType =
+  | 'belongs_to'
+  | 'related_to'
+  | 'part_of'
+  | 'depends_on'
+  | 'created_from'
+  | 'supports_goal'
+  | 'uses_skill'
+  | 'references';
+
+export type UniverseGraphMode =
+  | 'full'
+  | 'personal'
+  | 'academic'
+  | 'career'
+  | 'project'
+  | 'goal'
+  | 'knowledge';
+
+export type CustomGraphNodeKind =
+  | 'note'
+  | 'personal-topic'
+  | 'interest'
+  | 'concept'
+  | 'research'
+  | 'learning-resource'
+  | 'brand'
+  | 'business-idea'
+  | 'marketing-project'
+  | 'product'
+  | 'tool'
+  | 'language'
+  | 'framework'
+  | 'ai-experiment'
+  | 'institution'
+  | 'custom';
+
+export interface CustomGraphNode {
+  id: string;
+  title: string;
+  description?: string;
+  category: UniverseCategory;
+  kind: CustomGraphNodeKind;
+  tags?: string[];
+  relatedNodeIds?: string[];
+  status?: string;
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
+}
+
+export interface CustomGraphEdge {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  relationType: UniverseRelationType;
+  label?: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+  isDemo?: boolean;
+}
+
+export interface GraphPreferences {
+  nodeSizeScale: number;
+  linkDistance: number;
+  repulsionStrength: number;
+  labelVisibility: 'auto' | 'always' | 'hover';
+  hiddenCategories: UniverseCategory[];
+  showCompleted: boolean;
+  showArchived: boolean;
+  animationsEnabled: boolean;
+  reducedMotion: boolean;
+  activeMode: UniverseGraphMode;
 }
