@@ -1,19 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import useStore from '../store/useStore';
 import { todayLocal } from '../lib/dates';
+import { getSessionNvidiaKey } from '../lib/pwa';
+import { MarkdownMessage } from '../components/MarkdownMessage';
+import {
+  DEFAULT_NVIDIA_MODEL,
+  NVIDIA_MODELS,
+  type WorkspaceContextSummary,
+} from '../lib/nvidiaModels';
 import {
   Sparkles,
   Send,
-  Calendar,
-  Target,
-  AlertTriangle,
-  DollarSign,
-  GraduationCap,
   Bot,
-  User,
   Trash2,
-  Key,
-  CheckCircle2,
+  Settings,
+  Cpu,
 } from 'lucide-react';
 
 export default function AssistantPage() {
@@ -34,14 +35,98 @@ export default function AssistantPage() {
 
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
+  const [engineBadge, setEngineBadge] = useState<string>('Offline Heuristic Ready');
+  const [hasNvidiaKey, setHasNvidiaKey] = useState<boolean>(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   const todayStr = todayLocal();
   const currency = settings.currencySymbol || '₹';
+  const activeModel = settings.nvidiaModel || DEFAULT_NVIDIA_MODEL;
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    let active = true;
+    const hasSessionKey = getSessionNvidiaKey().trim().length >= 16;
+    fetch('/api/ai/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active) return;
+        const configured = Boolean(data?.serverKeyConfigured) || hasSessionKey;
+        setHasNvidiaKey(configured);
+        setEngineBadge(
+          configured
+            ? `NVIDIA NIM · ${NVIDIA_MODELS.find((m) => m.id === activeModel)?.label || activeModel}`
+            : 'Local Heuristic Copilot'
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setHasNvidiaKey(hasSessionKey);
+        setEngineBadge(hasSessionKey ? `NVIDIA NIM · ${activeModel}` : 'Local Heuristic Copilot');
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeModel]);
+
+  const workspaceContext: WorkspaceContextSummary = useMemo(() => {
+    const curMonth = todayStr.substring(0, 7);
+    const monthTx = financeTransactions.filter((t) => t.date.startsWith(curMonth));
+    const income = monthTx.filter((t) => t.type === 'income').reduce((a, b) => a + b.amount, 0);
+    const spend = monthTx.filter((t) => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
+    const dayOfWeek = new Date().getDay();
+    const habitsToday = habits.filter((h) => h.targetDays.includes(dayOfWeek));
+    const habitsDone = habitsToday.filter((h) =>
+      habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed)
+    ).length;
+
+    return {
+      userName: settings.userName || 'User',
+      todayStr,
+      currency,
+      pendingTasksCount: tasks.filter((t) => !t.isCompleted).length,
+      overdueTasksCount: tasks.filter((t) => t.isOverdue && !t.isCompleted).length,
+      todayTasks: tasks
+        .filter((t) => t.dueDate === todayStr && !t.isCompleted)
+        .slice(0, 12)
+        .map((t) => ({ title: t.title, priority: t.priority, dueTime: t.dueTime })),
+      activeGoals: goals
+        .filter((g) => !g.isArchived)
+        .slice(0, 8)
+        .map((g) => ({
+          title: g.title,
+          progress: g.progress,
+          priority: g.priority,
+          nextMilestone: g.milestones.find((m) => !m.isCompleted)?.title,
+        })),
+      habitsTodayCount: habitsToday.length,
+      habitsDoneTodayCount: habitsDone,
+      attendanceWarnings: academicSubjects
+        .filter((s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage)
+        .slice(0, 10)
+        .map((s) => ({
+          subject: `${s.code} ${s.name}`,
+          pct: Number(((s.attendedClasses / s.totalClasses) * 100).toFixed(1)),
+        })),
+      monthlySpendFormatted: `${currency}${spend.toLocaleString('en-IN')}`,
+      monthlyIncomeFormatted: `${currency}${income.toLocaleString('en-IN')}`,
+      workoutsLogged: workoutSessions.length,
+    };
+  }, [
+    settings.userName,
+    todayStr,
+    currency,
+    financeTransactions,
+    habits,
+    habitEntries,
+    tasks,
+    goals,
+    academicSubjects,
+    workoutSessions.length,
+  ]);
 
   // Quick Action Prompts
   const quickPrompts = [
@@ -217,27 +302,37 @@ export default function AssistantPage() {
         totalAtt += s.attendedClasses;
         totalCls += s.totalClasses;
       });
-      const pct = totalCls > 0 ? ((totalAtt / totalCls) * 100).toFixed(1) : '100.0';
+      const pctLabel = totalCls > 0 ? `${((totalAtt / totalCls) * 100).toFixed(1)}% (${totalAtt}/${totalCls} classes)` : 'No classes logged yet';
 
       response += `- **Enrolled Courses**: ${academicSubjects.length}\n`;
-      response += `- **Overall Attendance**: ${pct}% (${totalAtt}/${totalCls} classes)\n`;
+      response += `- **Overall Attendance**: ${pctLabel}\n`;
       response += `- **Active Assignments**: ${academicAssignments.filter((a) => !a.isSubmitted).length} pending\n\n`;
 
-      response += `#### Subject Breakdown:\n`;
-      academicSubjects.forEach((s) => {
-        const sPct = s.totalClasses > 0 ? ((s.attendedClasses / s.totalClasses) * 100).toFixed(1) : '100.0';
-        response += `- **${s.code}** (${s.name}): ${sPct}% attendance [${s.credits} credits]\n`;
-      });
+      if (academicSubjects.length > 0) {
+        response += `#### Subject Breakdown:\n`;
+        academicSubjects.forEach((s) => {
+          const sPct = s.totalClasses > 0 ? `${((s.attendedClasses / s.totalClasses) * 100).toFixed(1)}%` : '0 logged';
+          response += `- **${s.code}** (${s.name}): ${sPct} [${s.credits} credits]\n`;
+        });
+      }
       return response;
     }
 
     // Default intelligent response grounded in data
-    return `### 💡 Copilot Analysis\n\nI have reviewed your active profile:\n- **${tasks.filter((t) => !t.isCompleted).length} pending tasks** (${tasks.filter((t) => t.isOverdue).length} overdue).\n- **${goals.filter((g) => !g.isArchived).length} active goals**.\n- **${habits.length} habits tracked**.\n\nYou can ask me specific questions like: *"Plan my day"*, *"Which goals are most important?"*, *"Show my monthly spending"*, or *"Create an exam study plan"* to generate specialized intelligence.`;
+    return `### 💡 Astra Copilot Summary\n\nI have reviewed your active workspace:\n- **${tasks.filter((t) => !t.isCompleted).length} pending tasks** (${tasks.filter((t) => t.isOverdue).length} overdue).\n- **${goals.filter((g) => !g.isArchived).length} active goals**.\n- **${habits.length} habits tracked**.\n\nYou can ask me questions like *"Plan my day"*, *"Which goals are most important?"*, *"Show my monthly spending"*, or *"Create an exam study plan"* — or connect your NVIDIA API key in Settings for full LLM reasoning.`;
   };
 
   const handleSend = async (textToSend?: string) => {
     const messageContent = (textToSend || input).trim();
-    if (!messageContent) return;
+    if (!messageContent || isThinking) return;
+
+    const historyForApi = messages
+      .slice(-8)
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        content: m.content.slice(0, 4000),
+      }));
 
     addAssistantMessage({
       role: 'user',
@@ -246,53 +341,107 @@ export default function AssistantPage() {
     setInput('');
     setIsThinking(true);
 
-    // If user has set a Gemini API Key in Settings, we can query Gemini. Otherwise, run the offline heuristic engine!
-    setTimeout(() => {
-      const response = generateOfflineResponse(messageContent);
-      addAssistantMessage({
-        role: 'assistant',
-        content: response,
-      });
-      setIsThinking(false);
-    }, 400);
+    const isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
+    const sessionKey = getSessionNvidiaKey();
+
+    if (isOnline && hasNvidiaKey) {
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (sessionKey) {
+          headers['x-nvidia-session-key'] = sessionKey;
+        }
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            messages: [...historyForApi, { role: 'user', content: messageContent }],
+            model: activeModel,
+            workspaceContext,
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { reply?: string; model?: string };
+          if (data?.reply) {
+            addAssistantMessage({
+              role: 'assistant',
+              content: data.reply,
+            });
+            setIsThinking(false);
+            return;
+          }
+        }
+      } catch {
+        // Fall through cleanly to offline heuristic engine
+      }
+    }
+
+    const fallbackResponse = generateOfflineResponse(messageContent);
+    addAssistantMessage({
+      role: 'assistant',
+      content: fallbackResponse,
+    });
+    setIsThinking(false);
   };
 
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 48px)' }}>
+    <div
+      className="page-container"
+      style={{
+        padding: '20px 24px',
+        maxWidth: '1000px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        height: 'calc(100dvh - var(--toolbar-height) - 24px)',
+        minHeight: '460px',
+      }}
+    >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div
             style={{
-              width: '32px',
-              height: '32px',
+              width: '34px',
+              height: '34px',
               borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
+              background: 'var(--accent-subtle)',
+              border: '1px solid var(--accent-border)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Sparkles size={16} color="var(--text-primary)" />
+            <Sparkles size={16} color="var(--accent-primary)" />
           </div>
           <div>
-            <h1 style={{ fontSize: '16px', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
-              Astra — Life OS AI Copilot
+            <h1 style={{ fontSize: '16px', fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>
+              Astra — LIFE OS Copilot
             </h1>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Local-first heuristic intelligence • Private • Real-time data sync
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+              <Cpu size={11} />
+              <span>{engineBadge}</span>
             </div>
           </div>
         </div>
 
-        <button
-          onClick={clearAssistantChat}
-          className="btn btn-ghost btn-sm"
-          style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}
-        >
-          <Trash2 size={13} /> Clear
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveView('settings')}
+            className="btn btn-secondary btn-sm"
+            style={{ fontSize: '11.5px' }}
+          >
+            <Settings size={12} /> {hasNvidiaKey ? 'AI Settings' : 'Configure NVIDIA Key'}
+          </button>
+          <button
+            type="button"
+            onClick={clearAssistantChat}
+            className="btn btn-ghost btn-sm"
+            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}
+          >
+            <Trash2 size={13} /> Clear
+          </button>
+        </div>
       </div>
 
       {/* Quick Prompts Strip */}
@@ -300,6 +449,7 @@ export default function AssistantPage() {
         {quickPrompts.map((p, idx) => (
           <button
             key={idx}
+            type="button"
             onClick={() => handleSend(p.query)}
             className="btn btn-secondary btn-sm"
             style={{
@@ -320,14 +470,15 @@ export default function AssistantPage() {
         style={{
           flex: 1,
           background: 'var(--bg-card)',
-          borderRadius: '16px',
+          borderRadius: '14px',
           border: '1px solid var(--border)',
           overflowY: 'auto',
-          padding: '20px',
+          padding: '18px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
-          marginBottom: '16px',
+          gap: '14px',
+          marginBottom: '14px',
+          minHeight: 0,
         }}
       >
         {messages.map((m) => {
@@ -337,9 +488,9 @@ export default function AssistantPage() {
               key={m.id}
               style={{
                 display: 'flex',
-                gap: '12px',
+                gap: '10px',
                 alignSelf: isUser ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
+                maxWidth: '88%',
               }}
             >
               {!isUser && (
@@ -356,7 +507,7 @@ export default function AssistantPage() {
                     flexShrink: 0,
                   }}
                 >
-                  <Bot size={14} color="var(--text-secondary)" />
+                  <Bot size={14} color="var(--accent-primary)" />
                 </div>
               )}
 
@@ -364,15 +515,14 @@ export default function AssistantPage() {
                 style={{
                   padding: '10px 14px',
                   borderRadius: 'var(--radius-sm)',
-                  background: isUser ? 'var(--bg-hover)' : 'var(--bg-secondary)',
+                  background: isUser ? 'var(--accent-subtle)' : 'var(--bg-secondary)',
                   color: 'var(--text-primary)',
                   fontSize: '13px',
                   lineHeight: '1.55',
-                  border: '1px solid var(--border)',
-                  whiteSpace: 'pre-wrap',
+                  border: `1px solid ${isUser ? 'var(--accent-border)' : 'var(--border)'}`,
                 }}
               >
-                {m.content}
+                {isUser ? m.content : <MarkdownMessage content={m.content} />}
               </div>
 
               {isUser && (
@@ -412,7 +562,7 @@ export default function AssistantPage() {
                 justifyContent: 'center',
               }}
             >
-              <Bot size={14} color="var(--text-secondary)" />
+              <Bot size={14} color="var(--accent-primary)" />
             </div>
             <div
               style={{
@@ -424,7 +574,7 @@ export default function AssistantPage() {
                 fontSize: '12.5px',
               }}
             >
-              Analyzing IndexedDB personal state...
+              Analyzing workspace context...
             </div>
           </div>
         )}
@@ -464,7 +614,7 @@ export default function AssistantPage() {
         />
         <button
           type="submit"
-          disabled={!input.trim()}
+          disabled={!input.trim() || isThinking}
           className="btn btn-primary"
           style={{
             padding: '10px 16px',

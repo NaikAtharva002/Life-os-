@@ -1,21 +1,22 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import useStore from '../store/useStore';
 import { todayLocal, toLocalDateString } from '../lib/dates';
-import {
-  BarChart3,
-  TrendingUp,
-  Target,
-  Repeat,
-  DollarSign,
-  Dumbbell,
-  GraduationCap,
-  Briefcase,
-  Sparkles,
-  ArrowUpRight,
-  ShieldCheck,
-  AlertCircle,
-  RefreshCw,
-} from 'lucide-react';
+import { Download } from 'lucide-react';
+
+function downloadBlob(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeCsvCell(value: string | number | undefined): string {
+  const str = String(value ?? '');
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
 
 export default function AnalyticsPage() {
   const goals = useStore((s) => s.goals);
@@ -24,7 +25,6 @@ export default function AnalyticsPage() {
   const habitEntries = useStore((s) => s.habitEntries);
   const financeTransactions = useStore((s) => s.financeTransactions);
   const workoutSessions = useStore((s) => s.workoutSessions);
-  const bodyMetrics = useStore((s) => s.bodyMetrics);
   const academicSubjects = useStore((s) => s.academicSubjects);
   const careerApplications = useStore((s) => s.careerApplications);
   const settings = useStore((s) => s.settings);
@@ -32,27 +32,35 @@ export default function AnalyticsPage() {
   const currency = settings.currencySymbol || '₹';
   const todayStr = todayLocal();
 
-  // 1. Productivity Index Calculation (Composite 0-100)
-  // Combines: Task completion (35%), Habit consistency (35%), Active Goals velocity (30%)
+  // 1. Productivity Index Calculation (Composite 0-100; 0 when no records exist)
   const { productivityScore, taskCompletionRate, habitAdherenceRate, goalVelocity } = useMemo(() => {
-    // Task completion
     const completedTasks = tasks.filter((t) => t.isCompleted).length;
-    const taskRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 80;
+    const taskRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
-    // Habit adherence past 14 days
     const past14Days = Array.from({ length: 14 }).map((_, i) => {
       const d = new Date(Date.now() - i * 86400000);
       return toLocalDateString(d);
     });
     const expectedEntries = habits.length * 14;
     const actualEntries = habitEntries.filter((e) => past14Days.includes(e.date) && e.completed).length;
-    const habitRate = expectedEntries > 0 ? Math.min(100, Math.round((actualEntries / expectedEntries) * 100)) : 85;
+    const habitRate = expectedEntries > 0 ? Math.min(100, Math.round((actualEntries / expectedEntries) * 100)) : 0;
 
-    // Goal velocity
     const activeGoals = goals.filter((g) => !g.isArchived);
-    const avgGoalProgress = activeGoals.length > 0 ? Math.round(activeGoals.reduce((a, g) => a + g.progress, 0) / activeGoals.length) : 60;
+    const avgGoalProgress =
+      activeGoals.length > 0
+        ? Math.round(activeGoals.reduce((a, g) => a + g.progress, 0) / activeGoals.length)
+        : 0;
 
-    const composite = Math.round(taskRate * 0.35 + habitRate * 0.35 + avgGoalProgress * 0.3);
+    const activePillars = [
+      tasks.length > 0 ? taskRate : null,
+      habits.length > 0 ? habitRate : null,
+      activeGoals.length > 0 ? avgGoalProgress : null,
+    ].filter((v): v is number => v !== null);
+
+    const composite =
+      activePillars.length > 0
+        ? Math.round(activePillars.reduce((sum, v) => sum + v, 0) / activePillars.length)
+        : 0;
 
     return {
       productivityScore: composite,
@@ -63,7 +71,7 @@ export default function AnalyticsPage() {
   }, [tasks, habits, habitEntries, goals]);
 
   // 2. Financial Metrics
-  const { totalInflow, totalOutflow, savingsRate } = useMemo(() => {
+  const { totalInflow, totalOutflow, savingsRate, hasFinanceData } = useMemo(() => {
     let inflow = 0;
     let outflow = 0;
     financeTransactions.forEach((t) => {
@@ -72,7 +80,12 @@ export default function AnalyticsPage() {
     });
     const net = inflow - outflow;
     const rate = inflow > 0 ? Math.max(0, Math.round((net / inflow) * 100)) : 0;
-    return { totalInflow: inflow, totalOutflow: outflow, savingsRate: rate };
+    return {
+      totalInflow: inflow,
+      totalOutflow: outflow,
+      savingsRate: rate,
+      hasFinanceData: financeTransactions.length > 0,
+    };
   }, [financeTransactions]);
 
   // 3. Academic Attendance Safety
@@ -83,13 +96,22 @@ export default function AnalyticsPage() {
       att += s.attendedClasses;
       tot += s.totalClasses;
     });
-    const pct = tot > 0 ? Math.round((att / tot) * 100) : 100;
+    const pct = tot > 0 ? Math.round((att / tot) * 100) : 0;
     return { attendedCount: att, totalClassesCount: tot, overallAttendancePct: pct };
   }, [academicSubjects]);
 
   // 4. Actionable Insights Synthesis
   const actionableInsights = useMemo(() => {
     const list: { type: 'positive' | 'warning' | 'tip'; title: string; desc: string }[] = [];
+
+    if (tasks.length === 0 && habits.length === 0 && goals.length === 0 && !hasFinanceData) {
+      list.push({
+        type: 'tip',
+        title: 'Fresh Analytics Canvas',
+        desc: 'Log your first tasks, habits, goals, or financial transactions to generate personalized cross-domain velocity metrics.',
+      });
+      return list;
+    }
 
     if (productivityScore >= 75) {
       list.push({
@@ -99,26 +121,28 @@ export default function AnalyticsPage() {
       });
     }
 
-    if (overallAttendancePct < 75) {
+    if (totalClassesCount > 0 && overallAttendancePct < 75) {
       list.push({
         type: 'warning',
         title: 'Academic Attendance Warning',
-        desc: `Overall attendance is at ${overallAttendancePct}%, below the 75% university eligibility requirement. Prioritize scheduled morning lectures this week.`,
+        desc: `Overall attendance is at ${overallAttendancePct}% (${attendedCount}/${totalClassesCount} classes), below the 75% eligibility requirement. Prioritize scheduled lectures this week.`,
       });
     }
 
-    if (savingsRate >= 40) {
-      list.push({
-        type: 'positive',
-        title: 'Strong Capital Accumulation',
-        desc: `You are saving ${savingsRate}% of inflow. Continue allocating excess cashflow into your Emergency Reserve and long-term liquidity.`,
-      });
-    } else {
-      list.push({
-        type: 'tip',
-        title: 'Optimize Variable Spending',
-        desc: `Current savings rate is ${savingsRate}%. Review monthly dining and SaaS subscriptions to increase your monthly savings velocity.`,
-      });
+    if (hasFinanceData && totalInflow > 0) {
+      if (savingsRate >= 40) {
+        list.push({
+          type: 'positive',
+          title: 'Strong Capital Accumulation',
+          desc: `You are saving ${savingsRate}% of ${currency}${totalInflow.toLocaleString('en-IN')} inflow. Continue allocating excess cashflow toward liquidity goals.`,
+        });
+      } else {
+        list.push({
+          type: 'tip',
+          title: 'Optimize Variable Spending',
+          desc: `Current savings rate is ${savingsRate}% (${currency}${totalOutflow.toLocaleString('en-IN')} spent). Review variable spending categories to raise monthly savings velocity.`,
+        });
+      }
     }
 
     const overdueCount = tasks.filter((t) => t.isOverdue).length;
@@ -131,7 +155,69 @@ export default function AnalyticsPage() {
     }
 
     return list;
-  }, [productivityScore, overallAttendancePct, savingsRate, tasks]);
+  }, [
+    tasks,
+    habits.length,
+    goals.length,
+    hasFinanceData,
+    productivityScore,
+    totalClassesCount,
+    overallAttendancePct,
+    attendedCount,
+    totalInflow,
+    totalOutflow,
+    savingsRate,
+    currency,
+  ]);
+
+  const handleExportMetricsCsv = () => {
+    const header = ['Date', 'Type', 'Category', `Amount (${currency})`, 'Payment Method', 'Description'];
+    const rows = financeTransactions.map((t) => [
+      t.date,
+      t.type,
+      t.category,
+      t.amount,
+      t.paymentMethod,
+      t.description,
+    ]);
+    const summaryRows = [
+      [],
+      ['Summary Metric', 'Value'],
+      ['Export Date', todayStr],
+      ['Operational Index', `${productivityScore}%`],
+      ['Tasks Completion', `${taskCompletionRate}%`],
+      ['Habit Consistency (14d)', `${habitAdherenceRate}%`],
+      ['Goal Velocity', `${goalVelocity}%`],
+      ['Savings Ratio', `${savingsRate}%`],
+      ['Attendance', totalClassesCount > 0 ? `${overallAttendancePct}%` : 'No classes logged'],
+    ];
+    const csv = [header, ...rows, ...summaryRows]
+      .map((line) => line.map(escapeCsvCell).join(','))
+      .join('\n');
+    downloadBlob(csv, `life-os-analytics-${todayStr}.csv`, 'text/csv;charset=utf-8;');
+  };
+
+  const handleExportReportJson = () => {
+    const report = {
+      exportedAt: new Date().toISOString(),
+      localDate: todayStr,
+      currency,
+      metrics: {
+        productivityScore,
+        taskCompletionRate,
+        habitAdherenceRate,
+        goalVelocity,
+        savingsRate,
+        totalInflow,
+        totalOutflow,
+        attendance: { attendedCount, totalClassesCount, overallAttendancePct },
+        workoutSessionsCount: workoutSessions.length,
+        careerApplicationsCount: careerApplications.length,
+      },
+      insights: actionableInsights,
+    };
+    downloadBlob(JSON.stringify(report, null, 2), `life-os-report-${todayStr}.json`, 'application/json');
+  };
 
   return (
     <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1280px', margin: '0 auto' }}>
@@ -144,6 +230,17 @@ export default function AnalyticsPage() {
           <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '14px' }}>
             Actionable synthesis across productivity, academics, financial velocity, and physical conditioning.
           </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button type="button" onClick={handleExportMetricsCsv} className="btn btn-secondary btn-sm">
+            <Download size={13} />
+            Export CSV
+          </button>
+          <button type="button" onClick={handleExportReportJson} className="btn btn-secondary btn-sm">
+            <Download size={13} />
+            Export JSON Report
+          </button>
         </div>
       </div>
 
@@ -281,10 +378,12 @@ export default function AnalyticsPage() {
 
           <div>
             <div className="section-eyebrow" style={{ marginBottom: '2px' }}>ACADEMIC STATUS</div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: overallAttendancePct >= 75 ? 'var(--text-primary)' : 'var(--status-danger)', marginTop: '2px' }} className="tabular">
-              {overallAttendancePct}%
+            <div style={{ fontSize: '18px', fontWeight: 800, color: totalClassesCount === 0 || overallAttendancePct >= 75 ? 'var(--text-primary)' : 'var(--status-danger)', marginTop: '2px' }} className="tabular">
+              {totalClassesCount > 0 ? `${overallAttendancePct}%` : '—'}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Attendance Rate</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+              {totalClassesCount > 0 ? 'Attendance Rate' : 'No classes logged'}
+            </div>
           </div>
 
           <div>
@@ -352,7 +451,11 @@ export default function AnalyticsPage() {
             <span className="section-eyebrow">HABIT ADHERENCE RATES</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {habits.map((h) => {
+            {habits.length === 0 ? (
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', padding: '12px 0' }}>
+                No habits tracked yet. Add daily rituals inside Habits to visualize 30-day adherence.
+              </div>
+            ) : habits.map((h) => {
               const entries = habitEntries.filter((e) => e.habitId === h.id && e.completed).length;
               const pct = Math.min(100, Math.round((entries / 30) * 100));
 
@@ -383,7 +486,11 @@ export default function AnalyticsPage() {
             <span className="section-eyebrow">GOAL MILESTONE TRAJECTORY</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {goals.filter((g) => !g.isArchived).map((g) => (
+            {goals.filter((g) => !g.isArchived).length === 0 ? (
+              <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', padding: '12px 0' }}>
+                No active goals yet. Create a goal to track milestone progress here.
+              </div>
+            ) : goals.filter((g) => !g.isArchived).map((g) => (
               <div key={g.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
                   <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{g.title}</span>

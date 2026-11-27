@@ -20,6 +20,7 @@ import {
   Download,
   Palette,
   Orbit,
+  Sparkles,
   X,
 } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -100,6 +101,7 @@ export default function GlobalCommandPalette({
     { id: 'career', label: 'Career & Projects', shortcut: 'G C', icon: Briefcase },
     { id: 'obsidian', label: 'Knowledge Notes', shortcut: 'G N', icon: FileText },
     { id: 'universe', label: 'Knowledge Universe', shortcut: 'G U', icon: Orbit },
+    { id: 'assistant', label: 'Astra AI Copilot', shortcut: 'G I', icon: Sparkles },
     { id: 'focus', label: 'Deep Focus Timer', icon: Compass },
     { id: 'review', label: 'Evening Review', shortcut: 'G R', icon: Moon },
     { id: 'history', label: 'Review Archive', icon: History },

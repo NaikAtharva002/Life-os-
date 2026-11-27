@@ -22,6 +22,7 @@ import {
   Palette,
   Monitor,
   Orbit,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import useStore from '../store/useStore';
@@ -107,6 +108,7 @@ export default function Sidebar({
 
   const cadenceItems: NavItem[] = [
     { id: 'universe', label: 'Knowledge Universe', icon: Orbit },
+    { id: 'assistant', label: 'Astra Copilot', icon: Sparkles },
     { id: 'focus', label: 'Deep Focus', icon: Compass },
     { id: 'review', label: 'Evening Review', icon: Moon },
     { id: 'history', label: 'Review Archive', icon: History },

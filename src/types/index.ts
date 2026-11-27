@@ -636,6 +636,7 @@ export interface AppSettings {
   currencySymbol: string;
   dayStartHour?: number;
   geminiApiKey?: string;
+  nvidiaModel?: string;
   reminder: ReminderSettings;
   onboardingCompleted?: boolean;
   selectedLifeAreas?: string[];

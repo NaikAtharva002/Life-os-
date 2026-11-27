@@ -12,10 +12,10 @@ concurrency:
 
 jobs:
   # -------------------------------------------------------------
-  # Job 1: TypeScript Frontend Validation & Production Build
+  # Job 1: TypeScript Lint, Build & Vitest Test Suite
   # -------------------------------------------------------------
   frontend-build:
-    name: Frontend Build (TypeScript / Vite / React)
+    name: Frontend Quality (ESLint / TypeScript / Vite / Vitest)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,20 +24,26 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --legacy-peer-deps
+
+      - name: ESLint Static Check
+        run: npm run lint
 
       - name: TypeScript Compile & Vite Production Build
         run: npm run build
 
+      - name: Run Unit & Integration Tests
+        run: npx vitest run --pool=threads --maxWorkers=1 --no-isolate
+
   # -------------------------------------------------------------
-  # Job 2: Python AI Engine & Relational SQLite Tests
+  # Job 2: Python AI Engine Prototype Tests (labs/)
   # -------------------------------------------------------------
   python-ai-engine-tests:
-    name: Python AI Engine (FastAPI / Pydantic / Pytest / SQLite)
+    name: Labs Python AI Engine (FastAPI / Pydantic / Pytest)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -50,26 +56,26 @@ jobs:
           cache: 'pip'
 
       - name: Install Python dependencies
-        working-directory: services/ai_engine
+        working-directory: labs/ai_engine
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
       - name: Run SQL Migrations
-        working-directory: services/ai_engine
+        working-directory: labs/ai_engine
         run: |
           python database/migrator.py
 
       - name: Execute Pytest Suite
-        working-directory: services/ai_engine
+        working-directory: labs/ai_engine
         run: |
           pytest -v
 
   # -------------------------------------------------------------
-  # Job 3: Rust & Tauri Native Desktop Crate Check
+  # Job 3: Rust & Tauri Prototype Check (labs/)
   # -------------------------------------------------------------
   rust-tauri-check:
-    name: Rust Native Desktop Shell (Tauri 2 / Cargo)
+    name: Labs Rust Desktop Shell (Tauri 2 / Cargo)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -84,7 +90,7 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Cargo Syntax & Dependency Check
-        working-directory: src-tauri
+        working-directory: labs/src-tauri
         run: |
           cargo check --verbose
 
@@ -92,7 +98,7 @@ jobs:
   # Job 4: Containerization & Docker Image Build Verification
   # -------------------------------------------------------------
   docker-build-verification:
-    name: Docker Container Build (Multi-Stage Image)
+    name: Labs Docker Container Build (Multi-Stage Image)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -104,6 +110,6 @@ jobs:
       - name: Build Python AI Engine Docker Image
         uses: docker/build-push-action@v5
         with:
-          context: ./services/ai_engine
+          context: ./labs/ai_engine
           push: false
           tags: life-os-ai-engine:latest

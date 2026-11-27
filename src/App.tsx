@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, Plus, Search, HelpCircle } from 'lucide-react';
+import { Menu, Plus, Search, HelpCircle, WifiOff, Download, RefreshCw } from 'lucide-react';
 import useStore from './store/useStore';
 import { pathToViewMeta, viewIdToPath } from './lib/routes';
+import { registerLifeOSServiceWorker, type BeforeInstallPromptEvent } from './lib/pwa';
 import Sidebar from './components/Sidebar';
 import MobileBottomNav from './components/MobileBottomNav';
 import GlobalCommandPalette from './components/GlobalCommandPalette';
@@ -93,6 +94,37 @@ export default function App() {
   const [quickGoalModalOpen, setQuickGoalModalOpen] = useState(false);
   const [quickHabitModalOpen, setQuickHabitModalOpen] = useState(false);
   const [quickClassModalOpen, setQuickClassModalOpen] = useState(false);
+  const [isOffline, setIsOffline] = useState(() =>
+    typeof navigator !== 'undefined' ? !navigator.onLine : false
+  );
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
+  const applySwUpdateRef = useRef<() => Promise<void>>(async () => {});
+
+  // 0. Register PWA Service Worker & network/install listeners
+  useEffect(() => {
+    registerLifeOSServiceWorker({
+      onNeedRefresh: () => setSwUpdateReady(true),
+    }).then((applyFn) => {
+      applySwUpdateRef.current = applyFn;
+    });
+
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
 
   // 1. Initialize IndexedDB database on startup
   useEffect(() => {
@@ -234,6 +266,7 @@ export default function App() {
           c: 'career',
           n: 'obsidian',
           u: 'universe',
+          i: 'assistant',
           r: 'review',
           s: 'settings',
         };
@@ -329,6 +362,48 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {isOffline && (
+              <span
+                className="badge badge-warning"
+                title="Offline Mode — changes saved locally in IndexedDB"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              >
+                <WifiOff size={11} />
+                <span className="desktop-only">Offline</span>
+              </span>
+            )}
+
+            {swUpdateReady && (
+              <button
+                type="button"
+                onClick={() => applySwUpdateRef.current()}
+                className="btn btn-secondary btn-sm"
+                title="New app update ready — click to reload"
+              >
+                <RefreshCw size={12} />
+                <span className="desktop-only">Update</span>
+              </button>
+            )}
+
+            {installPrompt && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await installPrompt.prompt();
+                    await installPrompt.userChoice;
+                  } finally {
+                    setInstallPrompt(null);
+                  }
+                }}
+                className="btn btn-secondary btn-sm"
+                title="Install LIFE OS as a standalone app"
+              >
+                <Download size={12} />
+                <span className="desktop-only">Install</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => setCommandPaletteOpen(true)}

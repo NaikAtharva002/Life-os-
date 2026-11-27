@@ -27,6 +27,11 @@ import {
 import useStore from '../store/useStore';
 import { LifeOSRepository } from '../db/repository';
 import { todayLocal } from '../lib/dates';
+import { getSessionNvidiaKey, setSessionNvidiaKey } from '../lib/pwa';
+import {
+  DEFAULT_NVIDIA_MODEL,
+  NVIDIA_MODELS,
+} from '../lib/nvidiaModels';
 import {
   requestNotificationPermission,
   showNotification,
@@ -53,7 +58,12 @@ export default function SettingsPage() {
 
   const [userName, setUserName] = useState(settings.userName || '');
   const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol || '₹');
-  const [geminiApiKey, setGeminiApiKey] = useState(settings.geminiApiKey || '');
+  const [nvidiaModel, setNvidiaModel] = useState(settings.nvidiaModel || DEFAULT_NVIDIA_MODEL);
+  const [sessionNvidiaKey, setSessionNvidiaKeyState] = useState(() => getSessionNvidiaKey());
+  const [serverAiStatus, setServerAiStatus] = useState<{
+    checked: boolean;
+    serverKeyConfigured: boolean;
+  }>({ checked: false, serverKeyConfigured: false });
   const [newWorkspaceName, setNewWorkspaceName] = useState('');
 
   const [reminderEnabled, setReminderEnabled] = useState(settings.reminder.enabled);
@@ -71,17 +81,39 @@ export default function SettingsPage() {
     setReminderTime(settings.reminder.time || '21:30');
     setUserName(settings.userName || '');
     setCurrencySymbol(settings.currencySymbol || '₹');
-    setGeminiApiKey(settings.geminiApiKey || '');
+    setNvidiaModel(settings.nvidiaModel || DEFAULT_NVIDIA_MODEL);
   }, [settings]);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/ai/health')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data) {
+          setServerAiStatus({
+            checked: true,
+            serverKeyConfigured: Boolean(data.serverKeyConfigured),
+          });
+        }
+      })
+      .catch(() => {
+        if (active) setServerAiStatus({ checked: true, serverKeyConfigured: false });
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSessionNvidiaKey(sessionNvidiaKey);
     await updateSettings({
       userName: userName.trim(),
       currencySymbol: currencySymbol.trim() || '₹',
-      geminiApiKey: geminiApiKey.trim() || undefined,
+      nvidiaModel,
+      geminiApiKey: undefined,
     });
-    setStatusMessage('Profile and AI preferences saved successfully!');
+    setStatusMessage('Profile and Astra Copilot preferences saved!');
     setTimeout(() => setStatusMessage(null), 3000);
   };
 
@@ -335,19 +367,74 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div>
-            <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Key size={13} /> Optional Gemini API Key (Advanced AI Copilot Mode)
-            </label>
-            <input
-              type="password"
-              className="input"
-              value={geminiApiKey}
-              onChange={(e) => setGeminiApiKey(e.target.value)}
-              placeholder="Paste Google AI Studio Gemini API Key (Optional)..."
-            />
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              * Optional. Life OS works 100% offline with full local heuristic intelligence without any API key.
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '12px 14px', borderRadius: '8px', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                <Sparkles size={13} color="var(--accent-primary)" /> Astra Copilot Engine (NVIDIA NIM)
+              </span>
+              <span
+                className={`badge ${
+                  serverAiStatus.serverKeyConfigured || sessionNvidiaKey.trim().length >= 16
+                    ? 'badge-success'
+                    : 'badge-warning'
+                }`}
+              >
+                {serverAiStatus.serverKeyConfigured
+                  ? 'Server Env Connected'
+                  : sessionNvidiaKey.trim().length >= 16
+                  ? 'Session Key Active'
+                  : 'Local Heuristic Mode'}
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+              <div>
+                <label className="label">Preferred NVIDIA NIM Model</label>
+                <select
+                  className="select"
+                  value={nvidiaModel}
+                  onChange={(e) => setNvidiaModel(e.target.value)}
+                >
+                  {NVIDIA_MODELS.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Key size={12} /> Session-Only NVIDIA API Key (Optional)
+                </label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <input
+                    type="password"
+                    className="input"
+                    value={sessionNvidiaKey}
+                    onChange={(e) => setSessionNvidiaKeyState(e.target.value)}
+                    placeholder="nvapi-... (cleared on tab close)"
+                    autoComplete="off"
+                  />
+                  {sessionNvidiaKey && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setSessionNvidiaKeyState('');
+                        setSessionNvidiaKey('');
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              API keys are never saved to IndexedDB or JSON backups. For production deployments, add{' '}
+              <code>NVIDIA_API_KEY</code> in Vercel Environment Variables (or local <code>.env.local</code>) so all prompts stay behind the <code>/api/ai/chat</code> server proxy.
             </div>
           </div>
 

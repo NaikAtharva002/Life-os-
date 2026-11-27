@@ -39,6 +39,7 @@ test-results/
 view-*.png
 *.png
 !android/app/src/main/res/**/*.png
+!public/icons/*.png
 .pytest_cache/
 
 # Python virtual environment & cache
