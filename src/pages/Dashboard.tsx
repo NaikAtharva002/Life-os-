@@ -18,44 +18,128 @@ import {
   Sliders,
   X,
   Calendar,
+  Target,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import useStore, { isHabitScheduledOnDate } from '../store/useStore';
-import { todayLocal, formatCurrencyINR } from '../lib/dates';
-import type { Task, Priority } from '../types';
-import { Checkbox, EmptyState } from '../components/ui';
+import {
+  PRIORITY_ORDER,
+  buildUpcomingEvents,
+  computeDashboardAcademicSummary,
+  computeDashboardFinanceSummary,
+  filterUserRecords,
+  formatDashboardCurrency,
+  formatShortEventDate,
+  getEffectiveTodayContext,
+  getGoalProgressLabel,
+  getLatestWorkoutSession,
+  resolveDashboardWidgets,
+} from '../lib/dashboardSelectors';
+import type { Goal, Priority, Task } from '../types';
+import { Badge, Button, Checkbox, EmptyState, HabitIcon, ProgressBar } from '../components/ui';
 import QuickTaskBar from '../components/QuickTaskBar';
 import TaskModal from '../components/TaskModal';
+import GoalModal from '../components/GoalModal';
+import HabitModal from '../components/HabitModal';
+import ClassModal from '../components/ClassModal';
 
-export default function Dashboard() {
-  const goals = useStore((s) => s.goals);
-  const tasks = useStore((s) => s.tasks);
-  const habits = useStore((s) => s.habits);
-  const habitEntries = useStore((s) => s.habitEntries);
-  const financeTransactions = useStore((s) => s.financeTransactions);
-  const academicSubjects = useStore((s) => s.academicSubjects);
-  const timetableSlots = useStore((s) => s.timetableSlots);
-  const workoutSessions = useStore((s) => s.workoutSessions);
-  const eveningReviews = useStore((s) => s.eveningReviews);
-  const settings = useStore((s) => s.settings);
-  const updateSettings = useStore((s) => s.updateSettings);
-  const setActiveView = useStore((s) => s.setActiveView);
-  const toggleHabitEntry = useStore((s) => s.toggleHabitEntry);
-  const completeTask = useStore((s) => s.completeTask);
-  const updateTask = useStore((s) => s.updateTask);
-  const rescheduleTask = useStore((s) => s.rescheduleTask);
-  const startTaskFocusSession = useStore((s) => s.startTaskFocusSession);
-  const addToast = useStore((s) => s.addToast);
-
-  const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
-  const [taskModalInit, setTaskModalInit] = useState<{
+type TaskModalState = {
+  task?: Task;
+  initialValues?: {
     title?: string;
     priority?: Priority;
     dueDate?: string;
     category?: string;
     estimatedDuration?: number;
-  } | null>(null);
+  };
+} | null;
 
-  const todayStr = todayLocal(settings.dayStartHour);
+export default function Dashboard() {
+  const rawGoals = useStore((s) => s.goals);
+  const rawTasks = useStore((s) => s.tasks);
+  const rawHabits = useStore((s) => s.habits);
+  const rawHabitEntries = useStore((s) => s.habitEntries);
+  const rawFinanceTransactions = useStore((s) => s.financeTransactions);
+  const rawFinanceBudgets = useStore((s) => s.financeBudgets);
+  const rawAcademicSubjects = useStore((s) => s.academicSubjects);
+  const rawAcademicAssignments = useStore((s) => s.academicAssignments);
+  const rawAcademicExams = useStore((s) => s.academicExams);
+  const rawTimetableSlots = useStore((s) => s.timetableSlots);
+  const rawCareerApplications = useStore((s) => s.careerApplications);
+  const rawWorkoutSessions = useStore((s) => s.workoutSessions);
+  const rawEveningReviews = useStore((s) => s.eveningReviews);
+  const settings = useStore((s) => s.settings);
+
+  const updateSettings = useStore((s) => s.updateSettings);
+  const setActiveView = useStore((s) => s.setActiveView);
+  const toggleHabitEntry = useStore((s) => s.toggleHabitEntry);
+  const completeTask = useStore((s) => s.completeTask);
+  const reopenTask = useStore((s) => s.reopenTask);
+  const rescheduleTask = useStore((s) => s.rescheduleTask);
+  const startTaskFocusSession = useStore((s) => s.startTaskFocusSession);
+  const recordTaskFocusDuration = useStore((s) => s.recordTaskFocusDuration);
+  const addToast = useStore((s) => s.addToast);
+
+  const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
+  const [showAllOverdue, setShowAllOverdue] = useState(false);
+  const [taskModalState, setTaskModalState] = useState<TaskModalState>(null);
+  const [goalModalState, setGoalModalState] = useState<{ open: boolean; goal?: Goal }>({ open: false });
+  const [showHabitModal, setShowHabitModal] = useState(false);
+  const [showClassModal, setShowClassModal] = useState(false);
+
+  const isDemoMode = Boolean(settings.isDemoMode);
+
+  // Filter out soft-deleted and unrequested demo records so only real user data renders
+  const goals = useMemo(() => filterUserRecords(rawGoals, isDemoMode), [rawGoals, isDemoMode]);
+  const tasks = useMemo(() => filterUserRecords(rawTasks, isDemoMode), [rawTasks, isDemoMode]);
+  const habits = useMemo(
+    () => filterUserRecords(rawHabits, isDemoMode).filter((h) => !h.isArchived),
+    [rawHabits, isDemoMode]
+  );
+  const habitEntries = useMemo(
+    () => filterUserRecords(rawHabitEntries, isDemoMode),
+    [rawHabitEntries, isDemoMode]
+  );
+  const financeTransactions = useMemo(
+    () => filterUserRecords(rawFinanceTransactions, isDemoMode),
+    [rawFinanceTransactions, isDemoMode]
+  );
+  const financeBudgets = useMemo(
+    () => filterUserRecords(rawFinanceBudgets, isDemoMode),
+    [rawFinanceBudgets, isDemoMode]
+  );
+  const academicSubjects = useMemo(
+    () => filterUserRecords(rawAcademicSubjects, isDemoMode),
+    [rawAcademicSubjects, isDemoMode]
+  );
+  const academicAssignments = useMemo(
+    () => filterUserRecords(rawAcademicAssignments, isDemoMode),
+    [rawAcademicAssignments, isDemoMode]
+  );
+  const academicExams = useMemo(
+    () => filterUserRecords(rawAcademicExams, isDemoMode),
+    [rawAcademicExams, isDemoMode]
+  );
+  const timetableSlots = useMemo(
+    () => filterUserRecords(rawTimetableSlots, isDemoMode),
+    [rawTimetableSlots, isDemoMode]
+  );
+  const careerApplications = useMemo(
+    () => filterUserRecords(rawCareerApplications, isDemoMode),
+    [rawCareerApplications, isDemoMode]
+  );
+  const workoutSessions = useMemo(
+    () => filterUserRecords(rawWorkoutSessions, isDemoMode),
+    [rawWorkoutSessions, isDemoMode]
+  );
+  const eveningReviews = useMemo(
+    () => filterUserRecords(rawEveningReviews, isDemoMode),
+    [rawEveningReviews, isDemoMode]
+  );
+
+  const { todayStr, currentMonthStr, currentDayOfWeek, todayFormatted, sevenDaysLaterStr } =
+    useMemo(() => getEffectiveTodayContext(settings.dayStartHour ?? 4), [settings.dayStartHour]);
 
   const currentHour = new Date().getHours();
   const greeting =
@@ -65,16 +149,75 @@ export default function Dashboard() {
       ? 'Good afternoon'
       : 'Good evening';
 
-  const todayFormatted = new Date().toLocaleDateString('en-IN', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-  });
-
-  // Focus Timer State
-  const [timerDurationMins, setTimerDurationMins] = useState(25);
-  const [timerSeconds, setTimerSeconds] = useState(25 * 60);
+  // Focus Timer State initialized from user preference
+  const preferredFocusMins =
+    typeof settings.defaultFocusDuration === 'number' && settings.defaultFocusDuration > 0
+      ? settings.defaultFocusDuration
+      : 25;
+  const [timerDurationMins, setTimerDurationMins] = useState(preferredFocusMins);
+  const [timerSeconds, setTimerSeconds] = useState(preferredFocusMins * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
+  const [selectedFocusTaskId, setSelectedFocusTaskId] = useState('');
+
+  useEffect(() => {
+    if (!isTimerRunning) {
+      setTimerDurationMins(preferredFocusMins);
+      setTimerSeconds(preferredFocusMins * 60);
+    }
+  }, [preferredFocusMins]);
+
+  useEffect(() => {
+    const anyModalOpen =
+      showWidgetCustomizer ||
+      Boolean(taskModalState) ||
+      goalModalState.open ||
+      showHabitModal ||
+      showClassModal;
+    if (!anyModalOpen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowWidgetCustomizer(false);
+        setTaskModalState(null);
+        setGoalModalState({ open: false });
+        setShowHabitModal(false);
+        setShowClassModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [showWidgetCustomizer, taskModalState, goalModalState.open, showHabitModal, showClassModal]);
+
+  const todayTasks = useMemo(
+    () =>
+      tasks
+        .filter((t) => !t.isCompleted && !t.isArchived && t.dueDate === todayStr)
+        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
+    [tasks, todayStr]
+  );
+
+  const overdueTasks = useMemo(
+    () =>
+      tasks
+        .filter(
+          (t) =>
+            !t.isCompleted &&
+            !t.isArchived &&
+            (t.isOverdue || (t.dueDate && t.dueDate < todayStr))
+        )
+        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
+    [tasks, todayStr]
+  );
+
+  const openFocusCandidates = useMemo(
+    () => [...overdueTasks, ...todayTasks],
+    [overdueTasks, todayTasks]
+  );
+
+  useEffect(() => {
+    if (selectedFocusTaskId && !openFocusCandidates.some((t) => t.id === selectedFocusTaskId)) {
+      setSelectedFocusTaskId('');
+    }
+  }, [openFocusCandidates, selectedFocusTaskId]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | null = null;
@@ -84,16 +227,28 @@ export default function Dashboard() {
       }, 1000);
     } else if (timerSeconds === 0 && isTimerRunning) {
       setIsTimerRunning(false);
+      if (selectedFocusTaskId) {
+        recordTaskFocusDuration(selectedFocusTaskId, timerDurationMins);
+      }
       addToast({
         type: 'success',
         title: 'Focus Block Complete',
-        message: `${timerDurationMins}m deep work session finished.`,
+        message: selectedFocusTaskId
+          ? `Logged ${timerDurationMins}m deep work to your task.`
+          : `${timerDurationMins}m deep work session finished.`,
       });
     }
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isTimerRunning, timerSeconds, timerDurationMins, addToast]);
+  }, [
+    isTimerRunning,
+    timerSeconds,
+    timerDurationMins,
+    selectedFocusTaskId,
+    recordTaskFocusDuration,
+    addToast,
+  ]);
 
   const selectTimerMode = (mins: number) => {
     setIsTimerRunning(false);
@@ -112,31 +267,11 @@ export default function Dashboard() {
       ? Math.round(((timerDurationMins * 60 - timerSeconds) / (timerDurationMins * 60)) * 100)
       : 0;
 
-  const priorityOrder: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-
-  const todayTasks = useMemo(
-    () =>
-      tasks
-        .filter((t) => !t.isCompleted && !t.isArchived && t.dueDate === todayStr)
-        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
-    [tasks, todayStr]
-  );
-
-  const overdueTasks = useMemo(
-    () =>
-      tasks
-        .filter(
-          (t) =>
-            !t.isCompleted &&
-            !t.isArchived &&
-            (t.isOverdue || (t.dueDate && t.dueDate < todayStr))
-        )
-        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
-    [tasks, todayStr]
-  );
-
   const completedTodayCount = useMemo(
-    () => tasks.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length,
+    () =>
+      tasks.filter(
+        (t) => !t.isArchived && t.isCompleted && t.completedAt?.startsWith(todayStr)
+      ).length,
     [tasks, todayStr]
   );
 
@@ -148,7 +283,9 @@ export default function Dashboard() {
   const habitsCompletedTodayCount = useMemo(
     () =>
       habitsToday.filter((h) =>
-        habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed)
+        habitEntries.some(
+          (e) => e.habitId === h.id && e.date === todayStr && (e.completed || e.status === 'completed')
+        )
       ).length,
     [habitsToday, habitEntries, todayStr]
   );
@@ -164,43 +301,70 @@ export default function Dashboard() {
     () =>
       goals
         .filter((g) => !g.isArchived && g.status !== 'completed')
-        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
+        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority])
         .slice(0, 3),
     [goals]
   );
 
-  const attendanceAvg = useMemo(() => {
-    if (academicSubjects.length === 0) return null;
-    const totalClasses = academicSubjects.reduce((acc, s) => acc + s.totalClasses, 0);
-    const attended = academicSubjects.reduce((acc, s) => acc + s.attendedClasses, 0);
-    return totalClasses > 0 ? (attended / totalClasses) * 100 : 100.0;
-  }, [academicSubjects]);
-
-  const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const todayClasses = useMemo(
+  const academicSummary = useMemo(
     () =>
-      timetableSlots
-        .filter((s) => s.dayOfWeek === currentDayOfWeek)
-        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
-    [timetableSlots, currentDayOfWeek]
-  );
-
-  const academicAlertSubject = useMemo(
-    () =>
-      academicSubjects.find(
-        (s) =>
-          s.totalClasses > 0 &&
-          (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
+      computeDashboardAcademicSummary(
+        academicSubjects,
+        academicAssignments,
+        academicExams,
+        timetableSlots,
+        currentDayOfWeek,
+        todayStr,
+        sevenDaysLaterStr
       ),
-    [academicSubjects]
+    [
+      academicSubjects,
+      academicAssignments,
+      academicExams,
+      timetableSlots,
+      currentDayOfWeek,
+      todayStr,
+      sevenDaysLaterStr,
+    ]
   );
 
-  const monthlyExpenses = useMemo(
+  const financeSummary = useMemo(
     () =>
-      financeTransactions
-        .filter((t) => t.type === 'expense' && t.date.startsWith(todayStr.slice(0, 7)))
-        .reduce((sum, t) => sum + t.amount, 0),
-    [financeTransactions, todayStr]
+      computeDashboardFinanceSummary(
+        financeTransactions,
+        financeBudgets,
+        currentMonthStr
+      ),
+    [financeTransactions, financeBudgets, currentMonthStr]
+  );
+
+  const upcomingEvents = useMemo(
+    () =>
+      buildUpcomingEvents({
+        tasks,
+        academicAssignments,
+        academicExams,
+        academicSubjects,
+        careerApplications,
+        goals,
+        todayStr,
+        sevenDaysLaterStr,
+      }),
+    [
+      tasks,
+      academicAssignments,
+      academicExams,
+      academicSubjects,
+      careerApplications,
+      goals,
+      todayStr,
+      sevenDaysLaterStr,
+    ]
+  );
+
+  const latestWorkout = useMemo(
+    () => getLatestWorkoutSession(workoutSessions),
+    [workoutSessions]
   );
 
   const hasReviewedToday = useMemo(
@@ -208,40 +372,64 @@ export default function Dashboard() {
     [eveningReviews, todayStr]
   );
 
-  const widgets = {
-    focusTimer: true,
-    todayTasks: true,
-    goals: true,
-    habits: true,
-    academics: true,
-    finance: true,
-    fitness: true,
-    ...settings.dashboardWidgets,
-  };
-  const hasLeftColumn = widgets.todayTasks !== false || widgets.habits !== false;
+  const widgets = useMemo(() => resolveDashboardWidgets(settings), [settings]);
+  const hasLeftColumn = widgets.todayTasks || widgets.habits;
+
+  const isWorkspaceEmpty =
+    tasks.filter((t) => !t.isArchived).length === 0 &&
+    goals.filter((g) => !g.isArchived).length === 0 &&
+    habits.length === 0 &&
+    timetableSlots.length === 0 &&
+    academicAssignments.length === 0 &&
+    academicExams.length === 0 &&
+    financeTransactions.length === 0;
 
   const handleToggleTask = (task: Task) => {
     if (task.isCompleted) {
-      updateTask(task.id, { isCompleted: false, completedAt: undefined });
+      reopenTask(task.id);
     } else {
       completeTask(task.id);
     }
   };
 
-  const currencyDisplay =
-    !settings.currencySymbol || settings.currencySymbol === '₹'
-      ? formatCurrencyINR(monthlyExpenses)
-      : `${settings.currencySymbol}${monthlyExpenses.toLocaleString()}`;
+  const expenseDisplay = formatDashboardCurrency(
+    financeSummary.monthlyExpenses,
+    settings.currencySymbol
+  );
 
-  // Circle stroke calculation for clean vector Focus Ring
   const ringRadius = 56;
   const ringCircumference = 2 * Math.PI * ringRadius;
   const ringDashOffset =
     ringCircumference - (timerProgressPct / 100) * ringCircumference;
 
+  const headerStatusParts: string[] = [];
+  if (todayTasks.length > 0) {
+    headerStatusParts.push(`${todayTasks.length} due today`);
+  }
+  if (overdueTasks.length > 0) {
+    headerStatusParts.push(`${overdueTasks.length} overdue`);
+  }
+  const openHabitsCount = habitsToday.length - habitsCompletedTodayCount;
+  if (habitsToday.length > 0) {
+    headerStatusParts.push(`${openHabitsCount} habit${openHabitsCount !== 1 ? 's' : ''} open`);
+  }
+  if (academicSummary.todayClasses.length > 0) {
+    headerStatusParts.push(
+      `${academicSummary.todayClasses.length} class${academicSummary.todayClasses.length !== 1 ? 'es' : ''}`
+    );
+  }
+  const headerSubtitle =
+    headerStatusParts.length > 0
+      ? headerStatusParts.join(' · ')
+      : isWorkspaceEmpty
+      ? 'Clean workspace ready for your first items'
+      : 'All queued items for today are clear';
+
+  const visibleOverdueTasks = showAllOverdue ? overdueTasks : overdueTasks.slice(0, 1);
+
   return (
     <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* 1. CLEAN TODAY COMMAND HEADER */}
+      {/* 1. Command Header */}
       <section
         style={{
           display: 'flex',
@@ -252,23 +440,27 @@ export default function Dashboard() {
           paddingBottom: '4px',
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <span className="badge badge-brick font-tabular">{todayFormatted}</span>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {todayTasks.length} task{todayTasks.length !== 1 ? 's' : ''} scheduled
-              {habitsToday.length > 0 ? ` · ${habitsToday.length - habitsCompletedTodayCount} habits open` : ''}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
+            <Badge variant="brick" className="font-tabular">{todayFormatted}</Badge>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              {headerSubtitle}
             </span>
           </div>
           <h1
             className="text-display"
             style={{ color: 'var(--text-primary)', margin: 0 }}
           >
-            {settings.userName?.trim() ? `${greeting}, ${settings.userName.trim()}` : `${greeting}`}
+            {settings.userName?.trim() ? `${greeting}, ${settings.userName.trim()}` : greeting}
           </h1>
+          {settings.userGreeting?.trim() && (
+            <p style={{ margin: '4px 0 0', fontSize: '13px', color: 'var(--text-secondary)' }}>
+              {settings.userGreeting.trim()}
+            </p>
+          )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div
             style={{
               display: 'flex',
@@ -283,33 +475,109 @@ export default function Dashboard() {
             <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)', fontWeight: 600 }}>
               Daily Cadence
             </span>
-            <div style={{ width: '72px' }} className="progress-track">
-              <div className="progress-fill" style={{ width: `${dailyProgress}%` }} />
+            <div style={{ width: '72px' }}>
+              <ProgressBar value={dailyProgress} size="md" variant="brick" />
             </div>
             <span className="font-tabular" style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-primary)' }}>
               {dailyProgress}%
             </span>
           </div>
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={() => setShowWidgetCustomizer(true)}
-            className="btn btn-secondary btn-sm"
             aria-label="Customize dashboard widgets"
+            icon={<Sliders size={13} aria-hidden="true" />}
           >
-            <Sliders size={13} /> Customize
-          </button>
+            Customize
+          </Button>
         </div>
       </section>
 
-      {/* 2. NATURAL LANGUAGE QUICK CAPTURE BAR */}
+      {/* New-user orientation banner with direct creation actions */}
+      {isWorkspaceEmpty && (
+        <section
+          aria-label="First steps in LIFE OS"
+          className="editorial-island"
+          style={{
+            borderColor: 'var(--accent-border)',
+            background: 'var(--bg-surface)',
+            gap: '14px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+              <span className="section-eyebrow">Your Workspace</span>
+              <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', margin: '4px 0 4px' }}>
+                Start with one task, goal, habit, or class
+              </h2>
+              <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Nothing is pre-filled with sample profiles. Add your own items below or configure your name and life areas in Settings.
+              </p>
+            </div>
+            {!settings.userName?.trim() && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveView('settings')}
+              >
+                Set your name in Settings
+              </Button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={() => setTaskModalState({ initialValues: { dueDate: todayStr } })}
+              icon={<CheckSquare size={14} aria-hidden="true" />}
+            >
+              Add First Task
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setGoalModalState({ open: true })}
+              icon={<Target size={14} aria-hidden="true" />}
+            >
+              Create First Goal
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowHabitModal(true)}
+              icon={<Repeat size={14} aria-hidden="true" />}
+            >
+              Start First Habit
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowClassModal(true)}
+              icon={<Calendar size={14} aria-hidden="true" />}
+            >
+              Add Class or Event
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* 2. Natural Language Quick Capture Bar */}
       <QuickTaskBar
         compact
-        onExpandDetails={(vals) => setTaskModalInit(vals || {})}
+        onExpandDetails={(vals) => setTaskModalState({ initialValues: vals || {} })}
       />
 
-      {/* 3. FOUR-TILE KPI BENTO STRIP */}
-      <section className="today-kpi-grid">
+      {/* 3. KPI Summary Strip */}
+      <section className="today-kpi-grid" aria-label="Today summary metrics">
         <button
           type="button"
           onClick={() => setActiveView('tasks')}
@@ -317,15 +585,17 @@ export default function Dashboard() {
           style={{ textAlign: 'left' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="text-label" style={{ color: 'var(--text-muted)' }}>Today Tasks</span>
-            <CheckSquare size={15} color="var(--accent-primary)" />
+            <span className="text-label" style={{ color: 'var(--text-secondary)' }}>Today Tasks</span>
+            <CheckSquare size={15} color="var(--accent-primary)" aria-hidden="true" />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
             <span className="font-tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
               {todayTasks.length}
             </span>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              open · {completedTodayCount} done
+            <span style={{ fontSize: '12px', color: overdueTasks.length > 0 ? 'var(--status-danger)' : 'var(--text-secondary)' }}>
+              {overdueTasks.length > 0
+                ? `open · ${overdueTasks.length} overdue`
+                : `open · ${completedTodayCount} done`}
             </span>
           </div>
         </button>
@@ -337,20 +607,24 @@ export default function Dashboard() {
           style={{ textAlign: 'left' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span className="text-label" style={{ color: 'var(--text-muted)' }}>Habits Today</span>
-            <Repeat size={15} color="var(--status-success)" />
+            <span className="text-label" style={{ color: 'var(--text-secondary)' }}>Habits Today</span>
+            <Repeat size={15} color="var(--status-success)" aria-hidden="true" />
           </div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
             <span className="font-tabular" style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)' }}>
-              {habitsCompletedTodayCount}/{habitsToday.length}
+              {habitsToday.length > 0 ? `${habitsCompletedTodayCount}/${habitsToday.length}` : '0'}
             </span>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-              completed
+              {habitsToday.length > 0
+                ? 'completed'
+                : habits.length > 0
+                ? 'rest day today'
+                : 'no rituals yet'}
             </span>
           </div>
         </button>
 
-        {widgets.academics !== false && (
+        {widgets.academics && (
           <button
             type="button"
             onClick={() => setActiveView('academics')}
@@ -358,42 +632,54 @@ export default function Dashboard() {
             style={{ textAlign: 'left' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="text-label" style={{ color: 'var(--text-muted)' }}>Academics</span>
+              <span className="text-label" style={{ color: 'var(--text-secondary)' }}>Academics</span>
               <GraduationCap
                 size={15}
-                color={academicAlertSubject ? 'var(--status-danger)' : 'var(--status-info)'}
+                color={
+                  academicSummary.atRiskSubject || academicSummary.overdueAssignmentsCount > 0
+                    ? 'var(--status-danger)'
+                    : 'var(--status-info)'
+                }
+                aria-hidden="true"
               />
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
               <span
                 className="font-tabular"
                 style={{
                   fontSize: '24px',
                   fontWeight: 700,
                   color:
-                    attendanceAvg !== null && attendanceAvg < 75
+                    (academicSummary.attendanceAvg !== null && academicSummary.attendanceAvg < 75) ||
+                    academicSummary.overdueAssignmentsCount > 0
                       ? 'var(--status-danger)'
                       : 'var(--text-primary)',
                 }}
               >
-                {todayClasses.length > 0
-                  ? `${todayClasses.length}`
-                  : attendanceAvg !== null
-                  ? `${attendanceAvg.toFixed(0)}%`
-                  : '—'}
+                {academicSummary.todayClasses.length > 0
+                  ? `${academicSummary.todayClasses.length}`
+                  : academicSummary.pendingAssignmentsCount + academicSummary.upcomingExamsCount > 0
+                  ? `${academicSummary.pendingAssignmentsCount + academicSummary.upcomingExamsCount}`
+                  : academicSummary.attendanceAvg !== null
+                  ? `${academicSummary.attendanceAvg.toFixed(0)}%`
+                  : '0'}
               </span>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                {todayClasses.length > 0
-                  ? `class${todayClasses.length !== 1 ? 'es' : ''} today`
-                  : attendanceAvg !== null
+                {academicSummary.todayClasses.length > 0
+                  ? `class${academicSummary.todayClasses.length !== 1 ? 'es' : ''} today`
+                  : academicSummary.pendingAssignmentsCount + academicSummary.upcomingExamsCount > 0
+                  ? 'open academic items'
+                  : academicSummary.attendanceAvg !== null
                   ? 'attendance'
+                  : academicSubjects.length > 0
+                  ? 'classes logged'
                   : 'no courses yet'}
               </span>
             </div>
           </button>
         )}
 
-        {widgets.finance !== false && (
+        {widgets.finance && (
           <button
             type="button"
             onClick={() => setActiveView('finance')}
@@ -401,238 +687,126 @@ export default function Dashboard() {
             style={{ textAlign: 'left' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="text-label" style={{ color: 'var(--text-muted)' }}>Month Spend</span>
-              <Wallet size={15} color="var(--accent-secondary)" />
+              <span className="text-label" style={{ color: 'var(--text-secondary)' }}>Month Spend</span>
+              <Wallet size={15} color="var(--accent-secondary)" aria-hidden="true" />
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
               <span className="font-tabular" style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {currencyDisplay}
+                {expenseDisplay}
               </span>
               <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                logged
+                {financeSummary.budgetUtilizationPct !== null
+                  ? `${financeSummary.budgetUtilizationPct}% of budget`
+                  : financeSummary.monthlyIncome > 0
+                  ? `${formatDashboardCurrency(financeSummary.monthlyIncome, settings.currencySymbol)} in`
+                  : financeSummary.monthTransactionCount === 0
+                  ? 'no entries this month'
+                  : 'logged'}
               </span>
             </div>
           </button>
         )}
       </section>
 
-      {/* 4. EXECUTION GRID: TASKS + HABITS (LEFT) | FOCUS + SCHEDULE + REVIEW (RIGHT) */}
+      {/* 4. Execution Grid: Tasks + Habits (Left) | Focus + Schedule + Upcoming + Review (Right) */}
       <section className={`today-execution-grid${!hasLeftColumn ? ' single-col' : ''}`}>
-        {/* LEFT COLUMN */}
         {hasLeftColumn && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
-          {/* Today's Action Queue */}
-          {widgets.todayTasks !== false && (
-            <div className="editorial-island">
-              <div className="editorial-island-header">
-                <div>
-                  <span className="section-eyebrow">Priority Queue</span>
-                  <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
-                    Today’s Execution
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('tasks')}
-                  className="btn btn-ghost btn-sm"
-                  style={{ color: 'var(--accent-light)' }}
-                >
-                  Open Tasks <ArrowRight size={13} />
-                </button>
-              </div>
-
-              {overdueTasks.length > 0 && (
-                <div
-                  style={{
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-sm)',
-                    background: 'var(--status-danger-bg)',
-                    border: '1px solid rgba(244, 63, 94, 0.25)',
-                    marginBottom: '14px',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '10px 12px',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 200px', minWidth: 0 }}>
-                    <AlertTriangle size={15} color="var(--status-danger)" style={{ flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--status-danger)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {overdueTasks.length} overdue: {overdueTasks[0].title}
-                      </div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        Due {overdueTasks[0].dueDate}
-                      </div>
-                    </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
+            {/* Today's Action Queue */}
+            {widgets.todayTasks && (
+              <div className="editorial-island">
+                <div className="editorial-island-header" style={{ flexWrap: 'wrap' }}>
+                  <div>
+                    <span className="section-eyebrow">Priority Queue</span>
+                    <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
+                      Today’s Execution
+                    </h2>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => rescheduleTask(overdueTasks[0].id, todayStr)}
-                    className="btn btn-sm btn-secondary"
-                    style={{ flexShrink: 0 }}
-                  >
-                    Move to Today
-                  </button>
-                </div>
-              )}
-
-              {todayTasks.length === 0 ? (
-                <EmptyState
-                  illustration="tasks"
-                  badge="Clear Slate"
-                  title="Nothing overdue or queued for today."
-                  description="Use the quick capture bar above or jump into Tasks to plan your next sprint."
-                  action={
-                    <button
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Button
                       type="button"
-                      onClick={() => setTaskModalInit({ dueDate: todayStr })}
-                      className="btn btn-primary btn-sm"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setTaskModalState({ initialValues: { dueDate: todayStr } })}
+                      icon={<Plus size={13} aria-hidden="true" />}
                     >
-                      <Plus size={14} /> Add Task for Today
-                    </button>
-                  }
-                />
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {todayTasks.slice(0, 6).map((t) => (
-                    <div
-                      key={t.id}
-                      className="editorial-triage-row"
-                      style={{ opacity: t.isCompleted ? 0.55 : 1 }}
+                      Task
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveView('tasks')}
+                      style={{ color: 'var(--accent-light)' }}
+                      icon={<ArrowRight size={13} aria-hidden="true" />}
+                      iconPosition="right"
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                        <Checkbox
-                          size="sm"
-                          checked={t.isCompleted}
-                          onChange={() => handleToggleTask(t)}
-                        />
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div
-                            style={{
-                              fontSize: '13.5px',
-                              fontWeight: 600,
-                              color: t.isCompleted ? 'var(--text-muted)' : 'var(--text-primary)',
-                              textDecoration: t.isCompleted ? 'line-through' : 'none',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              whiteSpace: 'nowrap',
-                            }}
-                          >
-                            {t.title}
-                          </div>
-                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                            <span>{t.category || 'General'}</span>
-                            {t.dueTime && <span className="font-tabular">· {t.dueTime}</span>}
-                            {t.estimatedDuration && (
-                              <span className="font-tabular" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                                · <Clock size={10} /> {t.estimatedDuration}m
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      Open Tasks
+                    </Button>
+                  </div>
+                </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                        {!t.isCompleted && (
-                          <button
-                            type="button"
-                            onClick={() => startTaskFocusSession(t.id)}
-                            className="btn btn-ghost btn-sm"
-                            style={{ color: 'var(--accent-light)', padding: '4px 8px' }}
-                            title="Focus on this task"
-                          >
-                            <Play size={11} fill="currentColor" /> Focus
-                          </button>
-                        )}
-                        <span
-                          className={`badge ${
-                            t.priority === 'critical'
-                              ? 'badge-danger'
-                              : t.priority === 'high'
-                              ? 'badge-warning'
-                              : 'badge-silver'
-                          }`}
-                        >
-                          {t.priority}
+                {overdueTasks.length > 0 && (
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--status-danger-bg)',
+                      border: '1px solid rgba(244, 63, 94, 0.25)',
+                      marginBottom: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertTriangle size={15} color="var(--status-danger)" aria-hidden="true" />
+                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--status-danger)' }}>
+                          {overdueTasks.length} overdue task{overdueTasks.length !== 1 ? 's' : ''}
                         </span>
                       </div>
+                      {overdueTasks.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllOverdue((prev) => !prev)}
+                          aria-expanded={showAllOverdue}
+                          className="btn btn-ghost btn-sm"
+                          style={{ color: 'var(--text-primary)', padding: '2px 8px', fontSize: '11.5px' }}
+                        >
+                          {showAllOverdue ? 'Show less' : `Show all (${overdueTasks.length})`}
+                          {showAllOverdue ? <ChevronUp size={13} aria-hidden="true" /> : <ChevronDown size={13} aria-hidden="true" />}
+                        </button>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Habit Rhythm Checklist (Zero noisy stock images) */}
-          {widgets.habits !== false && (
-            <div className="editorial-island">
-              <div className="editorial-island-header">
-                <div>
-                  <span className="section-eyebrow">Daily Rituals</span>
-                  <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
-                    Habits Today
-                  </h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('habits')}
-                  className="btn btn-ghost btn-sm"
-                  style={{ color: 'var(--accent-light)' }}
-                >
-                  All Habits <ArrowRight size={13} />
-                </button>
-              </div>
-
-              {habitsToday.length === 0 ? (
-                <EmptyState
-                  illustration="habits"
-                  badge="Rituals"
-                  title="No habits scheduled today."
-                  description="Anchor consistent daily routines like deep study, workouts, or reading."
-                  action={
-                    <button
-                      type="button"
-                      onClick={() => setActiveView('habits')}
-                      className="btn btn-primary btn-sm"
-                    >
-                      <Plus size={14} /> Add Habit
-                    </button>
-                  }
-                />
-              ) : (
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                    gap: '10px',
-                  }}
-                >
-                  {habitsToday.map((h) => {
-                    const isDone = habitEntries.some(
-                      (e) => e.habitId === h.id && e.date === todayStr && e.completed
-                    );
-
-                    return (
+                    {visibleOverdueTasks.map((ot) => (
                       <div
-                        key={h.id}
+                        key={ot.id}
                         style={{
                           display: 'flex',
+                          flexWrap: 'wrap',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          gap: '10px',
-                          padding: '12px 14px',
-                          borderRadius: 'var(--radius-md)',
-                          background: isDone ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
-                          border: `1px solid ${isDone ? 'var(--accent-border)' : 'var(--border-default)'}`,
-                          transition: 'all var(--spring-fast)',
+                          gap: '8px 12px',
                         }}
                       >
-                        <div style={{ minWidth: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => setTaskModalState({ task: ot })}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            padding: 0,
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                            flex: '1 1 180px',
+                            minWidth: 0,
+                          }}
+                        >
                           <div
                             style={{
-                              fontSize: '13px',
+                              fontSize: '12.5px',
                               fontWeight: 600,
                               color: 'var(--text-primary)',
                               overflow: 'hidden',
@@ -640,66 +814,399 @@ export default function Dashboard() {
                               whiteSpace: 'nowrap',
                             }}
                           >
-                            {h.name}
+                            {ot.title}
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: 'var(--accent-secondary)', fontWeight: 600 }} className="font-tabular">
-                              <Flame size={11} /> {h.streak || 0}d
-                            </span>
-                            <span>· {h.category || 'Daily'}</span>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            Due {ot.dueDate || 'earlier'}
+                          </div>
+                        </button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => rescheduleTask(ot.id, todayStr)}
+                          style={{ flexShrink: 0 }}
+                        >
+                          Move to Today
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {todayTasks.length === 0 ? (
+                  overdueTasks.length > 0 ? (
+                    <div
+                      style={{
+                        padding: '16px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px dashed var(--border-default)',
+                        background: 'var(--bg-elevated)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '12px',
+                      }}
+                    >
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        No new tasks queued for today. Review your overdue items above or add one now.
+                      </span>
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setTaskModalState({ initialValues: { dueDate: todayStr } })}
+                        icon={<Plus size={14} aria-hidden="true" />}
+                      >
+                        Add Task for Today
+                      </Button>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      illustration="tasks"
+                      badge="Clear Slate"
+                      title="No tasks scheduled for today."
+                      description="Use the quick capture bar above or create a task with a deadline and subtasks."
+                      action={
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setTaskModalState({ initialValues: { dueDate: todayStr } })}
+                          icon={<Plus size={14} aria-hidden="true" />}
+                        >
+                          Add Task for Today
+                        </Button>
+                      }
+                    />
+                  )
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {todayTasks.slice(0, 6).map((t) => {
+                      const doneSubtasks = t.subtasks?.filter((st) => st.isCompleted).length || 0;
+                      const totalSubtasks = t.subtasks?.length || 0;
+                      return (
+                        <div
+                          key={t.id}
+                          className="editorial-triage-row"
+                          style={{ opacity: t.isCompleted ? 0.55 : 1, cursor: 'default' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                            <Checkbox
+                              size="sm"
+                              checked={t.isCompleted}
+                              onChange={() => handleToggleTask(t)}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setTaskModalState({ task: t })}
+                              style={{
+                                minWidth: 0,
+                                flex: 1,
+                                background: 'transparent',
+                                border: 'none',
+                                padding: 0,
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                              }}
+                              aria-label={`Edit task ${t.title}`}
+                            >
+                              <div
+                                style={{
+                                  fontSize: '13.5px',
+                                  fontWeight: 600,
+                                  color: t.isCompleted ? 'var(--text-secondary)' : 'var(--text-primary)',
+                                  textDecoration: t.isCompleted ? 'line-through' : 'none',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {t.title}
+                              </div>
+                              <div
+                                style={{
+                                  fontSize: '11.5px',
+                                  color: 'var(--text-secondary)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  flexWrap: 'wrap',
+                                  gap: '8px',
+                                  marginTop: '2px',
+                                }}
+                              >
+                                <span>{t.category || 'General'}</span>
+                                {t.dueTime && <span className="font-tabular">· {t.dueTime}</span>}
+                                {t.estimatedDuration && (
+                                  <span className="font-tabular" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                    · <Clock size={10} aria-hidden="true" /> {t.estimatedDuration}m
+                                  </span>
+                                )}
+                                {totalSubtasks > 0 && (
+                                  <span className="font-tabular">
+                                    · {doneSubtasks}/{totalSubtasks} steps
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                            {!t.isCompleted && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => startTaskFocusSession(t.id)}
+                                style={{ color: 'var(--accent-light)', padding: '4px 8px' }}
+                                title="Focus on this task"
+                                icon={<Play size={11} fill="currentColor" aria-hidden="true" />}
+                              >
+                                Focus
+                              </Button>
+                            )}
+                            <Badge
+                              variant={
+                                t.priority === 'critical'
+                                  ? 'danger'
+                                  : t.priority === 'high'
+                                  ? 'warning'
+                                  : 'silver'
+                              }
+                            >
+                              {t.priority}
+                            </Badge>
                           </div>
                         </div>
+                      );
+                    })}
 
-                        <button
-                          type="button"
-                          onClick={() => toggleHabitEntry(h.id, todayStr)}
-                          className="btn-habit-check"
+                    {todayTasks.length > 6 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setActiveView('tasks')}
+                        style={{ alignSelf: 'flex-start', color: 'var(--accent-light)' }}
+                        icon={<ArrowRight size={13} aria-hidden="true" />}
+                        iconPosition="right"
+                      >
+                        View {todayTasks.length - 6} more scheduled today
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Habit Rhythm Checklist */}
+            {widgets.habits && (
+              <div className="editorial-island">
+                <div className="editorial-island-header" style={{ flexWrap: 'wrap' }}>
+                  <div>
+                    <span className="section-eyebrow">Daily Rituals</span>
+                    <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
+                      Habits Today
+                    </h2>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setShowHabitModal(true)}
+                      icon={<Plus size={13} aria-hidden="true" />}
+                    >
+                      Habit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveView('habits')}
+                      style={{ color: 'var(--accent-light)' }}
+                      icon={<ArrowRight size={13} aria-hidden="true" />}
+                      iconPosition="right"
+                    >
+                      All Habits
+                    </Button>
+                  </div>
+                </div>
+
+                {habitsToday.length === 0 ? (
+                  <EmptyState
+                    illustration="habits"
+                    badge="Rituals"
+                    title={habits.length === 0 ? 'No habits added yet.' : 'No habits scheduled for today.'}
+                    description={
+                      habits.length === 0
+                        ? 'Create your first daily or weekly ritual to track streaks and consistency.'
+                        : `You have ${habits.length} active habit${habits.length !== 1 ? 's' : ''} scheduled on other days.`
+                    }
+                    action={
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => setShowHabitModal(true)}
+                        icon={<Plus size={14} aria-hidden="true" />}
+                      >
+                        Add Habit
+                      </Button>
+                    }
+                  />
+                ) : (
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                      gap: '10px',
+                    }}
+                  >
+                    {habitsToday.map((h) => {
+                      const entry = habitEntries.find(
+                        (e) => e.habitId === h.id && e.date === todayStr
+                      );
+                      const isDone = Boolean(
+                        entry && (entry.completed || entry.status === 'completed')
+                      );
+                      const hasQuantifiedTarget =
+                        (h.type === 'numeric' || h.type === 'duration' || h.type === 'frequency') &&
+                        typeof h.targetValue === 'number' &&
+                        h.targetValue > 1;
+
+                      return (
+                        <div
+                          key={h.id}
                           style={{
-                            width: '30px',
-                            height: '30px',
-                            borderRadius: '50%',
-                            border: isDone ? 'none' : '1.5px solid var(--border-light)',
-                            background: isDone ? 'var(--accent-primary)' : 'var(--bg-surface)',
-                            color: isDone ? '#FFFFFF' : 'var(--text-muted)',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer',
-                            flexShrink: 0,
+                            justifyContent: 'space-between',
+                            gap: '10px',
+                            padding: '12px 14px',
+                            borderRadius: 'var(--radius-md)',
+                            background: isDone ? 'var(--accent-subtle)' : 'var(--bg-elevated)',
+                            border: `1px solid ${isDone ? 'var(--accent-border)' : 'var(--border-default)'}`,
+                            transition: 'all var(--spring-fast)',
                           }}
-                          aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
                         >
-                          <Check size={15} strokeWidth={2.5} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <span
+                              style={{
+                                color: isDone ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                                display: 'inline-flex',
+                                flexShrink: 0,
+                              }}
+                              aria-hidden="true"
+                            >
+                              <HabitIcon icon={h.icon} size={16} />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div
+                                style={{
+                                  fontSize: '13px',
+                                  fontWeight: 600,
+                                  color: 'var(--text-primary)',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }}
+                              >
+                                {h.name}
+                              </div>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  flexWrap: 'wrap',
+                                  gap: '6px',
+                                  marginTop: '3px',
+                                  fontSize: '11px',
+                                  color: 'var(--text-secondary)',
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px',
+                                    color: 'var(--accent-secondary)',
+                                    fontWeight: 600,
+                                  }}
+                                  className="font-tabular"
+                                >
+                                  <Flame size={11} aria-hidden="true" /> {h.streak || 0}d
+                                </span>
+                                {hasQuantifiedTarget ? (
+                                  <span className="font-tabular">
+                                    · {entry?.value ?? (isDone ? h.targetValue : 0)}/{h.targetValue}{' '}
+                                    {h.unit || ''}
+                                  </span>
+                                ) : (
+                                  <span>· {h.category || 'Daily'}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => toggleHabitEntry(h.id, todayStr)}
+                            className="btn-habit-check"
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              border: isDone ? 'none' : '1.5px solid var(--border-light)',
+                              background: isDone ? 'var(--accent-primary)' : 'var(--bg-surface)',
+                              color: isDone ? '#FFFFFF' : 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              flexShrink: 0,
+                            }}
+                            aria-pressed={isDone}
+                            aria-label={`Mark ${h.name} as ${isDone ? 'incomplete' : 'complete'}`}
+                          >
+                            <Check size={15} strokeWidth={2.5} aria-hidden="true" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* RIGHT COLUMN */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minWidth: 0 }}>
-          {/* Clean Vector Deep Focus Card */}
-          {widgets.focusTimer !== false && (
+          {/* Focus Sprint Card */}
+          {widgets.focusTimer && (
             <div className={`focus-timer-card ${isTimerRunning ? 'active' : ''}`}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <span className="section-eyebrow">Focus Sprint</span>
-                <button
+                <Button
                   type="button"
-                  onClick={() => setActiveView('focus')}
-                  className="btn btn-ghost btn-sm"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    selectedFocusTaskId
+                      ? startTaskFocusSession(selectedFocusTaskId)
+                      : setActiveView('focus')
+                  }
                   style={{ padding: '2px 6px', fontSize: '11.5px' }}
+                  icon={<ArrowRight size={12} aria-hidden="true" />}
+                  iconPosition="right"
                 >
-                  Fullscreen <ArrowRight size={12} />
-                </button>
+                  Fullscreen
+                </Button>
               </div>
 
-              {/* Duration selector */}
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px' }}>
                 {[
                   { label: '25m Deep', mins: 25 },
                   { label: '45m Flow', mins: 45 },
@@ -717,10 +1224,30 @@ export default function Dashboard() {
                 ))}
               </div>
 
-              {/* Vector SVG Timer Ring */}
+              {openFocusCandidates.length > 0 && (
+                <div style={{ marginBottom: '14px' }}>
+                  <label htmlFor="dashboard-focus-task" className="form-label" style={{ display: 'block', marginBottom: '4px' }}>
+                    Focus target (optional)
+                  </label>
+                  <select
+                    id="dashboard-focus-task"
+                    value={selectedFocusTaskId}
+                    onChange={(e) => setSelectedFocusTaskId(e.target.value)}
+                    style={{ width: '100%', fontSize: '12px', padding: '6px 10px' }}
+                  >
+                    <option value="">General deep work session</option>
+                    {openFocusCandidates.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div style={{ display: 'flex', justifyContent: 'center', margin: '10px 0 18px' }}>
                 <div style={{ position: 'relative', width: '136px', height: '136px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="136" height="136" style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }}>
+                  <svg width="136" height="136" style={{ transform: 'rotate(-90deg)', position: 'absolute', inset: 0 }} aria-hidden="true">
                     <circle
                       cx="68"
                       cy="68"
@@ -754,7 +1281,7 @@ export default function Dashboard() {
                     >
                       {formatTimer(timerSeconds)}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                       {isTimerRunning ? 'In Focus' : 'Ready'}
                     </div>
                   </div>
@@ -762,79 +1289,137 @@ export default function Dashboard() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <button
+                <Button
                   type="button"
+                  variant="primary"
                   onClick={() => setIsTimerRunning((r) => !r)}
-                  className="btn btn-primary"
                   style={{ flex: 1 }}
+                  icon={
+                    isTimerRunning ? (
+                      <Pause size={14} aria-hidden="true" />
+                    ) : (
+                      <Play size={14} fill="currentColor" aria-hidden="true" />
+                    )
+                  }
                 >
-                  {isTimerRunning ? <Pause size={14} /> : <Play size={14} fill="currentColor" />}
                   {isTimerRunning ? 'Pause' : 'Start Focus'}
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => selectTimerMode(timerDurationMins)}
-                  className="btn btn-secondary btn-icon icon-btn-spin"
+                  className="btn-icon icon-btn-spin"
                   title="Reset Timer"
                   aria-label="Reset Timer"
-                >
-                  <RotateCcw size={15} />
-                </button>
+                  icon={<RotateCcw size={15} aria-hidden="true" />}
+                />
               </div>
             </div>
           )}
 
-          {/* Today's Class Schedule */}
-          {widgets.academics !== false && (
+          {/* Today's Class Schedule & Academic Status */}
+          {widgets.academics && (
             <div className="editorial-island">
-              <div className="editorial-island-header">
+              <div className="editorial-island-header" style={{ flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Calendar size={15} color="var(--status-info)" />
+                  <GraduationCap size={15} color="var(--status-info)" aria-hidden="true" />
                   <h3 className="text-heading-sub" style={{ color: 'var(--text-primary)' }}>
                     Today’s Timetable
                   </h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveView('academics')}
-                  className="btn btn-ghost btn-sm"
-                >
-                  Timetable <ArrowRight size={12} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setShowClassModal(true)}
+                    icon={<Plus size={12} aria-hidden="true" />}
+                  >
+                    Class
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveView('academics')}
+                    icon={<ArrowRight size={12} aria-hidden="true" />}
+                    iconPosition="right"
+                  >
+                    Academics
+                  </Button>
+                </div>
               </div>
 
-              {todayClasses.length === 0 ? (
-                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', margin: 0 }}>
-                  {academicSubjects.length === 0
-                    ? 'Add your semester courses and weekly timetable inside Academics.'
-                    : 'No classes scheduled for today.'}
-                </p>
+              {(academicSummary.atRiskSubject ||
+                academicSummary.overdueAssignmentsCount > 0 ||
+                academicSummary.pendingAssignmentsCount > 0) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+                  {academicSummary.atRiskSubject && (
+                    <Badge variant="danger">
+                      Low attendance: {academicSummary.atRiskSubject.code || academicSummary.atRiskSubject.name}
+                    </Badge>
+                  )}
+                  {academicSummary.overdueAssignmentsCount > 0 && (
+                    <Badge variant="danger">
+                      {academicSummary.overdueAssignmentsCount} overdue assignment{academicSummary.overdueAssignmentsCount !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                  {academicSummary.pendingAssignmentsCount > 0 && academicSummary.overdueAssignmentsCount === 0 && (
+                    <Badge variant="silver">
+                      {academicSummary.pendingAssignmentsCount} open assignment{academicSummary.pendingAssignmentsCount !== 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {academicSummary.todayClasses.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                    {academicSubjects.length === 0 && timetableSlots.length === 0
+                      ? 'Add your weekly classes or semester courses to see today’s schedule.'
+                      : 'No classes scheduled for today.'}
+                  </p>
+                  {timetableSlots.length === 0 && (
+                    <div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowClassModal(true)}
+                        icon={<Plus size={13} aria-hidden="true" />}
+                      >
+                        Add Class Slot
+                      </Button>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {todayClasses.map((slot) => (
+                  {academicSummary.todayClasses.map((slot) => (
                     <div
                       key={slot.id}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
+                        gap: '10px',
                         padding: '9px 12px',
                         borderRadius: 'var(--radius-sm)',
                         background: 'var(--bg-elevated)',
                         border: '1px solid var(--border-subtle)',
                       }}
                     >
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {slot.subjectName || slot.courseCode || 'Class'}
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                           Room {slot.room || 'TBA'}
                         </div>
                       </div>
-                      <span className="badge badge-silver font-tabular">
-                        {slot.startTime} – {slot.endTime}
-                      </span>
+                      <Badge variant="silver" className="font-tabular">
+                        {slot.startTime} - {slot.endTime}
+                      </Badge>
                     </div>
                   ))}
                 </div>
@@ -842,30 +1427,95 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* Upcoming Events & Deadlines (Next 7 Days) */}
+          <div className="editorial-island">
+            <div className="editorial-island-header" style={{ flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={15} color="var(--accent-primary)" aria-hidden="true" />
+                <h3 className="text-heading-sub" style={{ color: 'var(--text-primary)' }}>
+                  Upcoming (7 Days)
+                </h3>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setTaskModalState({ initialValues: {} })}
+                icon={<Plus size={12} aria-hidden="true" />}
+              >
+                Schedule
+              </Button>
+            </div>
+
+            {upcomingEvents.length === 0 ? (
+              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                No upcoming tasks, assignments, exams, career follow-ups, or goal deadlines in the next 7 days.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {upcomingEvents.slice(0, 5).map((ev) => (
+                  <button
+                    key={ev.id}
+                    type="button"
+                    onClick={() => setActiveView(ev.targetView)}
+                    className="editorial-triage-row"
+                    style={{ textAlign: 'left', width: '100%' }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {ev.title}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {ev.badgeLabel} · {ev.subtitle}
+                      </div>
+                    </div>
+                    <Badge variant={ev.isToday ? 'warning' : 'silver'} className="font-tabular">
+                      {formatShortEventDate(ev.date, todayStr)}
+                    </Badge>
+                  </button>
+                ))}
+                {upcomingEvents.length > 5 && (
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                    +{upcomingEvents.length - 5} more upcoming item{upcomingEvents.length - 5 !== 1 ? 's' : ''} across modules
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Fitness & Evening Review Dual Card */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {widgets.fitness !== false && (
+            {widgets.fitness && (
               <button
                 type="button"
                 onClick={() => setActiveView('fitness')}
                 className="card card-interactive"
                 style={{ textAlign: 'left', padding: '14px 16px' }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Dumbbell size={16} color="var(--status-success)" />
-                    <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                    <Dumbbell size={16} color="var(--status-success)" aria-hidden="true" />
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                         Fitness Log
                       </div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                        {workoutSessions.length > 0
-                          ? `Latest: ${workoutSessions[workoutSessions.length - 1]?.title || 'Workout'}`
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {latestWorkout
+                          ? `${latestWorkout.title || latestWorkout.splitType} · ${formatShortEventDate(latestWorkout.date, todayStr)}`
                           : 'No workout sessions logged yet'}
                       </div>
                     </div>
                   </div>
-                  <span className="badge badge-silver font-tabular">{workoutSessions.length}</span>
+                  <Badge variant="silver" className="font-tabular">{workoutSessions.length}</Badge>
                 </div>
               </button>
             )}
@@ -881,10 +1531,10 @@ export default function Dashboard() {
                 background: hasReviewedToday ? 'var(--status-success-bg)' : 'var(--accent-subtle)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Moon size={16} color={hasReviewedToday ? 'var(--status-success)' : 'var(--accent-light)'} />
-                  <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <Moon size={16} color={hasReviewedToday ? 'var(--status-success)' : 'var(--accent-light)'} aria-hidden="true" />
+                  <div style={{ minWidth: 0 }}>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {hasReviewedToday ? 'Evening Shutdown Logged' : 'Evening Review'}
                     </div>
@@ -895,31 +1545,45 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                <ArrowRight size={14} color="var(--text-secondary)" />
+                <ArrowRight size={14} color="var(--text-secondary)" aria-hidden="true" />
               </div>
             </button>
           </div>
         </div>
       </section>
 
-      {/* 5. ACTIVE STRATEGIC GOALS */}
-      {widgets.goals !== false && (
+      {/* 5. Active Strategic Goals */}
+      {widgets.goals && (
         <section>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
             <div>
               <span className="section-eyebrow">Horizons</span>
               <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', marginTop: '2px' }}>
                 Active Goals
               </h2>
             </div>
-            <button
-              type="button"
-              onClick={() => setActiveView('goals')}
-              className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--accent-light)' }}
-            >
-              Manage Goals <ArrowRight size={13} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setGoalModalState({ open: true })}
+                icon={<Plus size={13} aria-hidden="true" />}
+              >
+                Goal
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setActiveView('goals')}
+                style={{ color: 'var(--accent-light)' }}
+                icon={<ArrowRight size={13} aria-hidden="true" />}
+                iconPosition="right"
+              >
+                Manage Goals
+              </Button>
+            </div>
           </div>
 
           {priorityGoals.length === 0 ? (
@@ -929,75 +1593,67 @@ export default function Dashboard() {
               title="Set your next milestone."
               description="Define measurable semester, fitness, or career goals and link your daily tasks."
               action={
-                <button
+                <Button
                   type="button"
-                  onClick={() => setActiveView('goals')}
-                  className="btn btn-primary btn-sm"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setGoalModalState({ open: true })}
+                  icon={<Plus size={14} aria-hidden="true" />}
                 >
-                  <Plus size={14} /> Create Goal
-                </button>
+                  Create Goal
+                </Button>
               }
             />
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-              {priorityGoals.map((g) => {
-                const completedMilestones = g.milestones.filter((m) => m.isCompleted).length;
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onClick={() => setActiveView('goals')}
-                    className="card card-interactive"
-                    style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="badge badge-silver">{g.category || 'Personal'}</span>
-                      <span
-                        className={`badge ${
-                          g.priority === 'critical'
-                            ? 'badge-danger'
-                            : g.priority === 'high'
-                            ? 'badge-warning'
-                            : 'badge-brick'
-                        }`}
-                      >
-                        {g.priority}
-                      </span>
-                    </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              {priorityGoals.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setGoalModalState({ open: true, goal: g })}
+                  className="card card-interactive"
+                  style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Badge variant="silver">{g.category || 'Personal'}</Badge>
+                    <Badge
+                      variant={
+                        g.priority === 'critical'
+                          ? 'danger'
+                          : g.priority === 'high'
+                          ? 'warning'
+                          : 'brick'
+                      }
+                    >
+                      {g.priority}
+                    </Badge>
+                  </div>
 
-                    <div>
-                      <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
-                        {g.title}
-                      </h3>
-                      {g.description && (
-                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.45, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {g.description}
-                        </p>
-                      )}
-                    </div>
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>
+                      {g.title}
+                    </h3>
+                    {g.description && (
+                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.45, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {g.description}
+                      </p>
+                    )}
+                  </div>
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', marginBottom: '6px' }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>
-                          {completedMilestones}/{g.milestones.length} milestones
-                        </span>
-                        <span className="font-tabular" style={{ fontWeight: 700, color: 'var(--accent-light)' }}>
-                          {g.progress}%
-                        </span>
-                      </div>
-                      <div className="progress-track">
-                        <div className="progress-fill" style={{ width: `${g.progress}%` }} />
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+                  <ProgressBar
+                    value={g.progress}
+                    label={getGoalProgressLabel(g)}
+                    showPercentage
+                    variant="brick"
+                  />
+                </button>
+              ))}
             </div>
           )}
         </section>
       )}
 
-      {/* WIDGET CUSTOMIZER MODAL */}
+      {/* Widget Customizer Modal */}
       {showWidgetCustomizer && (
         <div
           className="modal-overlay"
@@ -1009,19 +1665,19 @@ export default function Dashboard() {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sliders size={16} color="var(--accent-primary)" />
+                <Sliders size={16} color="var(--accent-primary)" aria-hidden="true" />
                 <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>
                   Customize Today View
                 </h3>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setShowWidgetCustomizer(false)}
-                className="btn btn-ghost btn-icon"
+                className="btn-icon"
                 aria-label="Close"
-              >
-                <X size={16} />
-              </button>
+                icon={<X size={16} aria-hidden="true" />}
+              />
             </div>
 
             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1066,7 +1722,7 @@ export default function Dashboard() {
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                         {item.label}
                       </div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
                         {item.desc}
                       </div>
                     </div>
@@ -1076,8 +1732,10 @@ export default function Dashboard() {
             </div>
 
             <div className="modal-footer" style={{ justifyContent: 'space-between' }}>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => {
                   updateSettings({
                     dashboardWidgets: {
@@ -1091,26 +1749,47 @@ export default function Dashboard() {
                     },
                   });
                 }}
-                className="btn btn-ghost btn-sm"
               >
                 Reset to defaults
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={() => setShowWidgetCustomizer(false)}
-                className="btn btn-primary btn-sm"
               >
                 Done
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {taskModalInit && (
+      {taskModalState && (
         <TaskModal
-          initialValues={taskModalInit}
-          onClose={() => setTaskModalInit(null)}
+          task={taskModalState.task}
+          initialValues={taskModalState.initialValues}
+          onClose={() => setTaskModalState(null)}
+        />
+      )}
+
+      {goalModalState.open && (
+        <GoalModal
+          isOpen={goalModalState.open}
+          goal={goalModalState.goal}
+          onClose={() => setGoalModalState({ open: false })}
+        />
+      )}
+
+      {showHabitModal && (
+        <HabitModal onClose={() => setShowHabitModal(false)} />
+      )}
+
+      {showClassModal && (
+        <ClassModal
+          isOpen={showClassModal}
+          defaultDay={currentDayOfWeek}
+          onClose={() => setShowClassModal(false)}
         />
       )}
     </div>
