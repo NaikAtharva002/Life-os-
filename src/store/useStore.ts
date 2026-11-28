@@ -202,9 +202,10 @@ interface StoreState {
   updateGraphPreferences: (updates: Partial<GraphPreferences>) => Promise<void>;
   resetGraphPreferences: () => Promise<void>;
 
-  // 10. AI Assistant
+  // 10. AI Assistant (RIT)
   assistantMessages: AssistantMessage[];
   addAssistantMessage: (msg: Omit<AssistantMessage, 'id' | 'timestamp'>) => void;
+  updateAssistantMessage: (id: string, updates: Partial<AssistantMessage>) => void;
   clearAssistantChat: () => void;
 
   // 11. Settings & Nav
@@ -678,8 +679,10 @@ export const useStore = create<StoreState>((set, get) => ({
     {
       id: 'msg-init',
       role: 'assistant',
-      content: 'Greetings! I am Astra, your LIFE OS AI copilot. I analyze your tasks, goals, habits, finances, workouts, and academics in real-time. Ask me to plan your day, audit your spending, or review your priorities.',
+      content:
+        '### Meet RIT — Harmony, Structure and Order.\n*Bring your life into rhythm.*\n\nI connect directly to your live Tasks, Goals, Habits, Finance, Fitness, Academics, Career, and Analytics. Ask me to plan your day, audit overdue work, track consistency, or schedule tasks with confirmation.',
       timestamp: new Date().toISOString(),
+      source: 'local',
     },
   ],
   isOnboardingOpen: false,
@@ -2765,7 +2768,7 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   // ----------------------------------------------------
-  // AI ASSISTANT
+  // AI ASSISTANT (RIT)
   // ----------------------------------------------------
   addAssistantMessage: (msg) => {
     const newMsg: AssistantMessage = {
@@ -2776,14 +2779,24 @@ export const useStore = create<StoreState>((set, get) => ({
     set((s) => ({ assistantMessages: [...s.assistantMessages, newMsg] }));
   },
 
+  updateAssistantMessage: (id, updates) => {
+    set((s) => ({
+      assistantMessages: s.assistantMessages.map((m) =>
+        m.id === id ? { ...m, ...updates } : m
+      ),
+    }));
+  },
+
   clearAssistantChat: () => {
     set({
       assistantMessages: [
         {
           id: uuidv4(),
           role: 'assistant',
-          content: 'Chat history cleared. How can I assist you with your LIFE OS today?',
+          content:
+            '### Workspace Slate Reset\nReady when you are. Ask RIT to plan your day, check overdue tasks, or summarize your rhythm.',
           timestamp: new Date().toISOString(),
+          source: 'local',
         },
       ],
     });

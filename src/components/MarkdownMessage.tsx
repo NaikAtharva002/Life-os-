@@ -54,7 +54,7 @@ interface MarkdownMessageProps {
 
 /**
  * Lightweight, XSS-safe Markdown renderer (pure React elements, zero HTML injection)
- * tailored for Astra Copilot plans, warnings, checklists, and code snippets.
+ * tailored for RIT structured guidance, warnings, checklists, and code snippets.
  */
 export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content }) => {
   const lines = content.replace(/\r\n/g, '\n').split('\n');

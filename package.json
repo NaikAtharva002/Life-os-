@@ -50,6 +50,7 @@
     "date-fns": "^4.4.0",
     "dexie": "^4.4.7",
     "jszip": "^3.10.2",
+    "liquid-gl": "^3.0.0",
     "lucide-react": "^1.76.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

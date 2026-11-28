@@ -555,11 +555,70 @@ export interface CareerDocument {
 // ==========================================
 // 8. AI ASSISTANT & CHAT
 // ==========================================
+export type RitActionStatus = 'pending' | 'executing' | 'confirmed' | 'cancelled' | 'error';
+
+export type RitPendingAction =
+  | {
+      id: string;
+      type: 'create_task';
+      title: string;
+      dueDate?: string;
+      dueTime?: string;
+      priority: Priority;
+      category: string;
+      status: RitActionStatus;
+      errorMessage?: string;
+    }
+  | {
+      id: string;
+      type: 'complete_task';
+      taskId: string;
+      taskTitle: string;
+      status: RitActionStatus;
+      errorMessage?: string;
+    }
+  | {
+      id: string;
+      type: 'toggle_habit';
+      habitId: string;
+      habitName: string;
+      date: string;
+      status: RitActionStatus;
+      errorMessage?: string;
+    }
+  | {
+      id: string;
+      type: 'create_goal';
+      title: string;
+      priority: Priority;
+      category: string;
+      targetDate?: string;
+      status: RitActionStatus;
+      errorMessage?: string;
+    }
+  | {
+      id: string;
+      type: 'create_transaction';
+      txType: TransactionType;
+      amount: number;
+      description: string;
+      category: string;
+      date: string;
+      status: RitActionStatus;
+      errorMessage?: string;
+    };
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: string;
+  source?: 'nvidia-nim' | 'local';
+  modelUsed?: string;
+  notice?: string;
+  retryPrompt?: string;
+  suggestedViews?: Array<{ viewId: string; label: string }>;
+  pendingAction?: RitPendingAction;
   actionCard?: {
     type: 'plan_day' | 'prioritize_goals' | 'study_plan' | 'spending_summary' | 'behind_alert';
     data: any;

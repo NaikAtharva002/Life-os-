@@ -1,51 +1,126 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, Settings, SlidersHorizontal, Trash2 } from 'lucide-react';
 import useStore from '../store/useStore';
-import { todayLocal } from '../lib/dates';
 import { getSessionNvidiaKey } from '../lib/pwa';
-import { MarkdownMessage } from '../components/MarkdownMessage';
 import {
   DEFAULT_NVIDIA_MODEL,
   NVIDIA_MODELS,
   type WorkspaceContextSummary,
 } from '../lib/nvidiaModels';
 import {
-  Sparkles,
-  Send,
-  Bot,
-  Trash2,
-  Settings,
-  Cpu,
-} from 'lucide-react';
+  buildRitMetricsSnapshot,
+  buildRitWorkspaceContext,
+  detectRitActionIntent,
+  generateRitLocalResponse,
+  type RitWorkspaceState,
+} from '../lib/ritEngine';
+import { RitAvatar } from '../components/rit/RitAvatar';
+import { LiquidGlassSurface } from '../components/rit/LiquidGlassSurface';
+import { RitCommandBar, type RitSuggestionItem } from '../components/rit/RitCommandBar';
+import { RitResponseCard } from '../components/rit/RitResponseCard';
+import type { RitPendingAction } from '../types';
+import '../components/rit/rit-glass.css';
+
+function inferSuggestedViewsForPrompt(query: string): Array<{ viewId: string; label: string }> {
+  const q = query.toLowerCase();
+  if (q.includes('overdue') || q.includes('task')) {
+    return [
+      { viewId: 'tasks', label: 'Open Tasks' },
+      { viewId: 'dashboard', label: 'Today View' },
+    ];
+  }
+  if (q.includes('goal') || q.includes('milestone')) {
+    return [{ viewId: 'goals', label: 'Open Goals' }];
+  }
+  if (q.includes('consistent') || q.includes('habit') || q.includes('streak')) {
+    return [{ viewId: 'habits', label: 'Open Habits' }];
+  }
+  if (q.includes('spend') || q.includes('finance') || q.includes('budget')) {
+    return [{ viewId: 'finance', label: 'Open Finance' }];
+  }
+  if (q.includes('study') || q.includes('exam') || q.includes('academic')) {
+    return [{ viewId: 'academics', label: 'Open Academics' }];
+  }
+  if (q.includes('gym') || q.includes('workout') || q.includes('fitness')) {
+    return [{ viewId: 'fitness', label: 'Open Fitness' }];
+  }
+  if (q.includes('career') || q.includes('interview') || q.includes('job')) {
+    return [{ viewId: 'career', label: 'Open Career' }];
+  }
+  if (q.includes('productivity') || q.includes('week') || q.includes('overview')) {
+    return [
+      { viewId: 'analytics', label: 'Open Analytics' },
+      { viewId: 'tasks', label: 'Open Tasks' },
+    ];
+  }
+  return [
+    { viewId: 'dashboard', label: 'Today View' },
+    { viewId: 'focus', label: 'Deep Focus' },
+  ];
+}
 
 export default function AssistantPage() {
   const settings = useStore((s) => s.settings);
+  const updateSettings = useStore((s) => s.updateSettings);
+  const addToast = useStore((s) => s.addToast);
   const tasks = useStore((s) => s.tasks);
   const goals = useStore((s) => s.goals);
   const habits = useStore((s) => s.habits);
   const habitEntries = useStore((s) => s.habitEntries);
   const financeTransactions = useStore((s) => s.financeTransactions);
+  const financeBudgets = useStore((s) => s.financeBudgets);
+  const workoutSessions = useStore((s) => s.workoutSessions);
+  const fitnessGoals = useStore((s) => s.fitnessGoals);
   const academicSubjects = useStore((s) => s.academicSubjects);
   const academicAssignments = useStore((s) => s.academicAssignments);
   const academicExams = useStore((s) => s.academicExams);
-  const workoutSessions = useStore((s) => s.workoutSessions);
+  const timetableSlots = useStore((s) => s.timetableSlots);
+  const careerProjects = useStore((s) => s.careerProjects);
+  const careerApplications = useStore((s) => s.careerApplications);
+  const careerSkills = useStore((s) => s.careerSkills);
+  const eveningReviews = useStore((s) => s.eveningReviews);
+
   const messages = useStore((s) => s.assistantMessages);
   const addAssistantMessage = useStore((s) => s.addAssistantMessage);
+  const updateAssistantMessage = useStore((s) => s.updateAssistantMessage);
   const clearAssistantChat = useStore((s) => s.clearAssistantChat);
   const setActiveView = useStore((s) => s.setActiveView);
 
+  const addTask = useStore((s) => s.addTask);
+  const completeTask = useStore((s) => s.completeTask);
+  const toggleHabitEntry = useStore((s) => s.toggleHabitEntry);
+  const addGoal = useStore((s) => s.addGoal);
+  const addTransaction = useStore((s) => s.addTransaction);
+
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const [engineBadge, setEngineBadge] = useState<string>('Offline Heuristic Ready');
-  const [hasNvidiaKey, setHasNvidiaKey] = useState<boolean>(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const [hasNvidiaKey, setHasNvidiaKey] = useState(false);
+  const [engineBadge, setEngineBadge] = useState('Local Rhythm Engine');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
-  const todayStr = todayLocal();
+  const chatBottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const menuAnchorRef = useRef<HTMLDivElement | null>(null);
+
   const currency = settings.currencySymbol || '₹';
+  const theme: 'dark' | 'light' = settings.theme === 'light' ? 'light' : 'dark';
   const activeModel = settings.nvidiaModel || DEFAULT_NVIDIA_MODEL;
+  const userInitial = settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U';
 
   useEffect(() => {
     chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    const closeOnOutside = (e: MouseEvent) => {
+      if (menuAnchorRef.current && !menuAnchorRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    return () => document.removeEventListener('mousedown', closeOnOutside);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -55,275 +130,216 @@ export default function AssistantPage() {
       .then((data) => {
         if (!active) return;
         const configured = Boolean(data?.serverKeyConfigured) || hasSessionKey;
+        const modelLabel =
+          NVIDIA_MODELS.find((m) => m.id === activeModel)?.label || activeModel;
         setHasNvidiaKey(configured);
-        setEngineBadge(
-          configured
-            ? `NVIDIA NIM · ${NVIDIA_MODELS.find((m) => m.id === activeModel)?.label || activeModel}`
-            : 'Local Heuristic Copilot'
-        );
+        setEngineBadge(configured ? `NVIDIA NIM · ${modelLabel}` : 'Local Rhythm Engine');
       })
       .catch(() => {
         if (!active) return;
+        const modelLabel =
+          NVIDIA_MODELS.find((m) => m.id === activeModel)?.label || activeModel;
         setHasNvidiaKey(hasSessionKey);
-        setEngineBadge(hasSessionKey ? `NVIDIA NIM · ${activeModel}` : 'Local Heuristic Copilot');
+        setEngineBadge(hasSessionKey ? `NVIDIA NIM · ${modelLabel}` : 'Local Rhythm Engine');
       });
     return () => {
       active = false;
     };
   }, [activeModel]);
 
-  const workspaceContext: WorkspaceContextSummary = useMemo(() => {
-    const curMonth = todayStr.substring(0, 7);
-    const monthTx = financeTransactions.filter((t) => t.date.startsWith(curMonth));
-    const income = monthTx.filter((t) => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-    const spend = monthTx.filter((t) => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-    const dayOfWeek = new Date().getDay();
-    const habitsToday = habits.filter((h) => h.targetDays.includes(dayOfWeek));
-    const habitsDone = habitsToday.filter((h) =>
-      habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed)
-    ).length;
-
-    return {
-      userName: settings.userName || 'User',
-      todayStr,
+  const ritState: RitWorkspaceState = useMemo(
+    () => ({
+      userName: settings.userName || 'Student',
       currency,
-      pendingTasksCount: tasks.filter((t) => !t.isCompleted).length,
-      overdueTasksCount: tasks.filter((t) => t.isOverdue && !t.isCompleted).length,
-      todayTasks: tasks
-        .filter((t) => t.dueDate === todayStr && !t.isCompleted)
-        .slice(0, 12)
-        .map((t) => ({ title: t.title, priority: t.priority, dueTime: t.dueTime })),
-      activeGoals: goals
-        .filter((g) => !g.isArchived)
-        .slice(0, 8)
-        .map((g) => ({
-          title: g.title,
-          progress: g.progress,
-          priority: g.priority,
-          nextMilestone: g.milestones.find((m) => !m.isCompleted)?.title,
-        })),
-      habitsTodayCount: habitsToday.length,
-      habitsDoneTodayCount: habitsDone,
-      attendanceWarnings: academicSubjects
-        .filter((s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage)
-        .slice(0, 10)
-        .map((s) => ({
-          subject: `${s.code} ${s.name}`,
-          pct: Number(((s.attendedClasses / s.totalClasses) * 100).toFixed(1)),
-        })),
-      monthlySpendFormatted: `${currency}${spend.toLocaleString('en-IN')}`,
-      monthlyIncomeFormatted: `${currency}${income.toLocaleString('en-IN')}`,
-      workoutsLogged: workoutSessions.length,
-    };
-  }, [
-    settings.userName,
-    todayStr,
-    currency,
-    financeTransactions,
-    habits,
-    habitEntries,
-    tasks,
-    goals,
-    academicSubjects,
-    workoutSessions.length,
-  ]);
+      tasks,
+      goals,
+      habits,
+      habitEntries,
+      financeTransactions,
+      financeBudgets,
+      workoutSessions,
+      fitnessGoals,
+      academicSubjects,
+      academicAssignments,
+      academicExams,
+      timetableSlots,
+      careerProjects,
+      careerApplications,
+      careerSkills,
+      eveningReviews,
+    }),
+    [
+      settings.userName,
+      currency,
+      tasks,
+      goals,
+      habits,
+      habitEntries,
+      financeTransactions,
+      financeBudgets,
+      workoutSessions,
+      fitnessGoals,
+      academicSubjects,
+      academicAssignments,
+      academicExams,
+      timetableSlots,
+      careerProjects,
+      careerApplications,
+      careerSkills,
+      eveningReviews,
+    ]
+  );
 
-  // Quick Action Prompts
-  const quickPrompts = [
-    { label: 'Plan my day', query: 'Plan my day based on today’s scheduled tasks, habits, and priorities.' },
-    { label: 'Which goals are most important?', query: 'Which goals are most important this week?' },
-    { label: 'Why am I falling behind?', query: 'Why am I falling behind? Identify neglected tasks, habits, and attendance issues.' },
-    { label: 'Show my monthly spending', query: 'Show my monthly spending and budget health summary.' },
-    { label: 'Create an exam study plan', query: 'Create a study plan for my upcoming academic examinations.' },
-    { label: 'Academics progress review', query: 'How much progress have I made in academics and course attendance?' },
-  ];
+  const metrics = useMemo(() => buildRitMetricsSnapshot(ritState), [ritState]);
+  const workspaceContext: WorkspaceContextSummary = useMemo(
+    () => buildRitWorkspaceContext(ritState, metrics),
+    [ritState, metrics]
+  );
 
-  // Heuristic Offline Intelligence Engine:
-  // Evaluates real user data deterministically without requiring an internet connection or API key!
-  const generateOfflineResponse = (query: string): string => {
-    const q = query.toLowerCase();
+  const suggestions: RitSuggestionItem[] = useMemo(
+    () => [
+      {
+        id: 'plan-day',
+        label: 'Plan my day.',
+        query: 'Plan my day.',
+        meta: `${metrics.todayTasks.length} scheduled`,
+      },
+      {
+        id: 'overdue',
+        label: 'What tasks are overdue?',
+        query: 'What tasks are overdue?',
+        meta: metrics.overdueTasks.length > 0 ? `${metrics.overdueTasks.length} overdue` : 'All clear',
+      },
+      {
+        id: 'add-dsa',
+        label: 'Add a task to study DSA at 6 PM.',
+        query: 'Add a task to study DSA at 6 PM.',
+        meta: 'Action preview',
+      },
+      {
+        id: 'prioritize',
+        label: 'What should I prioritize today?',
+        query: 'What should I prioritize today?',
+        meta: 'Focus rank',
+      },
+      {
+        id: 'week',
+        label: 'Summarize my week.',
+        query: 'Summarize my week.',
+        meta: `${metrics.completedThisWeekCount} done`,
+      },
+      {
+        id: 'goals',
+        label: 'Show my upcoming goals.',
+        query: 'Show my upcoming goals.',
+        meta: `${goals.filter((g) => !g.isArchived).length} active`,
+      },
+      {
+        id: 'consistency',
+        label: 'How consistent have I been this month?',
+        query: 'How consistent have I been this month?',
+        meta: `${metrics.monthlyConsistencyPct}%`,
+      },
+      {
+        id: 'productivity',
+        label: 'Give me an overview of my productivity.',
+        query: 'Give me an overview of my productivity.',
+        meta: `${metrics.productivityScore}% index`,
+      },
+    ],
+    [metrics, goals]
+  );
 
-    // 1. "Plan my day"
-    if (q.includes('plan') && (q.includes('day') || q.includes('today'))) {
-      const todayTasks = tasks.filter((t) => t.dueDate === todayStr && !t.isCompleted);
-      const overdueTasks = tasks.filter((t) => t.isOverdue && !t.isCompleted);
-      const todayHabits = habits.filter((h) => {
-        const dayOfWeek = new Date().getDay();
-        return h.targetDays.includes(dayOfWeek);
+  const handleConfirmAction = async (messageId: string, action: RitPendingAction) => {
+    updateAssistantMessage(messageId, {
+      pendingAction: { ...action, status: 'executing', errorMessage: undefined },
+    });
+
+    try {
+      if (action.type === 'create_task') {
+        await addTask({
+          title: action.title,
+          priority: action.priority,
+          category: action.category,
+          status: 'todo',
+          subtasks: [],
+          dueDate: action.dueDate,
+          dueTime: action.dueTime,
+        });
+        addToast({
+          type: 'success',
+          title: 'Task Added via RIT',
+          message: `${action.title}${action.dueTime ? ` (${action.dueTime})` : ''} saved.`,
+        });
+      } else if (action.type === 'complete_task') {
+        await completeTask(action.taskId);
+        addToast({
+          type: 'success',
+          title: 'Task Completed',
+          message: `"${action.taskTitle}" marked done.`,
+        });
+      } else if (action.type === 'toggle_habit') {
+        await toggleHabitEntry(action.habitId, action.date);
+        addToast({
+          type: 'success',
+          title: 'Habit Logged',
+          message: `Updated "${action.habitName}" for ${action.date}.`,
+        });
+      } else if (action.type === 'create_goal') {
+        await addGoal({
+          title: action.title,
+          priority: action.priority,
+          category: action.category,
+          targetDate: action.targetDate,
+        });
+        addToast({
+          type: 'success',
+          title: 'Goal Established',
+          message: `"${action.title}" added to Goals.`,
+        });
+      } else if (action.type === 'create_transaction') {
+        await addTransaction({
+          type: action.txType,
+          amount: action.amount,
+          description: action.description,
+          category: action.category,
+          date: action.date,
+          paymentMethod: 'UPI',
+        });
+        addToast({
+          type: 'success',
+          title: 'Finance Recorded',
+          message: `${currency}${action.amount.toFixed(2)} saved under ${action.category}.`,
+        });
+      }
+
+      updateAssistantMessage(messageId, {
+        pendingAction: { ...action, status: 'confirmed' },
       });
-
-      let response = `### 📋 Day Plan for ${todayStr}\n\n`;
-
-      if (overdueTasks.length > 0) {
-        response += `> [!WARNING] **${overdueTasks.length} Overdue Task(s)** need immediate attention:\n`;
-        overdueTasks.forEach((t) => {
-          response += `- ⚠️ **${t.title}** (${t.priority.toUpperCase()} priority)\n`;
-        });
-        response += `\n`;
-      }
-
-      response += `#### 🎯 Top Tasks Scheduled Today:\n`;
-      if (todayTasks.length === 0) {
-        response += `*No tasks explicitly due today. Consider pulling high-priority milestones from your critical goals.*\n`;
-      } else {
-        todayTasks.forEach((t) => {
-          response += `- [ ] **${t.title}** — ${t.dueTime ? `⏰ ${t.dueTime}` : 'All day'} [${t.priority.toUpperCase()}]\n`;
-        });
-      }
-
-      response += `\n#### 🔥 Target Habits for Today:\n`;
-      todayHabits.forEach((h) => {
-        const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
-        response += `- ${isDone ? '✅' : '⭕'} **${h.name}** (Current Streak: ${h.streak} days)\n`;
+    } catch {
+      updateAssistantMessage(messageId, {
+        pendingAction: {
+          ...action,
+          status: 'error',
+          errorMessage: 'Failed to save to local workspace database.',
+        },
       });
-
-      response += `\n#### 💡 Recommendation:\nProtect a 90-minute deep work block this morning before checking social feeds or inbox.`;
-      return response;
-    }
-
-    // 2. "Which goals are most important this week?"
-    if (q.includes('goals') && (q.includes('important') || q.includes('priority') || q.includes('week'))) {
-      const criticalGoals = goals.filter((g) => !g.isArchived && (g.priority === 'critical' || g.priority === 'high'));
-
-      let response = `### 🎯 Most Important Goals This Week\n\n`;
-      if (criticalGoals.length === 0) {
-        response += `All your active goals are categorized as medium or low priority. Consider upgrading your primary focus goal to **Critical**.\n`;
-      } else {
-        criticalGoals.forEach((g) => {
-          const pendingMilestones = g.milestones.filter((m) => !m.isCompleted);
-          response += `#### 1. ${g.title} [${g.priority.toUpperCase()} • ${g.category}]\n`;
-          response += `- **Current Progress**: ${g.progress}%\n`;
-          response += `- **Target Deadline**: ${g.targetDate || 'Ongoing'}\n`;
-          if (pendingMilestones.length > 0) {
-            response += `- **Next Key Milestone**: "${pendingMilestones[0].title}"\n`;
-          }
-          response += `\n`;
-        });
-      }
-      return response;
-    }
-
-    // 3. "Why am I falling behind?"
-    if (q.includes('falling behind') || q.includes('neglected') || q.includes('behind')) {
-      const overdueTasks = tasks.filter((t) => t.isOverdue && !t.isCompleted);
-      const lowAttendance = academicSubjects.filter(
-        (s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
-      );
-      const missedHabits = habits.filter((h) => h.streak === 0);
-
-      let response = `### 🔍 Bottleneck & Friction Audit\n\n`;
-
-      if (overdueTasks.length === 0 && lowAttendance.length === 0 && missedHabits.length === 0) {
-        response += `You are currently in strong standing! Zero overdue tasks, all academic attendance thresholds are compliant, and habits maintain positive momentum.\n`;
-        return response;
-      }
-
-      if (overdueTasks.length > 0) {
-        response += `#### 1. Overdue Action Items (${overdueTasks.length}):\n`;
-        overdueTasks.forEach((t) => {
-          response += `- **${t.title}** was due on ${t.dueDate}. Reschedule or complete this today.\n`;
-        });
-        response += `\n`;
-      }
-
-      if (lowAttendance.length > 0) {
-        response += `#### 2. Academic Attendance Danger Zone:\n`;
-        lowAttendance.forEach((s) => {
-          const pct = ((s.attendedClasses / s.totalClasses) * 100).toFixed(1);
-          response += `- **${s.code} ${s.name}**: Attendance is ${pct}% (below ${s.targetAttendancePercentage}% threshold). You cannot afford to skip further lectures.\n`;
-        });
-        response += `\n`;
-      }
-
-      if (missedHabits.length > 0) {
-        response += `#### 3. Broken Habit Momentum:\n`;
-        missedHabits.forEach((h) => {
-          response += `- **${h.name}**: Streak is 0 days. Re-establish streak with a minimal 5-minute version today.\n`;
-        });
-      }
-
-      return response;
-    }
-
-    // 4. "Show my monthly spending"
-    if (q.includes('spend') || q.includes('finance') || q.includes('budget') || q.includes('money')) {
-      const curMonth = todayStr.substring(0, 7);
-      const monthTx = financeTransactions.filter((t) => t.date.startsWith(curMonth));
-      const income = monthTx.filter((t) => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-      const expense = monthTx.filter((t) => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-      const net = income - expense;
-
-      let response = `### 💰 Monthly Financial Snapshot (${curMonth})\n\n`;
-      response += `- **Total Inflow**: ${currency}${income.toFixed(2)}\n`;
-      response += `- **Total Outflow**: ${currency}${expense.toFixed(2)}\n`;
-      response += `- **Net Cashflow**: ${net >= 0 ? '+' : ''}${currency}${net.toFixed(2)} (${income > 0 ? Math.round((net / income) * 100) : 0}% savings rate)\n\n`;
-
-      // Top category
-      const catMap: Record<string, number> = {};
-      monthTx.filter((t) => t.type === 'expense').forEach((t) => {
-        catMap[t.category] = (catMap[t.category] || 0) + t.amount;
+      addToast({
+        type: 'error',
+        title: 'Action Failed',
+        message: 'Could not complete the Life OS update. Try again.',
       });
-      const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
-      if (sorted.length > 0) {
-        response += `#### Top Expense Categories:\n`;
-        sorted.slice(0, 4).forEach(([cat, amt]) => {
-          response += `- **${cat}**: ${currency}${amt.toFixed(2)}\n`;
-        });
-      }
-
-      return response;
     }
+  };
 
-    // 5. "Create a study plan"
-    if (q.includes('study plan') || q.includes('exam') || q.includes('examination')) {
-      let response = `### 📚 Structured Examination Study Plan\n\n`;
-      if (academicExams.length === 0) {
-        response += `No upcoming exams currently scheduled in your Academics module. You can add your exam dates under Academics -> Schedule Exam.\n`;
-      } else {
-        academicExams.forEach((exam) => {
-          const daysLeft = Math.ceil((new Date(exam.examDate).getTime() - Date.now()) / 86400000);
-          const sub = academicSubjects.find((s) => s.id === exam.subjectId);
-          response += `#### Course: ${sub ? sub.name : exam.title} (In ${daysLeft} Days)\n`;
-          response += `- **Syllabus Coverage**: ${exam.syllabusCoveragePercentage}%\n`;
-          response += `- **Phase 1 (Day 1-${Math.max(1, Math.floor(daysLeft * 0.4))}):** Finish uncompleted lecture notes & conceptual proofs.\n`;
-          response += `- **Phase 2 (Day ${Math.floor(daysLeft * 0.4) + 1}-${Math.floor(daysLeft * 0.8)}):** Solve past 5 years question papers & assignment problems.\n`;
-          response += `- **Phase 3 (Final 48 hours):** Active recall formula sheets & timed mock test.\n\n`;
-        });
-      }
-      return response;
-    }
-
-    // 6. "Academics progress review"
-    if (q.includes('academic') || q.includes('gpa') || q.includes('attendance')) {
-      let response = `### 🎓 Academic Standing Review\n\n`;
-      let totalAtt = 0;
-      let totalCls = 0;
-      academicSubjects.forEach((s) => {
-        totalAtt += s.attendedClasses;
-        totalCls += s.totalClasses;
-      });
-      const pctLabel = totalCls > 0 ? `${((totalAtt / totalCls) * 100).toFixed(1)}% (${totalAtt}/${totalCls} classes)` : 'No classes logged yet';
-
-      response += `- **Enrolled Courses**: ${academicSubjects.length}\n`;
-      response += `- **Overall Attendance**: ${pctLabel}\n`;
-      response += `- **Active Assignments**: ${academicAssignments.filter((a) => !a.isSubmitted).length} pending\n\n`;
-
-      if (academicSubjects.length > 0) {
-        response += `#### Subject Breakdown:\n`;
-        academicSubjects.forEach((s) => {
-          const sPct = s.totalClasses > 0 ? `${((s.attendedClasses / s.totalClasses) * 100).toFixed(1)}%` : '0 logged';
-          response += `- **${s.code}** (${s.name}): ${sPct} [${s.credits} credits]\n`;
-        });
-      }
-      return response;
-    }
-
-    // Default intelligent response grounded in data
-    return `### 💡 Astra Copilot Summary\n\nI have reviewed your active workspace:\n- **${tasks.filter((t) => !t.isCompleted).length} pending tasks** (${tasks.filter((t) => t.isOverdue).length} overdue).\n- **${goals.filter((g) => !g.isArchived).length} active goals**.\n- **${habits.length} habits tracked**.\n\nYou can ask me questions like *"Plan my day"*, *"Which goals are most important?"*, *"Show my monthly spending"*, or *"Create an exam study plan"* — or connect your NVIDIA API key in Settings for full LLM reasoning.`;
+  const handleCancelAction = (messageId: string, action: RitPendingAction) => {
+    updateAssistantMessage(messageId, {
+      pendingAction: { ...action, status: 'cancelled' },
+    });
   };
 
   const handleSend = async (textToSend?: string) => {
-    const messageContent = (textToSend || input).trim();
+    const messageContent = (textToSend ?? input).trim();
     if (!messageContent || isThinking) return;
 
     const historyForApi = messages
@@ -341,8 +357,23 @@ export default function AssistantPage() {
     setInput('');
     setIsThinking(true);
 
+    // Check explicit confirmation-gated command intents first
+    const actionReply = detectRitActionIntent(messageContent, ritState);
+    if (actionReply) {
+      addAssistantMessage({
+        role: 'assistant',
+        content: actionReply.content,
+        source: 'local',
+        suggestedViews: actionReply.suggestedViews,
+        pendingAction: actionReply.pendingAction,
+      });
+      setIsThinking(false);
+      return;
+    }
+
     const isOnline = typeof navigator === 'undefined' ? true : navigator.onLine;
     const sessionKey = getSessionNvidiaKey();
+    let apiNotice: string | undefined;
 
     if (isOnline && hasNvidiaKey) {
       try {
@@ -365,216 +396,209 @@ export default function AssistantPage() {
             addAssistantMessage({
               role: 'assistant',
               content: data.reply,
+              source: 'nvidia-nim',
+              modelUsed: data.model || activeModel,
+              suggestedViews: inferSuggestedViewsForPrompt(messageContent),
             });
             setIsThinking(false);
             return;
           }
+          apiNotice = 'NVIDIA NIM returned an empty response — answered using live local workspace intelligence.';
+        } else {
+          apiNotice = `NVIDIA NIM returned HTTP ${res.status} — answered using live local workspace intelligence.`;
         }
       } catch {
-        // Fall through cleanly to offline heuristic engine
+        apiNotice = 'Could not reach NVIDIA NIM — answered using live local workspace intelligence.';
       }
     }
 
-    const fallbackResponse = generateOfflineResponse(messageContent);
+    const fallbackReply = generateRitLocalResponse(messageContent, ritState);
     addAssistantMessage({
       role: 'assistant',
-      content: fallbackResponse,
+      content: fallbackReply.content,
+      source: 'local',
+      notice: apiNotice,
+      retryPrompt: apiNotice ? messageContent : undefined,
+      suggestedViews: fallbackReply.suggestedViews,
+      pendingAction: fallbackReply.pendingAction,
     });
     setIsThinking(false);
   };
 
+  const handleSelectModel = async (modelId: string) => {
+    setMenuOpen(false);
+    await updateSettings({ nvidiaModel: modelId });
+    const label = NVIDIA_MODELS.find((m) => m.id === modelId)?.label || modelId;
+    addToast({
+      type: 'success',
+      title: 'RIT Model Updated',
+      message: `Switched active engine to ${label}.`,
+    });
+  };
+
+  const isFreshConversation = messages.length <= 1;
+
   return (
-    <div
-      className="page-container"
-      style={{
-        padding: '20px 24px',
-        maxWidth: '1000px',
-        margin: '0 auto',
-        display: 'flex',
-        flexDirection: 'column',
-        height: 'calc(100dvh - var(--toolbar-height) - 24px)',
-        minHeight: '460px',
-      }}
-    >
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--accent-subtle)',
-              border: '1px solid var(--accent-border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Sparkles size={16} color="var(--accent-primary)" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '16px', fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>
-              Astra — LIFE OS Copilot
-            </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-              <Cpu size={11} />
-              <span>{engineBadge}</span>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button
-            type="button"
-            onClick={() => setActiveView('settings')}
-            className="btn btn-secondary btn-sm"
-            style={{ fontSize: '11.5px' }}
-          >
-            <Settings size={12} /> {hasNvidiaKey ? 'AI Settings' : 'Configure NVIDIA Key'}
-          </button>
-          <button
-            type="button"
-            onClick={clearAssistantChat}
-            className="btn btn-ghost btn-sm"
-            style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}
-          >
-            <Trash2 size={13} /> Clear
-          </button>
-        </div>
+    <div className="rit-snapshot-stage">
+      {/* Subtle Cosmic & Grid Atmospheric Layer for Real Liquid Glass Refraction */}
+      <div className="rit-ambient-backdrop" aria-hidden="true">
+        <div className="rit-orb rit-orb-primary" />
+        <div className="rit-orb rit-orb-cyan" />
+        <div className="rit-orb rit-orb-core" />
+        <div className="rit-grid-sheen" />
       </div>
 
-      {/* Quick Prompts Strip */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '8px' }}>
-        {quickPrompts.map((p, idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => handleSend(p.query)}
-            className="btn btn-secondary btn-sm"
-            style={{
-              fontSize: '11.5px',
-              whiteSpace: 'nowrap',
-              padding: '4px 9px',
-              borderRadius: 'var(--radius-xs)',
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Chat Messages Log */}
-      <div
-        className="card"
-        style={{
-          flex: 1,
-          background: 'var(--bg-card)',
-          borderRadius: '14px',
-          border: '1px solid var(--border)',
-          overflowY: 'auto',
-          padding: '18px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-          marginBottom: '14px',
-          minHeight: 0,
-        }}
-      >
-        {messages.map((m) => {
-          const isUser = m.role === 'user';
-          return (
-            <div
-              key={m.id}
-              style={{
-                display: 'flex',
-                gap: '10px',
-                alignSelf: isUser ? 'flex-end' : 'flex-start',
-                maxWidth: '88%',
-              }}
-            >
-              {!isUser && (
-                <div
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: 'var(--radius-xs)',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Bot size={14} color="var(--accent-primary)" />
+      {/* Floating Header Bar (Liquid Glass) */}
+      <header className="rit-header-wrap">
+        <LiquidGlassSurface variant="panel" theme={theme} className="rit-header-card">
+          <div className="rit-header-inner">
+            <div className="rit-identity-cluster">
+              <RitAvatar size={38} shape="squircle" thinking={isThinking} />
+              <div>
+                <div className="rit-brand-title-row">
+                  <h1 className="rit-brand-name">RIT</h1>
+                  <span className="rit-meaning-pill">Harmony, Structure and Order</span>
                 </div>
-              )}
-
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: isUser ? 'var(--accent-subtle)' : 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: '13px',
-                  lineHeight: '1.55',
-                  border: `1px solid ${isUser ? 'var(--accent-border)' : 'var(--border)'}`,
-                }}
-              >
-                {isUser ? m.content : <MarkdownMessage content={m.content} />}
+                <div className="rit-tagline-row">
+                  <span>&ldquo;Bring your life into rhythm.&rdquo;</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="rit-status-chip">
+                    <span className={`rit-status-dot ${hasNvidiaKey ? 'is-live' : ''}`} />
+                    <span>{engineBadge}</span>
+                  </span>
+                </div>
               </div>
+            </div>
 
-              {isUser && (
-                <div
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: 'var(--radius-xs)',
-                    background: 'var(--text-primary)',
-                    color: 'var(--bg-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    fontWeight: 600,
-                    fontSize: '11px',
-                  }}
-                >
-                  {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U'}
+            <div className="rit-header-controls" ref={menuAnchorRef}>
+              <button
+                type="button"
+                className="rit-glass-btn"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+                onClick={() => setMenuOpen((prev) => !prev)}
+              >
+                <SlidersHorizontal size={12} />
+                <span>{hasNvidiaKey ? 'Model' : 'Engine'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="rit-glass-btn rit-glass-btn-danger"
+                onClick={() => setConfirmClearOpen(true)}
+                aria-label="Clear RIT conversation"
+              >
+                <Trash2 size={12} />
+                <span>Clear</span>
+              </button>
+
+              {menuOpen && (
+                <div className="rit-menu-popover" role="menu" aria-label="RIT Engine Options">
+                  <LiquidGlassSurface variant="menu" theme={theme} className="rit-menu-card">
+                    <div className="rit-menu-body">
+                      <div className="rit-menu-heading">NVIDIA NIM Model</div>
+                      {NVIDIA_MODELS.map((m) => (
+                        <button
+                          key={m.id}
+                          type="button"
+                          role="menuitemradio"
+                          aria-checked={activeModel === m.id}
+                          className={`rit-menu-option ${activeModel === m.id ? 'is-active' : ''}`}
+                          onClick={() => handleSelectModel(m.id)}
+                        >
+                          <div className="rit-menu-option-title">
+                            <span>{m.label}</span>
+                            {activeModel === m.id && <Check size={12} />}
+                          </div>
+                          <span className="rit-menu-option-desc">{m.description}</span>
+                        </button>
+                      ))}
+                      <div className="rit-menu-divider" />
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="rit-menu-option"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setActiveView('settings');
+                        }}
+                      >
+                        <div className="rit-menu-option-title">
+                          <span>Open AI Settings</span>
+                          <Settings size={12} />
+                        </div>
+                        <span className="rit-menu-option-desc">
+                          {hasNvidiaKey ? 'Manage session key & preferences' : 'Configure NVIDIA API key'}
+                        </span>
+                      </button>
+                    </div>
+                  </LiquidGlassSurface>
                 </div>
               )}
             </div>
-          );
-        })}
+          </div>
+        </LiquidGlassSurface>
+      </header>
+
+      {/* Scrollable Chat Canvas */}
+      <div className="rit-chat-viewport">
+        {isFreshConversation && (
+          <section className="rit-hero-overview" aria-label="RIT Productivity Overview">
+            <RitAvatar size={56} shape="squircle" thinking={isThinking} />
+            <h2 className="rit-hero-title">Bring your life into rhythm.</h2>
+            <p className="rit-hero-sub">
+              Calm clarity across your tasks, goals, habits, academics, fitness, career, and finances.
+            </p>
+            <div className="rit-pulse-pills">
+              <span className="rit-pulse-pill">{metrics.pendingTasks.length} pending tasks</span>
+              {metrics.overdueTasks.length > 0 && (
+                <span className="rit-pulse-pill">{metrics.overdueTasks.length} overdue</span>
+              )}
+              <span className="rit-pulse-pill">
+                {metrics.habitsDoneToday}/{metrics.habitsToday.length} habits today
+              </span>
+              <span className="rit-pulse-pill">{metrics.productivityScore}% productivity</span>
+            </div>
+            <div className="rit-quick-chips">
+              {suggestions.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="rit-quick-chip"
+                  onClick={() => handleSend(s.query)}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {messages.map((m) => (
+          <RitResponseCard
+            key={m.id}
+            message={m}
+            userInitial={userInitial}
+            currency={currency}
+            onNavigateView={setActiveView}
+            onConfirmAction={handleConfirmAction}
+            onCancelAction={handleCancelAction}
+            onRetryPrompt={(prompt) => handleSend(prompt)}
+          />
+        ))}
 
         {isThinking && (
-          <div style={{ display: 'flex', gap: '10px', alignSelf: 'flex-start' }}>
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Bot size={14} color="var(--accent-primary)" />
+          <div className="rit-msg-row rit-msg-assistant" role="status" aria-live="polite">
+            <div className="rit-msg-avatar">
+              <RitAvatar size={30} shape="circle" thinking />
             </div>
-            <div
-              style={{
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-                fontSize: '12.5px',
-              }}
-            >
-              Analyzing workspace context...
+            <div className="rit-response-panel rit-thinking-panel">
+              <span>RIT is bringing your workspace into rhythm</span>
+              <span className="rit-thinking-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
             </div>
           </div>
         )}
@@ -582,51 +606,66 @@ export default function AssistantPage() {
         <div ref={chatBottomRef} />
       </div>
 
-      {/* Input Box */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSend();
-        }}
-        style={{
-          display: 'flex',
-          gap: '10px',
-          background: 'var(--bg-card)',
-          padding: '8px 10px',
-          borderRadius: '14px',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Ask Astra: 'Plan my day', 'Show spending', 'Study plan', or any question..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          style={{
-            flex: 1,
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-primary)',
-            fontSize: '14px',
-            padding: '8px 12px',
-            outline: 'none',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!input.trim() || isThinking}
-          className="btn btn-primary"
-          style={{
-            padding: '10px 16px',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
+      {/* Floating Liquid Glass Command / Search Bar */}
+      <RitCommandBar
+        value={input}
+        onChange={setInput}
+        onSubmit={handleSend}
+        isThinking={isThinking}
+        suggestions={suggestions}
+        theme={theme}
+        inputRef={inputRef}
+        onVoiceError={(msg) =>
+          addToast({
+            type: 'warning',
+            title: 'Voice Input',
+            message: msg,
+          })
+        }
+      />
+
+      {/* Liquid Glass Clear Confirmation Modal */}
+      {confirmClearOpen && (
+        <div
+          className="rit-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="rit-clear-title"
+          onClick={() => setConfirmClearOpen(false)}
         >
-          <Send size={16} /> Send
-        </button>
-      </form>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: 'min(400px, 100%)' }}>
+            <LiquidGlassSurface variant="panel" theme={theme} enableShader={false} className="rit-modal-card">
+              <div className="rit-modal-content">
+                <h3 id="rit-clear-title" style={{ margin: 0, fontSize: '15px', fontWeight: 700 }}>
+                  Reset RIT conversation?
+                </h3>
+                <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                  This clears the current chat stream cleanly. Your Tasks, Goals, Habits, and all Life OS data remain untouched.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '4px' }}>
+                  <button
+                    type="button"
+                    className="rit-cancel-btn"
+                    onClick={() => setConfirmClearOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="rit-confirm-btn"
+                    onClick={() => {
+                      clearAssistantChat();
+                      setConfirmClearOpen(false);
+                    }}
+                  >
+                    Clear Chat
+                  </button>
+                </div>
+              </div>
+            </LiquidGlassSurface>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
