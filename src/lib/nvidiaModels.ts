@@ -6,28 +6,23 @@ export interface NvidiaModelOption {
 
 export const NVIDIA_MODELS: NvidiaModelOption[] = [
   {
-    id: 'meta/llama-3.3-70b-instruct',
-    label: 'Llama 3.3 70B Instruct',
-    description: 'Balanced speed & structured reasoning',
+    id: 'nvidia/nemotron-3.5-bolt-e4b',
+    label: 'Nemotron 3.5 Bolt (Fast)',
+    description: 'Default — instant sub-second answers & daily plans',
   },
   {
-    id: 'nvidia/llama-3.1-nemotron-70b-instruct',
-    label: 'NVIDIA Nemotron 70B',
-    description: 'High helpfulness for planning & coaching',
+    id: 'nvidia/nemotron-3.5-lightning-30b-a3b',
+    label: 'Nemotron 3.5 Lightning (30B)',
+    description: 'Balanced planning & structured reasoning',
   },
   {
-    id: 'qwen/qwen2.5-coder-32b-instruct',
-    label: 'Qwen 2.5 Coder 32B',
-    description: 'Technical coursework, CS & engineering sprints',
-  },
-  {
-    id: 'deepseek-ai/deepseek-r1',
-    label: 'DeepSeek R1',
-    description: 'Deep analytical & multi-step reasoning',
+    id: 'nvidia/nemotron-3.5-super-vl-120b-a12b',
+    label: 'Nemotron 3.5 Super (120B)',
+    description: 'Deep multi-domain analysis & weekly strategy',
   },
 ];
 
-export const DEFAULT_NVIDIA_MODEL = 'meta/llama-3.3-70b-instruct';
+export const DEFAULT_NVIDIA_MODEL = 'nvidia/nemotron-3.5-bolt-e4b';
 
 export interface WorkspaceContextSummary {
   userName?: string;

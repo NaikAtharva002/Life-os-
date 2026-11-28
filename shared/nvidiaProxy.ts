@@ -201,8 +201,8 @@ export async function proxyNvidiaChat(params: {
         { role: 'system', content: systemPrompt },
         ...request.messages.map((m) => ({ role: m.role, content: m.content })),
       ],
-      temperature: 0.4,
-      max_tokens: 900,
+      temperature: 0.35,
+      max_tokens: 2400,
     }),
     signal: AbortSignal.timeout(25_000),
   });

@@ -52,8 +52,8 @@ describe('Phase 1 Upgrades: NVIDIA Proxy, Markdown Copilot, & Honest Analytics',
 
   it('validates NVIDIA proxy schemas, allowlisted models, key precedence, and rate limits', async () => {
     expect(resolveNvidiaModel('unknown/evil-model')).toBe(DEFAULT_NVIDIA_MODEL);
-    expect(resolveNvidiaModel('nvidia/llama-3.1-nemotron-70b-instruct')).toBe(
-      'nvidia/llama-3.1-nemotron-70b-instruct'
+    expect(resolveNvidiaModel('nvidia/nemotron-3.5-super-vl-120b-a12b')).toBe(
+      'nvidia/nemotron-3.5-super-vl-120b-a12b'
     );
 
     expect(resolveNvidiaApiKey('nvapi-server-env-secret-1234', 'nvapi-session-key-5678')).toBe(
