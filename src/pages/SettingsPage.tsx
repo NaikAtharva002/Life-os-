@@ -337,7 +337,7 @@ export default function SettingsPage() {
 
           <div>
             <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Key size={13} /> Optional Gemini API Key (Advanced AI Copilot Mode)
+              <Key size={13} /> Optional Gemini API Key (RIT Live Reasoning Mode)
             </label>
             <input
               type="password"
@@ -346,8 +346,8 @@ export default function SettingsPage() {
               onChange={(e) => setGeminiApiKey(e.target.value)}
               placeholder="Paste Google AI Studio Gemini API Key (Optional)..."
             />
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              * Optional. Life OS works 100% offline with full local heuristic intelligence without any API key.
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Optional. RIT calls Gemini 2.5 Flash directly from your browser when set, and automatically runs 100% locally offline without an API key.
             </div>
           </div>
 

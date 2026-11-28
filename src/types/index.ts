@@ -555,15 +555,48 @@ export interface CareerDocument {
 // ==========================================
 // 8. AI ASSISTANT & CHAT
 // ==========================================
+export type RitActionType =
+  | 'create_task'
+  | 'complete_task'
+  | 'reschedule_overdue'
+  | 'create_goal'
+  | 'create_habit'
+  | 'log_expense'
+  | 'save_note'
+  | 'save_memory'
+  | 'add_lifestyle_item'
+  | 'start_focus'
+  | 'navigate';
+
+export interface RitActionProposal {
+  id: string;
+  type: RitActionType;
+  label: string;
+  description: string;
+  payload: Record<string, any>;
+  status: 'proposed' | 'executed' | 'dismissed' | 'failed';
+  executedAt?: string;
+  errorMessage?: string;
+}
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: string;
+  provider?: 'gemini' | 'local';
   actionCard?: {
-    type: 'plan_day' | 'prioritize_goals' | 'study_plan' | 'spending_summary' | 'behind_alert';
+    type:
+      | 'plan_day'
+      | 'prioritize_goals'
+      | 'study_plan'
+      | 'spending_summary'
+      | 'behind_alert'
+      | 'life_rhythm'
+      | 'weekly_summary';
     data: any;
   };
+  proposedActions?: RitActionProposal[];
 }
 
 // ==========================================
@@ -761,4 +794,41 @@ export interface GraphPreferences {
   animationsEnabled: boolean;
   reducedMotion: boolean;
   activeMode: UniverseGraphMode;
+}
+
+export type LifestyleCategory =
+  | 'travel'
+  | 'hobby'
+  | 'memory'
+  | 'relationship'
+  | 'experience';
+
+export interface LifestyleItem {
+  id: string;
+  title: string;
+  category: LifestyleCategory;
+  date?: string;
+  location?: string;
+  people?: string[];
+  notes?: string;
+  status: 'planned' | 'active' | 'completed';
+  rating?: number;
+  createdAt: string;
+  updatedAt?: string;
+  isDemo?: boolean;
+  deletedAt?: string;
+}
+
+export type RitMemoryCategory = 'preference' | 'goal' | 'routine' | 'context' | 'constraint';
+
+export interface RitMemoryItem {
+  id: string;
+  content: string;
+  category: RitMemoryCategory;
+  source: 'user' | 'rit';
+  pinned?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  isDemo?: boolean;
+  deletedAt?: string;
 }

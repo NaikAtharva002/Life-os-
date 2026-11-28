@@ -22,10 +22,13 @@ import {
   Palette,
   Monitor,
   Orbit,
+  Sparkles,
+  Heart,
   type LucideIcon,
 } from 'lucide-react';
 import useStore from '../store/useStore';
 import { todayLocal } from '../lib/dates';
+import { BrandMark } from './BrandMark';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -102,10 +105,12 @@ export default function Sidebar({
     { id: 'finance', label: 'Finance', icon: DollarSign },
     { id: 'fitness', label: 'Fitness', icon: Dumbbell },
     { id: 'career', label: 'Career', icon: Briefcase },
+    { id: 'lifestyle', label: 'Lifestyle', icon: Heart },
     { id: 'obsidian', label: 'Notes', icon: FileText },
   ];
 
   const cadenceItems: NavItem[] = [
+    { id: 'assistant', label: 'RIT Agent', icon: Sparkles },
     { id: 'universe', label: 'Knowledge Universe', icon: Orbit },
     { id: 'focus', label: 'Deep Focus', icon: Compass },
     { id: 'review', label: 'Evening Review', icon: Moon },
@@ -201,14 +206,19 @@ export default function Sidebar({
               color: 'var(--text-primary)',
             }}
           >
-            <div className="sidebar-brand-mark">L</div>
+            <BrandMark size={28} />
             {!collapsed && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '13.5px', fontWeight: 700, letterSpacing: '-0.02em' }}>
-                  LIFE OS
-                </span>
-                <span className="badge badge-brick font-tabular" style={{ fontSize: '9.5px', padding: '1px 5px' }}>
-                  3.0
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '13.5px', fontWeight: 700, letterSpacing: '-0.02em' }}>
+                    LIFE OS
+                  </span>
+                  <span className="badge badge-brick font-tabular" style={{ fontSize: '9.5px', padding: '1px 5px' }}>
+                    3.0
+                  </span>
+                </div>
+                <span style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
+                  YOUR LIFE. ONE OS.
                 </span>
               </div>
             )}

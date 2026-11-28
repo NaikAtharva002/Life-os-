@@ -18,26 +18,42 @@ import {
 } from 'lucide-react';
 
 export default function AnalyticsPage() {
-  const goals = useStore((s) => s.goals);
-  const tasks = useStore((s) => s.tasks);
-  const habits = useStore((s) => s.habits);
-  const habitEntries = useStore((s) => s.habitEntries);
-  const financeTransactions = useStore((s) => s.financeTransactions);
-  const workoutSessions = useStore((s) => s.workoutSessions);
-  const bodyMetrics = useStore((s) => s.bodyMetrics);
-  const academicSubjects = useStore((s) => s.academicSubjects);
-  const careerApplications = useStore((s) => s.careerApplications);
+  const rawGoals = useStore((s) => s.goals);
+  const rawTasks = useStore((s) => s.tasks);
+  const rawHabits = useStore((s) => s.habits);
+  const rawHabitEntries = useStore((s) => s.habitEntries);
+  const rawFinanceTransactions = useStore((s) => s.financeTransactions);
+  const rawWorkoutSessions = useStore((s) => s.workoutSessions);
+  const rawBodyMetrics = useStore((s) => s.bodyMetrics);
+  const rawAcademicSubjects = useStore((s) => s.academicSubjects);
+  const rawCareerApplications = useStore((s) => s.careerApplications);
   const settings = useStore((s) => s.settings);
+
+  const isDemoMode = Boolean(settings.isDemoMode);
+  const keepVisible = <T extends { isDemo?: boolean; deletedAt?: string | null }>(items: T[]) =>
+    items.filter((item) => !item.deletedAt && (isDemoMode || item.isDemo !== true));
+
+  const goals = useMemo(() => keepVisible(rawGoals), [rawGoals, isDemoMode]);
+  const tasks = useMemo(() => keepVisible(rawTasks), [rawTasks, isDemoMode]);
+  const habits = useMemo(() => keepVisible(rawHabits), [rawHabits, isDemoMode]);
+  const habitEntries = useMemo(() => keepVisible(rawHabitEntries), [rawHabitEntries, isDemoMode]);
+  const financeTransactions = useMemo(
+    () => keepVisible(rawFinanceTransactions),
+    [rawFinanceTransactions, isDemoMode]
+  );
+  const workoutSessions = useMemo(() => keepVisible(rawWorkoutSessions), [rawWorkoutSessions, isDemoMode]);
+  const bodyMetrics = useMemo(() => keepVisible(rawBodyMetrics), [rawBodyMetrics, isDemoMode]);
+  const academicSubjects = useMemo(() => keepVisible(rawAcademicSubjects), [rawAcademicSubjects, isDemoMode]);
+  const careerApplications = useMemo(() => keepVisible(rawCareerApplications), [rawCareerApplications, isDemoMode]);
 
   const currency = settings.currencySymbol || '₹';
   const todayStr = todayLocal();
 
-  // 1. Productivity Index Calculation (Composite 0-100)
+  // 1. Productivity Index Calculation (Composite 0-100 using real data only)
   // Combines: Task completion (35%), Habit consistency (35%), Active Goals velocity (30%)
   const { productivityScore, taskCompletionRate, habitAdherenceRate, goalVelocity } = useMemo(() => {
-    // Task completion
     const completedTasks = tasks.filter((t) => t.isCompleted).length;
-    const taskRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 80;
+    const taskRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
 
     // Habit adherence past 14 days
     const past14Days = Array.from({ length: 14 }).map((_, i) => {
@@ -46,13 +62,27 @@ export default function AnalyticsPage() {
     });
     const expectedEntries = habits.length * 14;
     const actualEntries = habitEntries.filter((e) => past14Days.includes(e.date) && e.completed).length;
-    const habitRate = expectedEntries > 0 ? Math.min(100, Math.round((actualEntries / expectedEntries) * 100)) : 85;
+    const habitRate =
+      expectedEntries > 0 ? Math.min(100, Math.round((actualEntries / expectedEntries) * 100)) : 0;
 
     // Goal velocity
     const activeGoals = goals.filter((g) => !g.isArchived);
-    const avgGoalProgress = activeGoals.length > 0 ? Math.round(activeGoals.reduce((a, g) => a + g.progress, 0) / activeGoals.length) : 60;
+    const avgGoalProgress =
+      activeGoals.length > 0
+        ? Math.round(activeGoals.reduce((a, g) => a + g.progress, 0) / activeGoals.length)
+        : 0;
 
-    const composite = Math.round(taskRate * 0.35 + habitRate * 0.35 + avgGoalProgress * 0.3);
+    const activeWeights =
+      (tasks.length > 0 ? 0.35 : 0) +
+      (habits.length > 0 ? 0.35 : 0) +
+      (activeGoals.length > 0 ? 0.3 : 0);
+
+    const weightedSum =
+      (tasks.length > 0 ? taskRate * 0.35 : 0) +
+      (habits.length > 0 ? habitRate * 0.35 : 0) +
+      (activeGoals.length > 0 ? avgGoalProgress * 0.3 : 0);
+
+    const composite = activeWeights > 0 ? Math.round(weightedSum / activeWeights) : 0;
 
     return {
       productivityScore: composite,

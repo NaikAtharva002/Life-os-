@@ -1,482 +1,661 @@
-import React, { useState, useRef, useEffect } from 'react';
-import useStore from '../store/useStore';
-import { todayLocal } from '../lib/dates';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Sparkles,
-  Send,
-  Calendar,
-  Target,
-  AlertTriangle,
-  DollarSign,
-  GraduationCap,
-  Bot,
-  User,
-  Trash2,
-  Key,
+  Brain,
+  Check,
   CheckCircle2,
+  Cpu,
+  Key,
+  Mic,
+  MicOff,
+  Pin,
+  PinOff,
+  Play,
+  Plus,
+  Send,
+  Sparkles,
+  Trash2,
+  X,
 } from 'lucide-react';
+import useStore from '../store/useStore';
+import {
+  askRitIntelligence,
+  buildRitContext,
+  executeRitProposal,
+} from '../lib/ritEngine';
+import type { RitActionProposal, RitMemoryCategory } from '../types';
+import { LiquidGlassSurface } from '../components/LiquidGlassSurface';
+
+const QUICK_PROMPTS = [
+  { label: 'Plan my day', query: 'Plan my day based on my real tasks, habits, and deadlines.' },
+  { label: 'What matters right now?', query: 'What should I focus on right now?' },
+  { label: 'Summarize my week', query: 'Summarize my week across tasks, workouts, finance, and goals.' },
+  { label: 'What am I neglecting?', query: 'What have I been neglecting? Audit overdue tasks, habits, and attendance.' },
+  { label: 'Exam & assignment plan', query: 'What academic deadlines are approaching and how should I prepare?' },
+  { label: 'Analyze my spending', query: 'Analyze my monthly spending and net cashflow.' },
+];
 
 export default function AssistantPage() {
-  const settings = useStore((s) => s.settings);
-  const tasks = useStore((s) => s.tasks);
-  const goals = useStore((s) => s.goals);
-  const habits = useStore((s) => s.habits);
-  const habitEntries = useStore((s) => s.habitEntries);
-  const financeTransactions = useStore((s) => s.financeTransactions);
-  const academicSubjects = useStore((s) => s.academicSubjects);
-  const academicAssignments = useStore((s) => s.academicAssignments);
-  const academicExams = useStore((s) => s.academicExams);
-  const workoutSessions = useStore((s) => s.workoutSessions);
-  const messages = useStore((s) => s.assistantMessages);
-  const addAssistantMessage = useStore((s) => s.addAssistantMessage);
-  const clearAssistantChat = useStore((s) => s.clearAssistantChat);
-  const setActiveView = useStore((s) => s.setActiveView);
+  const store = useStore();
+  const {
+    settings,
+    assistantMessages,
+    addAssistantMessage,
+    updateAssistantMessage,
+    clearAssistantChat,
+    ritMemories,
+    saveRitMemory,
+    togglePinRitMemory,
+    deleteRitMemory,
+    setActiveView,
+    addToast,
+  } = store;
 
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const [memoryDraft, setMemoryDraft] = useState('');
+  const [memoryCategory, setMemoryCategory] = useState<RitMemoryCategory>('preference');
+  const [showMemories, setShowMemories] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
-  const todayStr = todayLocal();
-  const currency = settings.currencySymbol || '₹';
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const speechSupported = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    );
+  }, []);
+
+  const ritCtx = useMemo(() => buildRitContext(store), [store]);
 
   useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isThinking]);
+    chatBottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+  }, [assistantMessages, isThinking]);
 
-  // Quick Action Prompts
-  const quickPrompts = [
-    { label: 'Plan my day', query: 'Plan my day based on today’s scheduled tasks, habits, and priorities.' },
-    { label: 'Which goals are most important?', query: 'Which goals are most important this week?' },
-    { label: 'Why am I falling behind?', query: 'Why am I falling behind? Identify neglected tasks, habits, and attendance issues.' },
-    { label: 'Show my monthly spending', query: 'Show my monthly spending and budget health summary.' },
-    { label: 'Create an exam study plan', query: 'Create a study plan for my upcoming academic examinations.' },
-    { label: 'Academics progress review', query: 'How much progress have I made in academics and course attendance?' },
-  ];
-
-  // Heuristic Offline Intelligence Engine:
-  // Evaluates real user data deterministically without requiring an internet connection or API key!
-  const generateOfflineResponse = (query: string): string => {
-    const q = query.toLowerCase();
-
-    // 1. "Plan my day"
-    if (q.includes('plan') && (q.includes('day') || q.includes('today'))) {
-      const todayTasks = tasks.filter((t) => t.dueDate === todayStr && !t.isCompleted);
-      const overdueTasks = tasks.filter((t) => t.isOverdue && !t.isCompleted);
-      const todayHabits = habits.filter((h) => {
-        const dayOfWeek = new Date().getDay();
-        return h.targetDays.includes(dayOfWeek);
-      });
-
-      let response = `### 📋 Day Plan for ${todayStr}\n\n`;
-
-      if (overdueTasks.length > 0) {
-        response += `> [!WARNING] **${overdueTasks.length} Overdue Task(s)** need immediate attention:\n`;
-        overdueTasks.forEach((t) => {
-          response += `- ⚠️ **${t.title}** (${t.priority.toUpperCase()} priority)\n`;
-        });
-        response += `\n`;
+  // Pick up any prompt staged by Liquid Glass Command Palette or Dashboard
+  useEffect(() => {
+    const pendingPrompt = (() => {
+      try {
+        const pending = sessionStorage.getItem('lifeos_rit_pending_prompt');
+        if (pending) sessionStorage.removeItem('lifeos_rit_pending_prompt');
+        return pending;
+      } catch {
+        return null;
       }
-
-      response += `#### 🎯 Top Tasks Scheduled Today:\n`;
-      if (todayTasks.length === 0) {
-        response += `*No tasks explicitly due today. Consider pulling high-priority milestones from your critical goals.*\n`;
-      } else {
-        todayTasks.forEach((t) => {
-          response += `- [ ] **${t.title}** — ${t.dueTime ? `⏰ ${t.dueTime}` : 'All day'} [${t.priority.toUpperCase()}]\n`;
-        });
-      }
-
-      response += `\n#### 🔥 Target Habits for Today:\n`;
-      todayHabits.forEach((h) => {
-        const isDone = habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed);
-        response += `- ${isDone ? '✅' : '⭕'} **${h.name}** (Current Streak: ${h.streak} days)\n`;
-      });
-
-      response += `\n#### 💡 Recommendation:\nProtect a 90-minute deep work block this morning before checking social feeds or inbox.`;
-      return response;
+    })();
+    if (pendingPrompt) {
+      void handleSend(pendingPrompt);
     }
+  }, []);
 
-    // 2. "Which goals are most important this week?"
-    if (q.includes('goals') && (q.includes('important') || q.includes('priority') || q.includes('week'))) {
-      const criticalGoals = goals.filter((g) => !g.isArchived && (g.priority === 'critical' || g.priority === 'high'));
+  const handleSend = async (customQuery?: string) => {
+    const query = (customQuery ?? input).trim();
+    if (!query || isThinking) return;
 
-      let response = `### 🎯 Most Important Goals This Week\n\n`;
-      if (criticalGoals.length === 0) {
-        response += `All your active goals are categorized as medium or low priority. Consider upgrading your primary focus goal to **Critical**.\n`;
-      } else {
-        criticalGoals.forEach((g) => {
-          const pendingMilestones = g.milestones.filter((m) => !m.isCompleted);
-          response += `#### 1. ${g.title} [${g.priority.toUpperCase()} • ${g.category}]\n`;
-          response += `- **Current Progress**: ${g.progress}%\n`;
-          response += `- **Target Deadline**: ${g.targetDate || 'Ongoing'}\n`;
-          if (pendingMilestones.length > 0) {
-            response += `- **Next Key Milestone**: "${pendingMilestones[0].title}"\n`;
-          }
-          response += `\n`;
-        });
-      }
-      return response;
-    }
-
-    // 3. "Why am I falling behind?"
-    if (q.includes('falling behind') || q.includes('neglected') || q.includes('behind')) {
-      const overdueTasks = tasks.filter((t) => t.isOverdue && !t.isCompleted);
-      const lowAttendance = academicSubjects.filter(
-        (s) => s.totalClasses > 0 && (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
-      );
-      const missedHabits = habits.filter((h) => h.streak === 0);
-
-      let response = `### 🔍 Bottleneck & Friction Audit\n\n`;
-
-      if (overdueTasks.length === 0 && lowAttendance.length === 0 && missedHabits.length === 0) {
-        response += `You are currently in strong standing! Zero overdue tasks, all academic attendance thresholds are compliant, and habits maintain positive momentum.\n`;
-        return response;
-      }
-
-      if (overdueTasks.length > 0) {
-        response += `#### 1. Overdue Action Items (${overdueTasks.length}):\n`;
-        overdueTasks.forEach((t) => {
-          response += `- **${t.title}** was due on ${t.dueDate}. Reschedule or complete this today.\n`;
-        });
-        response += `\n`;
-      }
-
-      if (lowAttendance.length > 0) {
-        response += `#### 2. Academic Attendance Danger Zone:\n`;
-        lowAttendance.forEach((s) => {
-          const pct = ((s.attendedClasses / s.totalClasses) * 100).toFixed(1);
-          response += `- **${s.code} ${s.name}**: Attendance is ${pct}% (below ${s.targetAttendancePercentage}% threshold). You cannot afford to skip further lectures.\n`;
-        });
-        response += `\n`;
-      }
-
-      if (missedHabits.length > 0) {
-        response += `#### 3. Broken Habit Momentum:\n`;
-        missedHabits.forEach((h) => {
-          response += `- **${h.name}**: Streak is 0 days. Re-establish streak with a minimal 5-minute version today.\n`;
-        });
-      }
-
-      return response;
-    }
-
-    // 4. "Show my monthly spending"
-    if (q.includes('spend') || q.includes('finance') || q.includes('budget') || q.includes('money')) {
-      const curMonth = todayStr.substring(0, 7);
-      const monthTx = financeTransactions.filter((t) => t.date.startsWith(curMonth));
-      const income = monthTx.filter((t) => t.type === 'income').reduce((a, b) => a + b.amount, 0);
-      const expense = monthTx.filter((t) => t.type === 'expense').reduce((a, b) => a + b.amount, 0);
-      const net = income - expense;
-
-      let response = `### 💰 Monthly Financial Snapshot (${curMonth})\n\n`;
-      response += `- **Total Inflow**: ${currency}${income.toFixed(2)}\n`;
-      response += `- **Total Outflow**: ${currency}${expense.toFixed(2)}\n`;
-      response += `- **Net Cashflow**: ${net >= 0 ? '+' : ''}${currency}${net.toFixed(2)} (${income > 0 ? Math.round((net / income) * 100) : 0}% savings rate)\n\n`;
-
-      // Top category
-      const catMap: Record<string, number> = {};
-      monthTx.filter((t) => t.type === 'expense').forEach((t) => {
-        catMap[t.category] = (catMap[t.category] || 0) + t.amount;
-      });
-      const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
-      if (sorted.length > 0) {
-        response += `#### Top Expense Categories:\n`;
-        sorted.slice(0, 4).forEach(([cat, amt]) => {
-          response += `- **${cat}**: ${currency}${amt.toFixed(2)}\n`;
-        });
-      }
-
-      return response;
-    }
-
-    // 5. "Create a study plan"
-    if (q.includes('study plan') || q.includes('exam') || q.includes('examination')) {
-      let response = `### 📚 Structured Examination Study Plan\n\n`;
-      if (academicExams.length === 0) {
-        response += `No upcoming exams currently scheduled in your Academics module. You can add your exam dates under Academics -> Schedule Exam.\n`;
-      } else {
-        academicExams.forEach((exam) => {
-          const daysLeft = Math.ceil((new Date(exam.examDate).getTime() - Date.now()) / 86400000);
-          const sub = academicSubjects.find((s) => s.id === exam.subjectId);
-          response += `#### Course: ${sub ? sub.name : exam.title} (In ${daysLeft} Days)\n`;
-          response += `- **Syllabus Coverage**: ${exam.syllabusCoveragePercentage}%\n`;
-          response += `- **Phase 1 (Day 1-${Math.max(1, Math.floor(daysLeft * 0.4))}):** Finish uncompleted lecture notes & conceptual proofs.\n`;
-          response += `- **Phase 2 (Day ${Math.floor(daysLeft * 0.4) + 1}-${Math.floor(daysLeft * 0.8)}):** Solve past 5 years question papers & assignment problems.\n`;
-          response += `- **Phase 3 (Final 48 hours):** Active recall formula sheets & timed mock test.\n\n`;
-        });
-      }
-      return response;
-    }
-
-    // 6. "Academics progress review"
-    if (q.includes('academic') || q.includes('gpa') || q.includes('attendance')) {
-      let response = `### 🎓 Academic Standing Review\n\n`;
-      let totalAtt = 0;
-      let totalCls = 0;
-      academicSubjects.forEach((s) => {
-        totalAtt += s.attendedClasses;
-        totalCls += s.totalClasses;
-      });
-      const pct = totalCls > 0 ? ((totalAtt / totalCls) * 100).toFixed(1) : '100.0';
-
-      response += `- **Enrolled Courses**: ${academicSubjects.length}\n`;
-      response += `- **Overall Attendance**: ${pct}% (${totalAtt}/${totalCls} classes)\n`;
-      response += `- **Active Assignments**: ${academicAssignments.filter((a) => !a.isSubmitted).length} pending\n\n`;
-
-      response += `#### Subject Breakdown:\n`;
-      academicSubjects.forEach((s) => {
-        const sPct = s.totalClasses > 0 ? ((s.attendedClasses / s.totalClasses) * 100).toFixed(1) : '100.0';
-        response += `- **${s.code}** (${s.name}): ${sPct}% attendance [${s.credits} credits]\n`;
-      });
-      return response;
-    }
-
-    // Default intelligent response grounded in data
-    return `### 💡 Copilot Analysis\n\nI have reviewed your active profile:\n- **${tasks.filter((t) => !t.isCompleted).length} pending tasks** (${tasks.filter((t) => t.isOverdue).length} overdue).\n- **${goals.filter((g) => !g.isArchived).length} active goals**.\n- **${habits.length} habits tracked**.\n\nYou can ask me specific questions like: *"Plan my day"*, *"Which goals are most important?"*, *"Show my monthly spending"*, or *"Create an exam study plan"* to generate specialized intelligence.`;
-  };
-
-  const handleSend = async (textToSend?: string) => {
-    const messageContent = (textToSend || input).trim();
-    if (!messageContent) return;
-
-    addAssistantMessage({
-      role: 'user',
-      content: messageContent,
-    });
-    setInput('');
+    addAssistantMessage({ role: 'user', content: query });
+    if (!customQuery) setInput('');
     setIsThinking(true);
 
-    // If user has set a Gemini API Key in Settings, we can query Gemini. Otherwise, run the offline heuristic engine!
-    setTimeout(() => {
-      const response = generateOfflineResponse(messageContent);
+    try {
+      const { message } = await askRitIntelligence(query, store);
+      addAssistantMessage(message);
+    } catch (err) {
       addAssistantMessage({
         role: 'assistant',
-        content: response,
+        provider: 'local',
+        content:
+          err instanceof Error
+            ? `RIT encountered an issue: ${err.message}`
+            : 'RIT encountered an unexpected error.',
       });
+    } finally {
       setIsThinking(false);
-    }, 400);
+    }
   };
 
+  const handleProposalAction = async (
+    messageId: string,
+    proposal: RitActionProposal,
+    decision: 'execute' | 'dismiss'
+  ) => {
+    const msg = assistantMessages.find((m) => m.id === messageId);
+    if (!msg || !msg.proposedActions) return;
+
+    if (decision === 'dismiss') {
+      updateAssistantMessage(messageId, {
+        proposedActions: msg.proposedActions.map((p) =>
+          p.id === proposal.id ? { ...p, status: 'dismissed' } : p
+        ),
+      });
+      return;
+    }
+
+    const result = await executeRitProposal(proposal, store);
+    updateAssistantMessage(messageId, {
+      proposedActions: msg.proposedActions.map((p) =>
+        p.id === proposal.id
+          ? {
+              ...p,
+              status: result.ok ? 'executed' : 'failed',
+              executedAt: new Date().toISOString(),
+              errorMessage: result.ok ? undefined : result.message,
+            }
+          : p
+      ),
+    });
+
+    addToast({
+      type: result.ok ? 'success' : 'error',
+      title: result.ok ? 'RIT Action Executed' : 'RIT Action Failed',
+      message: result.message,
+    });
+  };
+
+  const handleAddMemory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = memoryDraft.trim();
+    if (!content) return;
+    await saveRitMemory({
+      content,
+      category: memoryCategory,
+      source: 'user',
+      pinned: true,
+    });
+    setMemoryDraft('');
+    addToast({
+      type: 'success',
+      title: 'Personal Memory Saved',
+      message: 'RIT will use this context in future planning.',
+    });
+  };
+
+  const toggleVoiceInput = () => {
+    if (!speechSupported) return;
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+    const SpeechRec =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) return;
+    const recognition = new SpeechRec();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event?.results?.[0]?.[0]?.transcript;
+      if (transcript) {
+        setInput((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    setIsListening(true);
+    recognition.start();
+  };
+
+  const geminiConfigured = Boolean(settings.geminiApiKey?.trim());
+
   return (
-    <div className="page-container" style={{ padding: '24px 28px', maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 48px)' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Sparkles size={16} color="var(--text-primary)" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '16px', fontWeight: 600, margin: 0, letterSpacing: '-0.01em' }}>
-              Astra — Life OS AI Copilot
-            </h1>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-              Local-first heuristic intelligence • Private • Real-time data sync
+    <div
+      className="animate-fade-in"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        minHeight: 'calc(100vh - 110px)',
+      }}
+    >
+      {/* Header Banner */}
+      <LiquidGlassSurface style={{ borderRadius: '16px', padding: '16px 20px' }} frost={5}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-medium)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--accent-primary)',
+                flexShrink: 0,
+              }}
+            >
+              <Sparkles size={19} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                  RIT Intelligence
+                </h1>
+                <span className={`badge ${geminiConfigured ? 'badge-success' : 'badge-silver'}`}>
+                  {geminiConfigured ? 'Gemini 2.5 Flash + Local Tools' : 'Local Deterministic Engine'}
+                </span>
+              </div>
+              <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                Harmony, Structure, and Order. Bring your life into rhythm across all Life OS dimensions.
+              </p>
             </div>
           </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowMemories((v) => !v)}
+              className={`btn btn-sm ${showMemories ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              <Brain size={14} />
+              Memory ({ritCtx.memories.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('settings')}
+              className="btn btn-secondary btn-sm"
+            >
+              <Key size={14} />
+              {geminiConfigured ? 'API Key Ready' : 'Connect Gemini Key'}
+            </button>
+            <button
+              type="button"
+              onClick={clearAssistantChat}
+              className="btn btn-ghost btn-sm"
+            >
+              <Trash2 size={14} />
+              Clear Chat
+            </button>
+          </div>
         </div>
+      </LiquidGlassSurface>
 
-        <button
-          onClick={clearAssistantChat}
-          className="btn btn-ghost btn-sm"
-          style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}
-        >
-          <Trash2 size={13} /> Clear
-        </button>
+      {/* Real-time Life Context Strip */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))',
+          gap: '10px',
+        }}
+      >
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Today & Overdue</div>
+          <div className="font-tabular" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {ritCtx.todayTasks.length} today / {ritCtx.overdueTasks.length} overdue
+          </div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Active Goals</div>
+          <div className="font-tabular" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {ritCtx.activeGoals.length} active
+          </div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Habits Today</div>
+          <div className="font-tabular" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {ritCtx.completedHabitsTodayCount}/{ritCtx.habits.length} done
+          </div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Academic Queue</div>
+          <div className="font-tabular" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {ritCtx.upcomingAssignments.length} tasks / {ritCtx.upcomingExams.length} exams
+          </div>
+        </div>
+        <div className="card" style={{ padding: '10px 14px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Lifestyle & Memory</div>
+          <div className="font-tabular" style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {ritCtx.lifestyleItems.length} life / {ritCtx.memories.length} mem
+          </div>
+        </div>
       </div>
 
-      {/* Quick Prompts Strip */}
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '8px' }}>
-        {quickPrompts.map((p, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSend(p.query)}
-            className="btn btn-secondary btn-sm"
-            style={{
-              fontSize: '11.5px',
-              whiteSpace: 'nowrap',
-              padding: '4px 9px',
-              borderRadius: 'var(--radius-xs)',
-            }}
+      {/* Collapsible Personal Memory Drawer */}
+      {showMemories && (
+        <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ fontSize: '14px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                RIT Personal Memory
+              </h2>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                Stored preferences, routines, constraints, and study goals injected into every planning response.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn btn-ghost btn-icon"
+              aria-label="Close memory panel"
+              onClick={() => setShowMemories(false)}
+            >
+              <X size={15} />
+            </button>
+          </div>
+
+          <form
+            onSubmit={handleAddMemory}
+            style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}
           >
-            {p.label}
-          </button>
-        ))}
-      </div>
+            <select
+              className="input"
+              aria-label="Memory category"
+              value={memoryCategory}
+              onChange={(e) => setMemoryCategory(e.target.value as RitMemoryCategory)}
+              style={{ width: '140px' }}
+            >
+              <option value="preference">Preference</option>
+              <option value="routine">Routine</option>
+              <option value="goal">Goal Context</option>
+              <option value="constraint">Constraint</option>
+              <option value="context">General</option>
+            </select>
+            <input
+              type="text"
+              className="input"
+              placeholder="e.g., I do deep coding best between 7 AM and 11 AM"
+              value={memoryDraft}
+              onChange={(e) => setMemoryDraft(e.target.value)}
+              style={{ flex: 1, minWidth: '220px' }}
+            />
+            <button type="submit" className="btn btn-primary btn-sm">
+              <Plus size={14} />
+              Save Memory
+            </button>
+          </form>
 
-      {/* Chat Messages Log */}
+          {ritMemories.length === 0 ? (
+            <div style={{ fontSize: '12.5px', color: 'var(--text-secondary)', padding: '6px 0' }}>
+              No personal memories saved yet. Add one above or ask RIT "Remember that ...".
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {ritMemories.map((mem) => (
+                <div
+                  key={mem.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    background: 'var(--bg-subtle)',
+                    border: '1px solid var(--border-subtle)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                    <span className="badge badge-silver">{mem.category}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-primary)' }}>
+                      {mem.content}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon"
+                      aria-label={mem.pinned ? 'Unpin memory' : 'Pin memory'}
+                      onClick={() => togglePinRitMemory(mem.id)}
+                    >
+                      {mem.pinned ? <Pin size={14} /> : <PinOff size={14} />}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-icon"
+                      aria-label="Delete memory"
+                      onClick={() => deleteRitMemory(mem.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Main Conversation Container */}
       <div
         className="card"
         style={{
           flex: 1,
-          background: 'var(--bg-card)',
-          borderRadius: '16px',
-          border: '1px solid var(--border)',
-          overflowY: 'auto',
-          padding: '20px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
-          marginBottom: '16px',
+          minHeight: '420px',
+          overflow: 'hidden',
         }}
       >
-        {messages.map((m) => {
-          const isUser = m.role === 'user';
-          return (
-            <div
-              key={m.id}
-              style={{
-                display: 'flex',
-                gap: '12px',
-                alignSelf: isUser ? 'flex-end' : 'flex-start',
-                maxWidth: '85%',
-              }}
-            >
-              {!isUser && (
-                <div
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: 'var(--radius-xs)',
-                    background: 'var(--bg-secondary)',
-                    border: '1px solid var(--border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <Bot size={14} color="var(--text-secondary)" />
-                </div>
-              )}
-
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius-sm)',
-                  background: isUser ? 'var(--bg-hover)' : 'var(--bg-secondary)',
-                  color: 'var(--text-primary)',
-                  fontSize: '13px',
-                  lineHeight: '1.55',
-                  border: '1px solid var(--border)',
-                  whiteSpace: 'pre-wrap',
-                }}
-              >
-                {m.content}
-              </div>
-
-              {isUser && (
-                <div
-                  style={{
-                    width: '28px',
-                    height: '28px',
-                    borderRadius: 'var(--radius-xs)',
-                    background: 'var(--text-primary)',
-                    color: 'var(--bg-primary)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    fontWeight: 600,
-                    fontSize: '11px',
-                  }}
-                >
-                  {settings.userName ? settings.userName.charAt(0).toUpperCase() : 'U'}
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {isThinking && (
-          <div style={{ display: 'flex', gap: '10px', alignSelf: 'flex-start' }}>
-            <div
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: 'var(--radius-xs)',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Bot size={14} color="var(--text-secondary)" />
-            </div>
-            <div
-              style={{
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-muted)',
-                fontSize: '12.5px',
-              }}
-            >
-              Analyzing IndexedDB personal state...
-            </div>
-          </div>
-        )}
-
-        <div ref={chatBottomRef} />
-      </div>
-
-      {/* Input Box */}
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSend();
-        }}
-        style={{
-          display: 'flex',
-          gap: '10px',
-          background: 'var(--bg-card)',
-          padding: '8px 10px',
-          borderRadius: '14px',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Ask Astra: 'Plan my day', 'Show spending', 'Study plan', or any question..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
+        <div
           style={{
             flex: 1,
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-primary)',
-            fontSize: '14px',
-            padding: '8px 12px',
-            outline: 'none',
-          }}
-        />
-        <button
-          type="submit"
-          disabled={!input.trim()}
-          className="btn btn-primary"
-          style={{
-            padding: '10px 16px',
-            borderRadius: '10px',
+            overflowY: 'auto',
+            padding: '18px',
             display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
+            flexDirection: 'column',
+            gap: '14px',
           }}
         >
-          <Send size={16} /> Send
-        </button>
-      </form>
+          {assistantMessages.map((msg) => {
+            const isUser = msg.role === 'user';
+            return (
+              <div
+                key={msg.id}
+                style={{
+                  alignSelf: isUser ? 'flex-end' : 'flex-start',
+                  maxWidth: 'min(760px, 92%)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <div
+                  style={{
+                    padding: '12px 15px',
+                    borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    background: isUser ? 'var(--accent-primary)' : 'var(--bg-subtle)',
+                    color: isUser ? '#FFFFFF' : 'var(--text-primary)',
+                    border: isUser ? 'none' : '1px solid var(--border-default)',
+                    fontSize: '13.5px',
+                    lineHeight: 1.55,
+                    whiteSpace: 'pre-wrap',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      marginBottom: '6px',
+                      fontSize: '11px',
+                      opacity: isUser ? 0.9 : 0.8,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {isUser ? (
+                      <span>You</span>
+                    ) : (
+                      <>
+                        <Cpu size={12} />
+                        <span>RIT</span>
+                        <span>·</span>
+                        <span>{msg.provider === 'gemini' ? 'Gemini 2.5 Flash' : 'Local Intelligence'}</span>
+                      </>
+                    )}
+                  </div>
+                  {msg.content}
+                </div>
+
+                {/* Executable Action Proposals */}
+                {!isUser && msg.proposedActions && msg.proposedActions.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {msg.proposedActions.map((proposal) => (
+                      <div
+                        key={proposal.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '12px',
+                          flexWrap: 'wrap',
+                          padding: '10px 14px',
+                          borderRadius: '12px',
+                          background: 'var(--bg-surface)',
+                          border: '1px solid var(--border-medium)',
+                        }}
+                      >
+                        <div style={{ minWidth: 0, flex: '1 1 220px' }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                            {proposal.label}
+                          </div>
+                          {proposal.description && (
+                            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              {proposal.description}
+                            </div>
+                          )}
+                          {proposal.errorMessage && (
+                            <div style={{ fontSize: '12px', color: 'var(--status-danger)', marginTop: '2px' }}>
+                              {proposal.errorMessage}
+                            </div>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {proposal.status === 'executed' ? (
+                            <span className="badge badge-success">
+                              <CheckCircle2 size={12} style={{ marginRight: 4 }} />
+                              Executed
+                            </span>
+                          ) : proposal.status === 'dismissed' ? (
+                            <span className="badge badge-silver">Dismissed</span>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={() => handleProposalAction(msg.id, proposal, 'execute')}
+                              >
+                                <Play size={12} />
+                                {proposal.status === 'failed' ? 'Retry Action' : 'Run Action'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm"
+                                onClick={() => handleProposalAction(msg.id, proposal, 'dismiss')}
+                              >
+                                <Check size={12} />
+                                Dismiss
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {isThinking && (
+            <div
+              style={{
+                alignSelf: 'flex-start',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                background: 'var(--bg-subtle)',
+                border: '1px solid var(--border-default)',
+                fontSize: '13px',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              RIT is analyzing your real Life OS data...
+            </div>
+          )}
+          <div ref={chatBottomRef} />
+        </div>
+
+        {/* Prompt Chips */}
+        <div
+          style={{
+            padding: '10px 16px',
+            borderTop: '1px solid var(--border-subtle)',
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            background: 'var(--bg-subtle)',
+          }}
+        >
+          {QUICK_PROMPTS.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => handleSend(chip.query)}
+              className="btn btn-secondary btn-sm"
+              style={{ fontSize: '12px' }}
+              disabled={isThinking}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Input Composer */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSend();
+          }}
+          style={{
+            padding: '12px 16px',
+            borderTop: '1px solid var(--border-default)',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+          }}
+        >
+          <input
+            type="text"
+            className="input"
+            aria-label="Message RIT"
+            placeholder='Ask RIT anything or issue an action (e.g., "Add task revise DBMS tomorrow 5pm")...'
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            style={{ flex: 1 }}
+            disabled={isThinking}
+          />
+          {speechSupported && (
+            <button
+              type="button"
+              className={`btn btn-icon ${isListening ? 'btn-danger' : 'btn-secondary'}`}
+              onClick={toggleVoiceInput}
+              aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+              title={isListening ? 'Listening...' : 'Speak to RIT'}
+            >
+              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          )}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={!input.trim() || isThinking}
+            aria-label="Send to RIT"
+          >
+            <Send size={15} />
+            Send
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

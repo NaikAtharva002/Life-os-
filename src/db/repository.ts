@@ -28,6 +28,8 @@ import type {
   ObsidianNote,
   CustomGraphNode,
   CustomGraphEdge,
+  LifestyleItem,
+  RitMemoryItem,
   AppSettings,
 } from '../types';
 
@@ -61,6 +63,8 @@ export class LifeOSRepository {
     obsidianNotes: ObsidianNote[];
     graphNodes: CustomGraphNode[];
     graphEdges: CustomGraphEdge[];
+    lifestyleItems: LifestyleItem[];
+    ritMemories: RitMemoryItem[];
     settings: AppSettings;
   }> {
     const isInitialized = await db.appMeta.get('initialized');
@@ -124,6 +128,8 @@ export class LifeOSRepository {
         obsidianNotes: [],
         graphNodes: [],
         graphEdges: [],
+        lifestyleItems: [],
+        ritMemories: [],
         settings: defaultSettings,
       };
     }
@@ -155,6 +161,8 @@ export class LifeOSRepository {
       obsidianNotes,
       graphNodes,
       graphEdges,
+      lifestyleItems,
+      ritMemories,
       savedSettings,
     ] = await Promise.all([
       db.goals.toArray(),
@@ -182,6 +190,8 @@ export class LifeOSRepository {
       db.obsidianNotes.toArray(),
       db.graphNodes.toArray(),
       db.graphEdges.toArray(),
+      db.lifestyleItems.toArray(),
+      db.ritMemories.toArray(),
       db.appMeta.get('settings'),
     ]);
 
@@ -229,6 +239,8 @@ export class LifeOSRepository {
       obsidianNotes: active(obsidianNotes),
       graphNodes: active(graphNodes),
       graphEdges: active(graphEdges),
+      lifestyleItems: active(lifestyleItems),
+      ritMemories: active(ritMemories),
       settings: mergedSettings,
     };
   }
@@ -425,6 +437,22 @@ export class LifeOSRepository {
     await db.graphEdges.delete(id);
   }
 
+  // --- LIFESTYLE & RIT MEMORY ACTIONS ---
+  static async saveLifestyleItem(item: LifestyleItem) {
+    item.updatedAt = item.updatedAt || new Date().toISOString();
+    await db.lifestyleItems.put(item);
+  }
+  static async deleteLifestyleItem(id: string) {
+    await db.lifestyleItems.delete(id);
+  }
+  static async saveRitMemory(item: RitMemoryItem) {
+    item.updatedAt = item.updatedAt || new Date().toISOString();
+    await db.ritMemories.put(item);
+  }
+  static async deleteRitMemory(id: string) {
+    await db.ritMemories.delete(id);
+  }
+
   // --- SETTINGS ---
   static async saveSettings(settings: AppSettings) {
     await db.appMeta.put({ key: 'settings', value: settings });
@@ -462,6 +490,8 @@ export class LifeOSRepository {
       obsidianNotes: await db.obsidianNotes.toArray(),
       graphNodes: await db.graphNodes.toArray(),
       graphEdges: await db.graphEdges.toArray(),
+      lifestyleItems: await db.lifestyleItems.toArray(),
+      ritMemories: await db.ritMemories.toArray(),
       settings: settingsRecord?.value ?? settingsRecord,
     };
     return JSON.stringify(data, null, 2);
@@ -514,6 +544,8 @@ export class LifeOSRepository {
           db.obsidianNotes,
           db.graphNodes,
           db.graphEdges,
+          db.lifestyleItems,
+          db.ritMemories,
           db.appMeta,
         ],
         async () => {
@@ -542,6 +574,8 @@ export class LifeOSRepository {
           await db.obsidianNotes.clear();
           await db.graphNodes.clear();
           await db.graphEdges.clear();
+          await db.lifestyleItems.clear();
+          await db.ritMemories.clear();
 
           if (data.goals.length) await db.goals.bulkAdd(sanitizeRecords(data.goals));
           if (data.tasks.length) await db.tasks.bulkAdd(sanitizeRecords(data.tasks));
@@ -573,6 +607,8 @@ export class LifeOSRepository {
           if (data.obsidianNotes.length) await db.obsidianNotes.bulkAdd(sanitizeRecords(data.obsidianNotes));
           if (data.graphNodes?.length) await db.graphNodes.bulkAdd(sanitizeRecords(data.graphNodes));
           if (data.graphEdges?.length) await db.graphEdges.bulkAdd(sanitizeRecords(data.graphEdges));
+          if (data.lifestyleItems?.length) await db.lifestyleItems.bulkAdd(sanitizeRecords(data.lifestyleItems));
+          if (data.ritMemories?.length) await db.ritMemories.bulkAdd(sanitizeRecords(data.ritMemories));
 
           if (data.settings) {
             await db.appMeta.put({ key: 'settings', value: data.settings });
@@ -617,6 +653,8 @@ export class LifeOSRepository {
         db.obsidianNotes,
         db.graphNodes,
         db.graphEdges,
+        db.lifestyleItems,
+        db.ritMemories,
       ],
       async () => {
         await db.goals.clear();
@@ -644,6 +682,8 @@ export class LifeOSRepository {
         await db.obsidianNotes.clear();
         await db.graphNodes.clear();
         await db.graphEdges.clear();
+        await db.lifestyleItems.clear();
+        await db.ritMemories.clear();
       }
     );
   }
@@ -694,6 +734,8 @@ export class LifeOSRepository {
         db.obsidianNotes,
         db.graphNodes,
         db.graphEdges,
+        db.lifestyleItems,
+        db.ritMemories,
         db.appMeta,
       ],
       async () => {
@@ -739,6 +781,8 @@ export class LifeOSRepository {
         await purgeTable(db.obsidianNotes);
         await purgeTable(db.graphNodes);
         await purgeTable(db.graphEdges);
+        await purgeTable(db.lifestyleItems);
+        await purgeTable(db.ritMemories);
 
         const currSettings = (await db.appMeta.get('settings'))?.value || {};
         await db.appMeta.put({
@@ -799,6 +843,8 @@ export class LifeOSRepository {
         db.obsidianNotes,
         db.graphNodes,
         db.graphEdges,
+        db.lifestyleItems,
+        db.ritMemories,
         db.appMeta,
       ],
       async () => {

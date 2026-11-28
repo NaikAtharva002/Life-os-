@@ -13,8 +13,10 @@ import {
   Bell,
   Calendar,
   Check,
+  Heart,
 } from 'lucide-react';
 import useStore from '../store/useStore';
+import { BrandMark } from './BrandMark';
 
 interface OnboardingModalProps {
   isOpen?: boolean;
@@ -29,6 +31,7 @@ const LIFE_AREAS = [
   { id: 'fitness', label: 'Fitness', icon: Dumbbell },
   { id: 'academics', label: 'Academics', icon: GraduationCap },
   { id: 'career', label: 'Career', icon: Briefcase },
+  { id: 'lifestyle', label: 'Lifestyle', icon: Heart },
 ];
 
 export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
@@ -41,7 +44,7 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
   const [selectedLifeAreas, setSelectedLifeAreas] = useState<string[]>(
     settings.selectedLifeAreas && settings.selectedLifeAreas.length > 0
       ? settings.selectedLifeAreas
-      : ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career']
+      : ['goals', 'tasks', 'habits', 'finance', 'fitness', 'academics', 'career', 'lifestyle']
   );
   const [weekStartDay, setWeekStartDay] = useState<'monday' | 'sunday'>(
     settings.weekStartDay || 'monday'
@@ -109,17 +112,8 @@ export default function OnboardingModal({ isOpen, onClose }: OnboardingModalProp
         {/* Step 1: Clean, Minimal Welcome Screen */}
         {step === 'welcome' && (
           <div style={{ padding: '36px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div
-              className="sidebar-brand-mark"
-              style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '14px',
-                fontSize: '24px',
-                marginBottom: '20px',
-              }}
-            >
-              L
+            <div style={{ marginBottom: '20px' }}>
+              <BrandMark size={54} />
             </div>
 
             <h1

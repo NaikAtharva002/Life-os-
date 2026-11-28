@@ -38,6 +38,7 @@ const FocusModePage = React.lazy(() => import('./pages/FocusModePage'));
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'));
 const KnowledgeUniversePage = React.lazy(() => import('./pages/KnowledgeUniversePage'));
 const AssistantPage = React.lazy(() => import('./pages/AssistantPage'));
+const LifestylePage = React.lazy(() => import('./pages/LifestylePage'));
 const DesignSystemPage = React.lazy(() => import('./pages/DesignSystemPage'));
 
 function PageSkeletonFallback() {
@@ -381,6 +382,7 @@ export default function App() {
                 <Route path="/finance" element={<FinancePage />} />
                 <Route path="/fitness" element={<FitnessPage />} />
                 <Route path="/career" element={<CareerPage />} />
+                <Route path="/lifestyle" element={<LifestylePage />} />
                 <Route path="/notes" element={<ObsidianPage />} />
                 <Route path="/focus" element={<FocusModePage />} />
                 <Route path="/review" element={<EveningReviewPage />} />
@@ -388,6 +390,7 @@ export default function App() {
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/universe" element={<KnowledgeUniversePage />} />
                 <Route path="/assistant" element={<AssistantPage />} />
+                <Route path="/rit" element={<AssistantPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/design-system" element={<DesignSystemPage />} />
                 <Route path="*" element={<Navigate to="/" replace />} />

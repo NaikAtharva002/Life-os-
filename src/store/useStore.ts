@@ -47,6 +47,8 @@ import type {
   CustomGraphNode,
   CustomGraphEdge,
   GraphPreferences,
+  LifestyleItem,
+  RitMemoryItem,
 } from '../types';
 
 export const DEFAULT_GRAPH_PREFERENCES: GraphPreferences = {
@@ -202,10 +204,24 @@ interface StoreState {
   updateGraphPreferences: (updates: Partial<GraphPreferences>) => Promise<void>;
   resetGraphPreferences: () => Promise<void>;
 
-  // 10. AI Assistant
+  // 10. AI Assistant (RIT)
   assistantMessages: AssistantMessage[];
-  addAssistantMessage: (msg: Omit<AssistantMessage, 'id' | 'timestamp'>) => void;
+  addAssistantMessage: (msg: Omit<AssistantMessage, 'id' | 'timestamp'>) => string;
+  updateAssistantMessage: (id: string, updates: Partial<AssistantMessage>) => void;
   clearAssistantChat: () => void;
+
+  // 10b. Lifestyle & RIT Personal Memory
+  lifestyleItems: LifestyleItem[];
+  saveLifestyleItem: (
+    item: Omit<LifestyleItem, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  ) => Promise<LifestyleItem>;
+  deleteLifestyleItem: (id: string) => Promise<void>;
+  ritMemories: RitMemoryItem[];
+  saveRitMemory: (
+    memory: Omit<RitMemoryItem, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
+  ) => Promise<RitMemoryItem>;
+  togglePinRitMemory: (id: string) => Promise<void>;
+  deleteRitMemory: (id: string) => Promise<void>;
 
   // 11. Settings & Nav
   settings: AppSettings;
@@ -674,12 +690,16 @@ export const useStore = create<StoreState>((set, get) => ({
   obsidianNotes: [],
   graphNodes: [],
   graphEdges: [],
+  lifestyleItems: [],
+  ritMemories: [],
   assistantMessages: [
     {
       id: 'msg-init',
       role: 'assistant',
-      content: 'Greetings! I am Astra, your LIFE OS AI copilot. I analyze your tasks, goals, habits, finances, workouts, and academics in real-time. Ask me to plan your day, audit your spending, or review your priorities.',
+      content:
+        'I am RIT, your Life OS intelligence layer. Bring your life into rhythm. Ask me to plan your day, review academic deadlines, audit spending, log memories, or organize what matters next.',
       timestamp: new Date().toISOString(),
+      provider: 'local',
     },
   ],
   isOnboardingOpen: false,
@@ -2765,15 +2785,25 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   // ----------------------------------------------------
-  // AI ASSISTANT
+  // AI ASSISTANT (RIT)
   // ----------------------------------------------------
   addAssistantMessage: (msg) => {
+    const id = uuidv4();
     const newMsg: AssistantMessage = {
       ...msg,
-      id: uuidv4(),
+      id,
       timestamp: new Date().toISOString(),
     };
     set((s) => ({ assistantMessages: [...s.assistantMessages, newMsg] }));
+    return id;
+  },
+
+  updateAssistantMessage: (id, updates) => {
+    set((s) => ({
+      assistantMessages: s.assistantMessages.map((m) =>
+        m.id === id ? { ...m, ...updates } : m
+      ),
+    }));
   },
 
   clearAssistantChat: () => {
@@ -2782,11 +2812,82 @@ export const useStore = create<StoreState>((set, get) => ({
         {
           id: uuidv4(),
           role: 'assistant',
-          content: 'Chat history cleared. How can I assist you with your LIFE OS today?',
+          content:
+            'Conversation reset. I am RIT, ready to align your day, academics, career, finance, health, and lifestyle.',
           timestamp: new Date().toISOString(),
+          provider: 'local',
         },
       ],
     });
+  },
+
+  // ----------------------------------------------------
+  // LIFESTYLE & RIT PERSONAL MEMORY
+  // ----------------------------------------------------
+  saveLifestyleItem: async (itemData) => {
+    const now = new Date().toISOString();
+    const existing = itemData.id
+      ? get().lifestyleItems.find((i) => i.id === itemData.id)
+      : undefined;
+    const item: LifestyleItem = {
+      ...itemData,
+      id: itemData.id || uuidv4(),
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+      isDemo: get().settings.isDemoMode ? true : false,
+    };
+    await LifeOSRepository.saveLifestyleItem(item);
+    set((s) => ({
+      lifestyleItems: [item, ...s.lifestyleItems.filter((i) => i.id !== item.id)],
+    }));
+    return item;
+  },
+
+  deleteLifestyleItem: async (id) => {
+    await LifeOSRepository.deleteLifestyleItem(id);
+    set((s) => ({
+      lifestyleItems: s.lifestyleItems.filter((i) => i.id !== id),
+    }));
+  },
+
+  saveRitMemory: async (memoryData) => {
+    const now = new Date().toISOString();
+    const existing = memoryData.id
+      ? get().ritMemories.find((m) => m.id === memoryData.id)
+      : undefined;
+    const memory: RitMemoryItem = {
+      ...memoryData,
+      id: memoryData.id || uuidv4(),
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+      isDemo: get().settings.isDemoMode ? true : false,
+    };
+    await LifeOSRepository.saveRitMemory(memory);
+    set((s) => ({
+      ritMemories: [memory, ...s.ritMemories.filter((m) => m.id !== memory.id)],
+    }));
+    return memory;
+  },
+
+  togglePinRitMemory: async (id) => {
+    const existing = get().ritMemories.find((m) => m.id === id);
+    if (!existing) return;
+    const updated: RitMemoryItem = {
+      ...existing,
+      pinned: !existing.pinned,
+      updatedAt: new Date().toISOString(),
+    };
+    await LifeOSRepository.saveRitMemory(updated);
+    set((s) => ({
+      ritMemories: s.ritMemories.map((m) => (m.id === id ? updated : m)),
+    }));
+  },
+
+  deleteRitMemory: async (id) => {
+    await LifeOSRepository.deleteRitMemory(id);
+    set((s) => ({
+      ritMemories: s.ritMemories.filter((m) => m.id !== id),
+    }));
   },
 
   // ----------------------------------------------------
@@ -2957,6 +3058,8 @@ export const useStore = create<StoreState>((set, get) => ({
       obsidianNotes: [],
       graphNodes: [],
       graphEdges: [],
+      lifestyleItems: [],
+      ritMemories: [],
       isOnboardingOpen: true,
       activeView: 'dashboard',
     });

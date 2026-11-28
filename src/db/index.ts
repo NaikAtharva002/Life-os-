@@ -26,6 +26,8 @@ import type {
   ObsidianNote,
   CustomGraphNode,
   CustomGraphEdge,
+  LifestyleItem,
+  RitMemoryItem,
 } from '../types';
 
 export class LifeOSDatabase extends Dexie {
@@ -55,6 +57,8 @@ export class LifeOSDatabase extends Dexie {
   obsidianNotes!: Table<ObsidianNote, string>;
   graphNodes!: Table<CustomGraphNode, string>;
   graphEdges!: Table<CustomGraphEdge, string>;
+  lifestyleItems!: Table<LifestyleItem, string>;
+  ritMemories!: Table<RitMemoryItem, string>;
   appMeta!: Table<{ key: string; value: any }, string>;
 
   constructor() {
@@ -186,6 +190,12 @@ export class LifeOSDatabase extends Dexie {
       graphNodes: 'id, category, kind, isDemo, deletedAt, updatedAt',
       graphEdges: 'id, sourceId, targetId, relationType, isDemo, deletedAt, updatedAt',
       appMeta: 'key',
+    });
+
+    // Version 4: Additive tables for Lifestyle & Experiences and RIT Personal Memory
+    this.version(4).stores({
+      lifestyleItems: 'id, category, status, date, isDemo, deletedAt, updatedAt',
+      ritMemories: 'id, category, pinned, isDemo, deletedAt, updatedAt',
     });
   }
 }

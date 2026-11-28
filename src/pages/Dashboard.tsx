@@ -18,13 +18,18 @@ import {
   Sliders,
   X,
   Calendar,
+  Sparkles,
+  Search,
+  Heart,
 } from 'lucide-react';
-import useStore, { isHabitScheduledOnDate } from '../store/useStore';
+import useStore from '../store/useStore';
 import { todayLocal, formatCurrencyINR } from '../lib/dates';
 import type { Task, Priority } from '../types';
 import { Checkbox, EmptyState } from '../components/ui';
 import QuickTaskBar from '../components/QuickTaskBar';
 import TaskModal from '../components/TaskModal';
+import { LiquidGlassSurface } from '../components/LiquidGlassSurface';
+import { buildDashboardViewModel } from '../lib/dashboardSelectors';
 
 export default function Dashboard() {
   const goals = useStore((s) => s.goals);
@@ -33,9 +38,12 @@ export default function Dashboard() {
   const habitEntries = useStore((s) => s.habitEntries);
   const financeTransactions = useStore((s) => s.financeTransactions);
   const academicSubjects = useStore((s) => s.academicSubjects);
+  const academicAssignments = useStore((s) => s.academicAssignments);
+  const academicExams = useStore((s) => s.academicExams);
   const timetableSlots = useStore((s) => s.timetableSlots);
   const workoutSessions = useStore((s) => s.workoutSessions);
   const eveningReviews = useStore((s) => s.eveningReviews);
+  const lifestyleItems = useStore((s) => s.lifestyleItems);
   const settings = useStore((s) => s.settings);
   const updateSettings = useStore((s) => s.updateSettings);
   const setActiveView = useStore((s) => s.setActiveView);
@@ -47,6 +55,7 @@ export default function Dashboard() {
   const addToast = useStore((s) => s.addToast);
 
   const [showWidgetCustomizer, setShowWidgetCustomizer] = useState(false);
+  const [ritPrompt, setRitPrompt] = useState('');
   const [taskModalInit, setTaskModalInit] = useState<{
     title?: string;
     priority?: Priority;
@@ -112,101 +121,74 @@ export default function Dashboard() {
       ? Math.round(((timerDurationMins * 60 - timerSeconds) / (timerDurationMins * 60)) * 100)
       : 0;
 
-  const priorityOrder: Record<Priority, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-
-  const todayTasks = useMemo(
+  const {
+    todayTasks,
+    overdueTasks,
+    completedTodayCount,
+    habitsToday,
+    habitsCompletedTodayCount,
+    dailyProgress,
+    priorityGoals,
+    attendanceAvg,
+    todayClasses,
+    academicAlertSubject,
+    monthlyExpenses,
+    workoutSessions: visibleWorkouts,
+    hasReviewedToday,
+    upcomingEvents,
+    lifestyleItems: visibleLifestyleItems,
+    isBrandNewUser,
+  } = useMemo(
     () =>
-      tasks
-        .filter((t) => !t.isCompleted && !t.isArchived && t.dueDate === todayStr)
-        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
-    [tasks, todayStr]
+      buildDashboardViewModel({
+        isDemoMode: Boolean(settings.isDemoMode),
+        todayStr,
+        tasks,
+        goals,
+        habits,
+        habitEntries,
+        financeTransactions,
+        academicSubjects,
+        academicAssignments,
+        academicExams,
+        timetableSlots,
+        workoutSessions,
+        eveningReviews,
+        lifestyleItems,
+      }),
+    [
+      settings.isDemoMode,
+      todayStr,
+      tasks,
+      goals,
+      habits,
+      habitEntries,
+      financeTransactions,
+      academicSubjects,
+      academicAssignments,
+      academicExams,
+      timetableSlots,
+      workoutSessions,
+      eveningReviews,
+      lifestyleItems,
+    ]
   );
 
-  const overdueTasks = useMemo(
-    () =>
-      tasks
-        .filter(
-          (t) =>
-            !t.isCompleted &&
-            !t.isArchived &&
-            (t.isOverdue || (t.dueDate && t.dueDate < todayStr))
-        )
-        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]),
-    [tasks, todayStr]
-  );
+  const launchRitPrompt = (promptText: string) => {
+    const clean = promptText.trim() || 'Plan my day and bring my life into rhythm.';
+    try {
+      sessionStorage.setItem('lifeos_rit_pending_prompt', clean);
+    } catch {
+      // Ignore storage error.
+    }
+    setActiveView('assistant');
+  };
 
-  const completedTodayCount = useMemo(
-    () => tasks.filter((t) => t.isCompleted && t.completedAt?.startsWith(todayStr)).length,
-    [tasks, todayStr]
-  );
-
-  const habitsToday = useMemo(
-    () => habits.filter((h) => isHabitScheduledOnDate(h, todayStr)),
-    [habits, todayStr]
-  );
-
-  const habitsCompletedTodayCount = useMemo(
-    () =>
-      habitsToday.filter((h) =>
-        habitEntries.some((e) => e.habitId === h.id && e.date === todayStr && e.completed)
-      ).length,
-    [habitsToday, habitEntries, todayStr]
-  );
-
-  const dailyProgress = useMemo(() => {
-    const totalItems = todayTasks.length + completedTodayCount + habitsToday.length;
-    if (totalItems === 0) return 0;
-    const completedItems = completedTodayCount + habitsCompletedTodayCount;
-    return Math.round((completedItems / totalItems) * 100);
-  }, [todayTasks.length, completedTodayCount, habitsToday.length, habitsCompletedTodayCount]);
-
-  const priorityGoals = useMemo(
-    () =>
-      goals
-        .filter((g) => !g.isArchived && g.status !== 'completed')
-        .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority])
-        .slice(0, 3),
-    [goals]
-  );
-
-  const attendanceAvg = useMemo(() => {
-    if (academicSubjects.length === 0) return null;
-    const totalClasses = academicSubjects.reduce((acc, s) => acc + s.totalClasses, 0);
-    const attended = academicSubjects.reduce((acc, s) => acc + s.attendedClasses, 0);
-    return totalClasses > 0 ? (attended / totalClasses) * 100 : 100.0;
-  }, [academicSubjects]);
-
-  const currentDayOfWeek = new Date().getDay() === 0 ? 7 : new Date().getDay();
-  const todayClasses = useMemo(
-    () =>
-      timetableSlots
-        .filter((s) => s.dayOfWeek === currentDayOfWeek)
-        .sort((a, b) => a.startTime.localeCompare(b.startTime)),
-    [timetableSlots, currentDayOfWeek]
-  );
-
-  const academicAlertSubject = useMemo(
-    () =>
-      academicSubjects.find(
-        (s) =>
-          s.totalClasses > 0 &&
-          (s.attendedClasses / s.totalClasses) * 100 < s.targetAttendancePercentage
-      ),
-    [academicSubjects]
-  );
-
-  const monthlyExpenses = useMemo(
-    () =>
-      financeTransactions
-        .filter((t) => t.type === 'expense' && t.date.startsWith(todayStr.slice(0, 7)))
-        .reduce((sum, t) => sum + t.amount, 0),
-    [financeTransactions, todayStr]
-  );
-
-  const hasReviewedToday = useMemo(
-    () => eveningReviews.some((r) => r.date === todayStr),
-    [eveningReviews, todayStr]
-  );
+  const openLiquidGlassSearch = () => {
+    window.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true })
+    );
+  };
 
   const widgets = {
     focusTimer: true,
@@ -302,11 +284,97 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* 2. NATURAL LANGUAGE QUICK CAPTURE BAR */}
+      {/* 2. NATURAL LANGUAGE QUICK CAPTURE + RIT LIQUID GLASS BAR */}
       <QuickTaskBar
         compact
         onExpandDetails={(vals) => setTaskModalInit(vals || {})}
       />
+
+      <LiquidGlassSurface style={{ borderRadius: '14px', padding: '14px 16px' }} frost={5}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: '1 1 280px', minWidth: 0 }}>
+            <Sparkles size={16} color="var(--accent-primary)" style={{ flexShrink: 0 }} />
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                launchRitPrompt(ritPrompt);
+              }}
+              style={{ display: 'flex', gap: '8px', flex: 1, minWidth: 0 }}
+            >
+              <input
+                type="text"
+                className="input"
+                aria-label="Ask RIT from dashboard"
+                placeholder="Ask RIT: Plan my day, audit deadlines, add a trip or goal..."
+                value={ritPrompt}
+                onChange={(e) => setRitPrompt(e.target.value)}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              <button type="submit" className="btn btn-primary btn-sm" style={{ flexShrink: 0 }}>
+                Ask RIT
+              </button>
+            </form>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => launchRitPrompt('What should I focus on right now?')}
+            >
+              Focus Brief
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={openLiquidGlassSearch}
+            >
+              <Search size={13} />
+              Universal Search
+            </button>
+          </div>
+        </div>
+      </LiquidGlassSurface>
+
+      {isBrandNewUser && (
+        <section className="card" style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <span className="section-eyebrow">New Workspace Quickstart</span>
+            <h2 className="text-heading-section" style={{ color: 'var(--text-primary)', margin: '2px 0 4px' }}>
+              Set up your real Life OS in under a minute
+            </h2>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: 0 }}>
+              Every number below reflects your own data. Start with one priority task, a personal goal, a daily habit, or an experience you are planning.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => setTaskModalInit({ dueDate: todayStr, priority: 'high' })}
+            >
+              <Plus size={14} /> Add First Task
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveView('goals')}>
+              <Plus size={14} /> Set First Goal
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveView('habits')}>
+              <Plus size={14} /> Start First Habit
+            </button>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setActiveView('lifestyle')}>
+              <Heart size={14} /> Plan Lifestyle & Trips
+            </button>
+          </div>
+        </section>
+      )}
 
       {/* 3. FOUR-TILE KPI BENTO STRIP */}
       <section className="today-kpi-grid">
@@ -858,14 +926,14 @@ export default function Dashboard() {
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                         Fitness Log
                       </div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>
-                        {workoutSessions.length > 0
-                          ? `Latest: ${workoutSessions[workoutSessions.length - 1]?.title || 'Workout'}`
+                      <div style={{ fontSize: '11.5px', color: 'var(--text-secondary)' }}>
+                        {visibleWorkouts.length > 0
+                          ? `Latest: ${visibleWorkouts[visibleWorkouts.length - 1]?.title || 'Workout'}`
                           : 'No workout sessions logged yet'}
                       </div>
                     </div>
                   </div>
-                  <span className="badge badge-silver font-tabular">{workoutSessions.length}</span>
+                  <span className="badge badge-silver font-tabular">{visibleWorkouts.length}</span>
                 </div>
               </button>
             )}
@@ -898,6 +966,61 @@ export default function Dashboard() {
                 <ArrowRight size={14} color="var(--text-secondary)" />
               </div>
             </button>
+
+            <div className="editorial-island">
+              <div className="editorial-island-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Heart size={15} color="var(--accent-primary)" />
+                  <h3 className="text-heading-sub" style={{ color: 'var(--text-primary)' }}>
+                    Upcoming 7 Days & Lifestyle
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveView('lifestyle')}
+                  className="btn btn-ghost btn-sm"
+                >
+                  Lifestyle <ArrowRight size={12} />
+                </button>
+              </div>
+              {upcomingEvents.length === 0 ? (
+                <p style={{ fontSize: '12.5px', color: 'var(--text-secondary)', margin: 0 }}>
+                  No upcoming deadlines or lifestyle events in the next 7 days. {visibleLifestyleItems.length > 0 ? `${visibleLifestyleItems.length} lifestyle record(s) saved.` : 'Add trips, hobbies, or milestones anytime.'}
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {upcomingEvents.map((ev) => (
+                    <button
+                      key={ev.id}
+                      type="button"
+                      onClick={() => setActiveView(ev.viewId)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '10px',
+                        padding: '8px 10px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border-subtle)',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {ev.title}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {ev.meta}
+                        </div>
+                      </div>
+                      <span className="badge badge-silver font-tabular">{ev.date}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
