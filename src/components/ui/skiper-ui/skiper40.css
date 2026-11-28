@@ -1,0 +1,193 @@
+/*
+ * Skiper 40 Animated Link Styles (Vite + CSS port of @skiper-ui/skiper40)
+ * Pure CSS hover animations with zero Tailwind / runtime style dependencies.
+ */
+
+.skiper40-section {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+}
+
+.skiper40-demo-list {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  height: 100%;
+}
+
+.skiper40-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.skiper40-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Variant 000: Bottom underline left-to-right sweep */
+.skiper40-link000::before {
+  bottom: 0;
+  height: 0.05em;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transform-origin: right;
+  transition-property: transform;
+}
+
+.skiper40-link000:hover::before,
+.skiper40-link000:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* Variants 001–003: Offset underline + reveal arrow */
+.skiper40-link001::before,
+.skiper40-link002::before,
+.skiper40-link003::before {
+  top: 1.5em;
+  height: 0.05em;
+  background-color: currentColor;
+  transform: scaleX(0);
+  transition-property: transform;
+}
+
+.skiper40-link001::before {
+  transform-origin: right;
+}
+
+.skiper40-link001:hover::before,
+.skiper40-link001:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.skiper40-link002::before {
+  transform-origin: left;
+}
+
+.skiper40-link002:hover::before,
+.skiper40-link002:focus-visible::before {
+  transform: scaleX(1);
+  transform-origin: right;
+}
+
+.skiper40-link003::before {
+  transform-origin: center;
+}
+
+.skiper40-link003:hover::before,
+.skiper40-link003:focus-visible::before {
+  transform: scaleX(1);
+}
+
+/* Variant 004: Inverted difference height bar */
+.skiper40-link004 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.skiper40-link004::before {
+  bottom: 0;
+  height: 0;
+  z-index: 1;
+  background-color: #ffffff;
+  mix-blend-mode: difference;
+  transition-property: all;
+}
+
+.skiper40-link004:hover::before,
+.skiper40-link004:focus-visible::before {
+  height: 1.4em;
+}
+
+/* Variant 005: Inverted difference width sweep */
+.skiper40-link005 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+.skiper40-link005::before {
+  top: 0;
+  height: 100%;
+  z-index: 1;
+  background-color: #ffffff;
+  mix-blend-mode: difference;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition-property: all;
+}
+
+.skiper40-link005:hover::before,
+.skiper40-link005:focus-visible::before {
+  transform: scaleX(1);
+}
+
+/* Arrow Icon Transitions */
+.skiper40-arrow {
+  width: 0.55em;
+  height: 0.55em;
+  flex-shrink: 0;
+  opacity: 0;
+  transition-property: transform, opacity;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.skiper40-arrow-underline {
+  margin-left: 0.3em;
+  transform: translateY(0.25rem);
+}
+
+.skiper40-link:hover .skiper40-arrow-underline,
+.skiper40-link:focus-visible .skiper40-arrow-underline {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.skiper40-arrow-height {
+  position: relative;
+  z-index: 0;
+  margin-left: 0.6em;
+  transform: translateY(0.25rem);
+}
+
+.skiper40-link004:hover .skiper40-arrow-height,
+.skiper40-link004:focus-visible .skiper40-arrow-height {
+  opacity: 1;
+  transform: translateY(0) rotate(45deg);
+}
+
+.skiper40-arrow-width {
+  position: relative;
+  z-index: 0;
+  margin-left: 0.6em;
+  transform: translateX(-0.25rem) rotate(45deg);
+}
+
+.skiper40-link005:hover .skiper40-arrow-width,
+.skiper40-link005:focus-visible .skiper40-arrow-width {
+  opacity: 1;
+  transform: translateX(0) rotate(45deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skiper40-link::before,
+  .skiper40-arrow {
+    transition: none;
+  }
+}
